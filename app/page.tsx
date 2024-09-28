@@ -109,6 +109,7 @@ export default function Home() {
 						<div>
 							<span className="mr-[0.5em] font-bold">概要:</span>
 							自社プロダクト。インフラ除き、バックエンド/フロントエンドの開発を担当。
+							<br />
 							機能追加以外では Vue2 から Next.js への置き換えを実施した。
 						</div>
 					</section>
