@@ -76,6 +76,7 @@ export default function Home() {
 								"Github Actions",
 								"Vercel",
 								"Prisma",
+								"TailwindCSS",
 								"その他",
 							].join(", ")}
 						</div>
@@ -103,6 +104,7 @@ export default function Home() {
 								"Docker",
 								"Github",
 								"CircleCI",
+								"TailwindCSS",
 								"その他",
 							].join(", ")}
 						</div>
