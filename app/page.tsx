@@ -16,14 +16,45 @@ export default function Home() {
 				<DarkToggleButton />
 			</header>
 			<main className="row-start-2 flex flex-col items-center gap-8 sm:items-start">
-				<Image
-					className="rounded-full"
-					src={icon}
-					alt="kik4 avator"
-					width={180}
-					height={180}
-					priority
-				/>
+				<div className="flex flex-col items-center justify-center gap-8 sm:flex-row">
+					<Image
+						className="rounded-full"
+						src={icon}
+						alt="kik4 avator"
+						width={180}
+						height={180}
+						priority
+					/>
+					<div className="flex flex-row gap-2 px-4 pt-2 pb-4 sm:flex-col">
+						<a
+							className="flex items-center gap-2 hover:underline hover:underline-offset-4"
+							href="https://github.com/kik4"
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							<FontAwesomeIcon icon={faGithub} />
+							@kik4
+						</a>
+						<a
+							className="flex items-center gap-2 hover:underline hover:underline-offset-4"
+							href="https://x.com/_kik4_"
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							<FontAwesomeIcon icon={faXTwitter} />
+							@_kik4_
+						</a>
+						<a
+							className="flex items-center gap-2 hover:underline hover:underline-offset-4"
+							href="https://qiita.com/kik4"
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							<span>Qiita</span>
+							@kik4
+						</a>
+					</div>
+				</div>
 
 				<section className="rounded border px-4 pt-2 pb-4">
 					<h2 className="font-bold text-lg">プロフィール</h2>
@@ -118,24 +149,16 @@ export default function Home() {
 					<HiddenSections />
 				</section>
 			</main>
-			<footer className="row-start-3 flex flex-wrap items-center justify-center gap-6">
+			<footer className="row-start-3 flex flex-wrap items-center justify-center gap-6 text-sm">
+				<span>©︎ 2024 kik4</span>
 				<a
-					className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-					href="https://github.com/kik4"
+					className="flex items-center gap-1 hover:underline hover:underline-offset-4"
+					href="https://github.com/kik4/my-portfolio-next"
 					target="_blank"
 					rel="noopener noreferrer"
 				>
 					<FontAwesomeIcon icon={faGithub} />
-					@kik4
-				</a>
-				<a
-					className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-					href="https://x.com/_kik4_"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					<FontAwesomeIcon icon={faXTwitter} />
-					@_kik4_
+					このサイトのソース
 				</a>
 			</footer>
 		</div>

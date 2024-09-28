@@ -35,6 +35,8 @@
 		"typescript": "^5"
 	},
 	"lint-staged": {
-		"*": ["biome check --no-errors-on-unmatched --files-ignore-unknown=true"]
+		"*": [
+			"biome check --write --unsafe --no-errors-on-unmatched --files-ignore-unknown=true"
+		]
 	}
 }
