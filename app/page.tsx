@@ -114,6 +114,9 @@ export default function Home() {
 						<div>
 							<span className="mr-[0.5em] font-bold">概要:</span>
 							自社プロダクト。最初の技術選定から始め、ほとんどのバックエンド/フロントエンドの設計・開発を担当。
+							<br />
+							ログイン不要。主な機能は物件検索、物件情報を他サービスとの連携、headless
+							CMS を用いた記事掲載。
 						</div>
 					</section>
 					<section className="flex flex-col gap-2 rounded border p-2 text-sm">
@@ -142,6 +145,8 @@ export default function Home() {
 						<div>
 							<span className="mr-[0.5em] font-bold">概要:</span>
 							自社プロダクト。インフラ除き、バックエンド/フロントエンドの開発を担当。
+							<br />
+							大きな機能としては Slack のようなチャットシステムを構築するなど。
 							<br />
 							機能追加以外では Vue2 から Next.js への置き換えを実施した。
 						</div>
