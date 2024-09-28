@@ -34,8 +34,8 @@ export default function Home() {
 						<div>業務経歴</div>
 						<ul className="list-inside list-disc">
 							{[
-								"業務用倉庫保管管理サービス開発",
 								"倉庫検索ポータルサイト開発",
+								"業務用倉庫保管管理サービス開発",
 								"EC系サイト開発",
 								"求職サイト開発",
 							].map((v) => (
@@ -54,6 +54,63 @@ export default function Home() {
 
 				<section className="flex flex-col gap-4 rounded border px-2 pt-2 pb-4">
 					<h2 className="font-bold text-lg">業務経験詳細</h2>
+					<section className="flex flex-col gap-2 rounded border p-2 text-sm">
+						<h3 className="text-lg">倉庫検索ポータルサイト開発</h3>
+						<div>
+							<span className="mr-[0.5em] font-bold">時期:</span>
+							2021〜現在
+						</div>
+						<div>
+							<span className="mr-[0.5em] font-bold">担当工程:</span>
+							{["要件定義", "設計", "実装", "テスト", "保守"].join(", ")}
+						</div>
+						<div>
+							<span className="mr-[0.5em] font-bold">技術:</span>
+							{[
+								"TypeScript",
+								"React (Next.js)",
+								"Node.js",
+								"Docker",
+								"Github",
+								"Github Actions",
+								"Vercel",
+								"Prisma",
+								"その他",
+							].join(", ")}
+						</div>
+						<div>
+							<span className="mr-[0.5em] font-bold">概要:</span>
+							自社プロダクト。最初の技術選定から始め、ほとんどのバックエンド/フロントエンドの設計・開発を担当。
+						</div>
+					</section>
+					<section className="flex flex-col gap-2 rounded border p-2 text-sm">
+						<h3 className="text-lg">業務用倉庫保管管理サービス開発</h3>
+						<div>
+							<span className="mr-[0.5em] font-bold">時期:</span>
+							2018末頃〜現在
+						</div>
+						<div>
+							<span className="mr-[0.5em] font-bold">担当工程:</span>
+							{["要件定義", "設計", "実装", "テスト", "保守"].join(", ")}
+						</div>
+						<div>
+							<span className="mr-[0.5em] font-bold">技術:</span>
+							{[
+								"TypeScript",
+								"React (Next.js) / Vue.js",
+								"Node.js",
+								"Docker",
+								"Github",
+								"CircleCI",
+								"その他",
+							].join(", ")}
+						</div>
+						<div>
+							<span className="mr-[0.5em] font-bold">概要:</span>
+							自社プロダクト。インフラ除き、バックエンド/フロントエンドの開発を担当。
+							機能追加以外では Vue2 から Next.js への置き換えを実施した。
+						</div>
+					</section>
 					<section className="flex flex-col gap-2 rounded border p-2 text-sm">
 						<h3 className="text-lg">ECサイト開発</h3>
 						<div>
