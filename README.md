@@ -1,3 +1,13 @@
+# my-portfolio-next
+
+https://kik4.work
+
+自分のポートフォリオサイト。新しい技術スタックの確認も兼ねている。
+
+以下、オリジナルの README
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
