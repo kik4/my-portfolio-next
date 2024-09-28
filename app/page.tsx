@@ -25,7 +25,7 @@ export default function Home() {
 						height={180}
 						priority
 					/>
-					<div className="flex flex-row gap-2 px-4 pt-2 pb-4 sm:flex-col">
+					<div className="flex flex-col gap-2 px-4 pt-2 pb-4">
 						<a
 							className="flex items-center gap-2 hover:underline hover:underline-offset-4"
 							href="https://github.com/kik4"
