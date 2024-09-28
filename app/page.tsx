@@ -3,8 +3,8 @@ import { faGithub, faXTwitter } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Image from "next/image";
 import Link from "next/link";
-import { DarkToggleButton } from "./components/DarkToggleButton";
-import { HiddenSections } from "./components/HiddenSections";
+import { DarkToggleButton } from "./_components/DarkToggleButton";
+import { HiddenSections } from "./_components/HiddenSections";
 
 export default function Home() {
 	return (
