@@ -208,8 +208,8 @@ export default function Home() {
 							<span className="mr-[0.5em] font-bold">技術:</span>
 							{[
 								"Nuxt.js",
-								"TypeScript",
 								"Vue.js",
+								"JavaScript",
 								"Google App Engine",
 								"Go",
 								"Firebase",
