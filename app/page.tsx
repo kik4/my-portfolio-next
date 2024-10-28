@@ -163,7 +163,7 @@ export default function Home() {
 					rel="noopener noreferrer"
 				>
 					<FontAwesomeIcon icon={faGithub} />
-					このサイトのソース
+					このサイトのリポジトリ
 				</a>
 			</footer>
 		</div>
