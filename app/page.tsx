@@ -153,6 +153,75 @@ export default function Home() {
 					</section>
 					<HiddenSections />
 				</section>
+
+				<section className="flex flex-col gap-4 rounded border px-2 pt-2 pb-4">
+					<h2 className="font-bold text-lg">個人開発詳細</h2>
+					<section className="flex flex-col gap-2 rounded border p-2 text-sm">
+						<h3 className="text-lg">二台目ポートフォリオサイト（これ）</h3>
+						<div>
+							<span className="mr-[0.5em] font-bold">開発時期:</span>
+							2024〜現在
+						</div>
+						<div>
+							<span className="mr-[0.5em] font-bold">担当工程:</span>
+							{["すべて"].join(", ")}
+						</div>
+						<div>
+							<span className="mr-[0.5em] font-bold">リポジトリ:</span>
+							<Link href="https://github.com/kik4/my-portfolio-next">
+								<FontAwesomeIcon icon={faGithub} />
+							</Link>
+						</div>
+						<div>
+							<span className="mr-[0.5em] font-bold">技術:</span>
+							{[
+								"Next.js (app router)",
+								"React",
+								"TypeScript",
+								"Tailwind CSS",
+								"Biome",
+							].join(", ")}
+						</div>
+						<div>
+							<span className="mr-[0.5em] font-bold">概要:</span>
+							このポートフォリオサイト。Next.js の app router や Biome
+							などの新規技術の試用も兼ねて開発中。
+						</div>
+					</section>
+					<section className="flex flex-col gap-2 rounded border p-2 text-sm">
+						<h3 className="text-lg">初代ポートフォリオサイト</h3>
+						<div>
+							<span className="mr-[0.5em] font-bold">開発時期:</span>
+							2018〜2019
+						</div>
+						<div>
+							<span className="mr-[0.5em] font-bold">担当工程:</span>
+							{["すべて"].join(", ")}
+						</div>
+						<div>
+							<span className="mr-[0.5em] font-bold">リポジトリ:</span>
+							<Link href="https://github.com/kik4/my-portfolio-nuxt">
+								<FontAwesomeIcon icon={faGithub} />
+							</Link>
+						</div>
+						<div>
+							<span className="mr-[0.5em] font-bold">技術:</span>
+							{[
+								"Nuxt.js",
+								"TypeScript",
+								"Vue.js",
+								"Google App Engine",
+								"Go",
+								"Firebase",
+							].join(", ")}
+						</div>
+						<div>
+							<span className="mr-[0.5em] font-bold">概要:</span>
+							最初に作ったポートフォリオサイト。Nuxt, GAE, Go, Firebase
+							などの技術を試用と個人実績作りのために作成。
+						</div>
+					</section>
+				</section>
 			</main>
 			<footer className="row-start-3 flex flex-wrap items-center justify-center gap-6 text-sm">
 				<span>©︎ 2024 kik4</span>
