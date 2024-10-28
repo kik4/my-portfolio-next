@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
-import { Noto_Sans_JP } from "next/font/google";
+import { Lato, Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
+import clsx from "clsx";
+
+const lato = Lato({
+	subsets: ["latin"],
+	weight: ["400", "700"],
+	variable: "--font-lato",
+});
 
 const notoSansJp = Noto_Sans_JP({
 	subsets: ["latin"],
-	weight: ["400", "700"],
-	display: "swap",
+	variable: "--font-noto-sans-jp",
 });
 
 export const metadata: Metadata = {
@@ -20,7 +26,15 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="ja">
-			<body className={`${notoSansJp.className} antialiased`}>{children}</body>
+			<body
+				className={clsx(
+					notoSansJp.variable,
+					lato.variable,
+					"font-default antialiased",
+				)}
+			>
+				{children}
+			</body>
 		</html>
 	);
 }

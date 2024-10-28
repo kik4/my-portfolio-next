@@ -15,6 +15,9 @@ const config: Config = {
 	],
 	theme: {
 		extend: {
+			fontFamily: {
+				default: ["var(--font-lato)", "var(--font-noto-sans-jp)"],
+			},
 			colors: {
 				background: "var(--background)",
 				foreground: "var(--foreground)",
