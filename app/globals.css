@@ -19,6 +19,21 @@
 		--foreground: #fefefe;
 	}
 }
+body {
+	font-family:
+		Lato,
+		"Noto Sans JP",
+		-apple-system,
+		BlinkMacSystemFont,
+		Segoe UI,
+		Roboto,
+		Oxygen,
+		Ubuntu,
+		Cantarell,
+		Fira Sans,
+		Helvetica Neue,
+		sans-serif;
+}
 
 svg[data-prefix*="fa"] {
 	width: 1em;
