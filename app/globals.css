@@ -19,3 +19,8 @@
 		--foreground: #fefefe;
 	}
 }
+
+svg[data-prefix*="fa"] {
+	width: 1em;
+	display: inline-block;
+}
