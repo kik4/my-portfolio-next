@@ -224,7 +224,7 @@ export default function Home() {
 				</section>
 			</main>
 			<footer className="row-start-3 flex flex-wrap items-center justify-center gap-6 text-sm">
-				<span>©︎ 2024 kik4</span>
+				<span>©︎ kik4</span>
 				<a
 					className="flex items-center gap-1 hover:underline hover:underline-offset-4"
 					href="https://github.com/kik4/my-portfolio-next"
