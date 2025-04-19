@@ -1,17 +1,8 @@
 @import "tailwindcss";
 
-@custom-variant dark {
-  @media (prefers-color-scheme: dark) {
-    &:not(.light *) {
-      @slot;
-    }
-  }
-  &:is(.dark *) {
-    @slot;
-  }
-}
+@custom-variant dark (&:where(.dark, .dark *));
 
-@theme {
+@theme inline {
   --font-default: var(--font-lato), var(--font-noto-sans-jp);
 
   --color-background: var(--background);
