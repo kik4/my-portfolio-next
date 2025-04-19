@@ -4,37 +4,37 @@ import "./globals.css";
 import clsx from "clsx";
 
 const lato = Lato({
-	subsets: ["latin"],
-	weight: ["400", "700"],
-	variable: "--font-lato",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-lato",
 });
 
 const notoSansJp = Noto_Sans_JP({
-	subsets: ["latin"],
-	variable: "--font-noto-sans-jp",
+  subsets: ["latin"],
+  variable: "--font-noto-sans-jp",
 });
 
 export const metadata: Metadata = {
-	title: "kik4.work",
-	description: "フロントエンドエンジニア kik4 のポートフォリオ",
+  title: "kik4.work",
+  description: "フロントエンドエンジニア kik4 のポートフォリオ",
 };
 
 export default function RootLayout({
-	children,
+  children,
 }: Readonly<{
-	children: React.ReactNode;
+  children: React.ReactNode;
 }>) {
-	return (
-		<html lang="ja">
-			<body
-				className={clsx(
-					notoSansJp.variable,
-					lato.variable,
-					"font-default antialiased",
-				)}
-			>
-				{children}
-			</body>
-		</html>
-	);
+  return (
+    <html lang="ja">
+      <body
+        className={clsx(
+          notoSansJp.variable,
+          lato.variable,
+          "font-default antialiased",
+        )}
+      >
+        {children}
+      </body>
+    </html>
+  );
 }
