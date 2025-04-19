@@ -9,10 +9,10 @@ import { HiddenSections } from "./_components/HiddenSections";
 export default function Home() {
   return (
     <>
-      <header className="fixed top-0 z-50 w-full bg-background shadow-md">
+      <header className="fixed top-0 z-50 w-full bg-background/50 shadow-md backdrop-blur-sm">
         <div className="container mx-auto flex justify-between py-5">
           <Link href="/">
-            <h1 className="text-lg">kik4.work</h1>
+            <h1 className="font-bold text-2xl">kik4.work</h1>
           </Link>
           <DarkToggleButton />
         </div>
