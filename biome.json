@@ -20,7 +20,10 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "nursery": { "useSortedClasses": "warn" }
+      "nursery": { "useSortedClasses": "warn" },
+      "correctness": {
+        "noUnusedImports": "error"
+      }
     }
   },
   "javascript": {
