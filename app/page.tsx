@@ -54,7 +54,7 @@ export default function Home() {
                   href="#work"
                   className="rounded-full bg-blue-600 px-8 py-3 font-medium text-white transition hover:bg-blue-700"
                 >
-                  開発経歴を見る
+                  プロダクトを見る
                 </Link>
               </div>
               <div className="md:w-5/12">
@@ -73,7 +73,7 @@ export default function Home() {
 
         <section id="work" className="bg-gray-50 py-20 dark:bg-gray-50/20">
           <div className="container mx-auto px-6">
-            <h2 className="mb-16 text-center font-bold text-3xl">開発経歴</h2>
+            <h2 className="mb-16 text-center font-bold text-3xl">プロダクト</h2>
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
               {[
                 {
@@ -323,7 +323,7 @@ export default function Home() {
                     href="#work"
                     className="text-gray-400 transition hover:text-white"
                   >
-                    作品
+                    プロダクト
                   </Link>
                 </li>
                 <li>
