@@ -30,7 +30,7 @@ export default function RootLayout({
         className={clsx(
           notoSansJp.variable,
           lato.variable,
-          "font-default antialiased",
+          "bg-background font-default text-foreground antialiased",
         )}
       >
         {children}

@@ -49,3 +49,7 @@ svg[data-prefix*="fa"] {
   width: 1em;
   display: inline-block;
 }
+
+button {
+  cursor: pointer;
+}
