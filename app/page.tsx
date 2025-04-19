@@ -197,6 +197,7 @@ export default function Home() {
                     "TypeScript",
                     "TailwindCSS",
                     "Biome",
+                    "pnpm",
                     "AI",
                   ].join(", "),
                 },
