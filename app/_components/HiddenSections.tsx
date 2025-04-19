@@ -9,7 +9,7 @@ export const HiddenSections: React.FC = () => {
 	return (
 		<>
 			<button
-				className="flex items-center justify-center rounded border p-2 hover:bg-slate-400"
+				className="flex items-center justify-center rounded-sm border p-2 hover:bg-slate-400"
 				type="button"
 				onClick={() => setIsOpen((v) => !v)}
 			>
@@ -24,7 +24,7 @@ export const HiddenSections: React.FC = () => {
 			</button>
 			{isOpen && (
 				<>
-					<section className="flex flex-col gap-2 rounded border p-2 text-sm">
+					<section className="flex flex-col gap-2 rounded-sm border p-2 text-sm">
 						<h3 className="text-lg">ECサイト開発</h3>
 						<div>
 							<span className="mr-[0.5em] font-bold">担当工程:</span>
@@ -64,7 +64,7 @@ export const HiddenSections: React.FC = () => {
 							</ul>
 						</div>
 					</section>
-					<section className="flex flex-col gap-2 rounded border p-2 text-sm">
+					<section className="flex flex-col gap-2 rounded-sm border p-2 text-sm">
 						<h3 className="text-lg">求職サイト開発</h3>
 						<div>
 							<span className="mr-[0.5em] font-bold">担当工程:</span>

@@ -56,7 +56,7 @@ export default function Home() {
 					</div>
 				</div>
 
-				<section className="rounded border px-4 pt-2 pb-4">
+				<section className="rounded-sm border px-4 pt-2 pb-4">
 					<h2 className="font-bold text-lg">プロフィール</h2>
 					<div className="mt-2 grid grid-cols-[100px_1fr] gap-2 text-sm">
 						<div>名前</div>
@@ -84,9 +84,9 @@ export default function Home() {
 					</div>
 				</section>
 
-				<section className="flex flex-col gap-4 rounded border px-2 pt-2 pb-4">
+				<section className="flex flex-col gap-4 rounded-sm border px-2 pt-2 pb-4">
 					<h2 className="font-bold text-lg">業務経験詳細</h2>
-					<section className="flex flex-col gap-2 rounded border p-2 text-sm">
+					<section className="flex flex-col gap-2 rounded-sm border p-2 text-sm">
 						<h3 className="text-lg">倉庫検索ポータルサイト開発</h3>
 						<div>
 							<span className="mr-[0.5em] font-bold">時期:</span>
@@ -119,7 +119,7 @@ export default function Home() {
 							CMS を用いた記事掲載。
 						</div>
 					</section>
-					<section className="flex flex-col gap-2 rounded border p-2 text-sm">
+					<section className="flex flex-col gap-2 rounded-sm border p-2 text-sm">
 						<h3 className="text-lg">業務用倉庫保管管理サービス開発</h3>
 						<div>
 							<span className="mr-[0.5em] font-bold">時期:</span>
@@ -154,9 +154,9 @@ export default function Home() {
 					<HiddenSections />
 				</section>
 
-				<section className="flex flex-col gap-4 rounded border px-2 pt-2 pb-4">
+				<section className="flex flex-col gap-4 rounded-sm border px-2 pt-2 pb-4">
 					<h2 className="font-bold text-lg">個人開発詳細</h2>
-					<section className="flex flex-col gap-2 rounded border p-2 text-sm">
+					<section className="flex flex-col gap-2 rounded-sm border p-2 text-sm">
 						<h3 className="text-lg">二台目ポートフォリオサイト（これ）</h3>
 						<div>
 							<span className="mr-[0.5em] font-bold">開発時期:</span>
@@ -188,7 +188,7 @@ export default function Home() {
 							などの新規技術の試用も兼ねて開発中。
 						</div>
 					</section>
-					<section className="flex flex-col gap-2 rounded border p-2 text-sm">
+					<section className="flex flex-col gap-2 rounded-sm border p-2 text-sm">
 						<h3 className="text-lg">初代ポートフォリオサイト</h3>
 						<div>
 							<span className="mr-[0.5em] font-bold">開発時期:</span>
