@@ -43,11 +43,18 @@ export default function Home() {
                   <br />
                   <span className="text-blue-600">kik4</span>です
                 </h1>
-                <div className="mb-8 text-lg">
-                  <p>
-                    “使えるUI”は、業務理解から。
-                    自社開発の倉庫管理・EC・求職サイトなどの実務システム開発に従事。
-                    TypeScriptを主軸に、フロントエンド中心のフルスタック開発を行っています。
+                <div className="mb-10 space-y-4 text-lg">
+                  <p className="border-b pb-1 font-medium">
+                    <span className="text-blue-600">01.</span>{" "}
+                    速く、そして丁寧に。価値あるWeb体験を届ける。
+                  </p>
+                  <p className="border-b pb-1 font-medium">
+                    <span className="text-blue-600">02.</span>{" "}
+                    倉庫管理・EC・求職サイトなど、実務システム開発のスペシャリスト。
+                  </p>
+                  <p className="border-b pb-1 font-medium">
+                    <span className="text-blue-600">03.</span>{" "}
+                    TypeScriptを主軸に、フロントエンド中心のフルスタック開発。
                   </p>
                 </div>
                 <Link
@@ -304,7 +311,7 @@ export default function Home() {
             <div className="mb-8 w-full md:mb-0 md:w-1/3">
               <h3 className="mb-4 font-bold text-xl">kik4</h3>
               <p className="text-gray-400">
-                Webエンジニア（主にフロントエンド。フルスタックも担当）
+                Webエンジニア。現在はリードエンジニアとして自社開発プロジェクトに従事。フルリモート・フルフレックス勤務。
               </p>
             </div>
             <div className="mb-8 w-full md:mb-0 md:w-1/4">
