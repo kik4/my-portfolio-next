@@ -43,19 +43,20 @@ export default function Home() {
                 <h1 className="mb-6 font-bold text-5xl leading-tight">
                   Webエンジニア、
                   <br />
-                  <span className="text-blue-600">kik4</span>です
+                  <span className="text-accent">kik4</span>
+                  です
                 </h1>
                 <div className="mb-10 space-y-4 text-lg">
                   <p className="border-b pb-1 font-medium">
-                    <span className="text-blue-600">01.</span>{" "}
+                    <span className="text-accent">01.</span>{" "}
                     速く、そして丁寧に。価値あるWeb体験を届ける。
                   </p>
                   <p className="border-b pb-1 font-medium">
-                    <span className="text-blue-600">02.</span>{" "}
+                    <span className="text-accent">02.</span>{" "}
                     倉庫管理・EC・求職サイトなど、実務システム開発のスペシャリスト。
                   </p>
                   <p className="border-b pb-1 font-medium">
-                    <span className="text-blue-600">03.</span>{" "}
+                    <span className="text-accent">03.</span>{" "}
                     TypeScriptを主軸に、フロントエンド中心のフルスタック開発。
                   </p>
                 </div>
@@ -241,7 +242,7 @@ export default function Home() {
                     />
                   </div>
                   <div className="p-6">
-                    <p className="mb-2 font-medium text-blue-600 dark:text-blue-300">
+                    <p className="mb-2 font-medium text-accent">
                       {project.category}
                       <span className="ml-2 text-gray-700/60 text-sm dark:text-gray-200/60">
                         {project.period}

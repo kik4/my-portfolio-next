@@ -25,6 +25,10 @@
   ::file-selector-button {
     border-color: var(--color-gray-200, currentcolor);
   }
+
+  button {
+    cursor: pointer;
+  }
 }
 
 :root,
@@ -50,6 +54,9 @@ svg[data-prefix*="fa"] {
   display: inline-block;
 }
 
-button {
-  cursor: pointer;
+.text-accent {
+  color: var(--color-blue-600);
+  @variant dark {
+    color: var(--color-blue-300);
+  }
 }
