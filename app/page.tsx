@@ -10,6 +10,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Image from "next/image";
 import Link from "next/link";
 import { DarkToggleButton } from "./_components/DarkToggleButton";
+import { WavyBackground } from "./_components/WavyBackground";
 
 export default function Home() {
   return (
@@ -34,7 +35,8 @@ export default function Home() {
       </header>
 
       <main>
-        <section id="home" className="pt-32 pb-20">
+        <section id="home" className="relative pt-32 pb-20">
+          <WavyBackground />
           <div className="container mx-auto px-6">
             <div className="flex flex-col items-center justify-between md:flex-row">
               <div className="mb-10 md:mb-0 md:w-1/2">
