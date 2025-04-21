@@ -49,7 +49,7 @@ export default function Home() {
                 <div className="mb-10 space-y-4 text-lg">
                   <p className="border-b pb-1 font-medium">
                     <span className="text-accent">01.</span>{" "}
-                    速く、そして丁寧に。価値あるWeb体験を届ける。
+                    モダンな技術と効率的な開発で、スピード感あるプロダクト改善を実現。
                   </p>
                   <p className="border-b pb-1 font-medium">
                     <span className="text-accent">02.</span>{" "}
@@ -269,7 +269,7 @@ export default function Home() {
         <section id="skills" className="py-20">
           <div className="container mx-auto px-6">
             <h2 className="mb-16 text-center font-bold text-3xl">スキル</h2>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
               {[
                 {
                   icon: "💻",
@@ -290,6 +290,11 @@ export default function Home() {
                   icon: "🖥️",
                   title: "バックエンド開発",
                   skills: "Node.js, Express, Next.js",
+                },
+                {
+                  icon: "📖",
+                  title: "IT知識",
+                  skills: "情報工学専攻, 応用情報技術者資格取得",
                 },
               ].map((skill) => (
                 <div
