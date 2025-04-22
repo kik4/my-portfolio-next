@@ -9,6 +9,7 @@ import { faGithub, faXTwitter } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Image from "next/image";
 import Link from "next/link";
+import { AnimateOnScroll } from "./_components/AnimateOnScroll";
 import { DarkToggleButton } from "./_components/DarkToggleButton";
 import { WavyBackground } from "./_components/WavyBackground";
 
@@ -39,7 +40,10 @@ export default function Home() {
           <WavyBackground />
           <div className="container mx-auto px-6">
             <div className="flex flex-col items-center justify-between md:flex-row">
-              <div className="mb-10 md:mb-0 md:w-1/2">
+              <AnimateOnScroll
+                animation="slideRight"
+                className="mb-10 md:mb-0 md:w-1/2"
+              >
                 <h1 className="mb-6 font-bold text-5xl leading-tight">
                   Webエンジニア、
                   <br />
@@ -66,8 +70,8 @@ export default function Home() {
                 >
                   プロダクトを見る
                 </Link>
-              </div>
-              <div className="md:w-5/12">
+              </AnimateOnScroll>
+              <AnimateOnScroll animation="slideLeft" className="md:w-5/12">
                 <div className="relative mx-auto h-80 w-80">
                   <Image
                     src={icon}
@@ -76,14 +80,18 @@ export default function Home() {
                     alt="kik4"
                   />
                 </div>
-              </div>
+              </AnimateOnScroll>
             </div>
           </div>
         </section>
 
         <section id="work" className="bg-gray-50 py-20 dark:bg-gray-50/20">
           <div className="container mx-auto px-6">
-            <h2 className="mb-16 text-center font-bold text-3xl">プロダクト</h2>
+            <AnimateOnScroll animation="fadeIn">
+              <h2 className="mb-16 text-center font-bold text-3xl">
+                プロダクト
+              </h2>
+            </AnimateOnScroll>
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
               {[
                 {
@@ -228,9 +236,11 @@ export default function Home() {
                     "Firebase",
                   ].join(", "),
                 },
-              ].map((project) => (
-                <div
+              ].map((project, index) => (
+                <AnimateOnScroll
                   key={project.title}
+                  animation="slideUp"
+                  delay={index * 0.1}
                   className="hover:-translate-y-2 overflow-hidden rounded-lg bg-white shadow-lg transition-transform dark:bg-gray-50/20"
                 >
                   <div className="relative h-56">
@@ -260,7 +270,7 @@ export default function Home() {
                       </p>
                     </div>
                   </div>
-                </div>
+                </AnimateOnScroll>
               ))}
             </div>
           </div>
@@ -268,7 +278,9 @@ export default function Home() {
 
         <section id="skills" className="py-20">
           <div className="container mx-auto px-6">
-            <h2 className="mb-16 text-center font-bold text-3xl">スキル</h2>
+            <AnimateOnScroll animation="fadeIn">
+              <h2 className="mb-16 text-center font-bold text-3xl">スキル</h2>
+            </AnimateOnScroll>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
               {[
                 {
@@ -296,9 +308,11 @@ export default function Home() {
                   title: "IT知識",
                   skills: "情報工学専攻, 応用情報技術者資格取得",
                 },
-              ].map((skill) => (
-                <div
+              ].map((skill, index) => (
+                <AnimateOnScroll
                   key={skill.title}
+                  animation="scale"
+                  delay={index * 0.1}
                   className="rounded-lg bg-gray-50 p-8 text-center shadow-sm dark:bg-gray-50/20"
                 >
                   <div className="mb-4 text-4xl">{skill.icon}</div>
@@ -306,7 +320,7 @@ export default function Home() {
                   <p className="text-gray-600 dark:text-gray-200/60">
                     {skill.skills}
                   </p>
-                </div>
+                </AnimateOnScroll>
               ))}
             </div>
           </div>
