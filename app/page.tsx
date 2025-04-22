@@ -287,7 +287,7 @@ export default function Home() {
                   skills: "TypeScript, React.js, Next.js, Vue.js",
                 },
                 {
-                  icon: "🖥️",
+                  icon: "🗄️",
                   title: "バックエンド開発",
                   skills: "Node.js, Express, Next.js",
                 },
