@@ -149,7 +149,7 @@ export default function Home() {
                 {
                   category: "業務",
                   title: "ECサイト群開発",
-                  period: "2016〜2018",
+                  period: "2015〜2018",
                   description:
                     "複数のサービスを展開する中でバックエンド/フロントエンド新規機能開発、AWS EC2サーバ構築、CI環境構築、DB設計、ASP.NET Web FormsからMVCへの順次移行提案・実施、データ出力カスタムDSLの設計・式木を用いた実行システムの実装。",
                   image: projectF,
@@ -177,7 +177,7 @@ export default function Home() {
                 {
                   category: "業務",
                   title: "求職・求人サイト開発",
-                  period: "2014〜2016",
+                  period: "2014〜2015",
                   description:
                     "バックエンド/フロントエンド新規機能開発。一部フォームデザインや開発環境整備なども実施。",
                   image: projectN,
