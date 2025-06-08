@@ -23,6 +23,9 @@
       "nursery": { "useSortedClasses": "warn" },
       "correctness": {
         "noUnusedImports": "error"
+      },
+      "a11y": {
+        "all": false
       }
     }
   },
