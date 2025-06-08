@@ -41,5 +41,6 @@
     "*": [
       "biome check --write --unsafe --no-errors-on-unmatched --files-ignore-unknown=true"
     ]
-  }
+  },
+  "packageManager": "pnpm@10.11.1"
 }
