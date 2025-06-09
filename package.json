@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "check": "biome check --write --unsafe .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
