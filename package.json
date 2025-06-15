@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "check": "biome check --write --unsafe .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "type:check": "tsc --noEmit"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
@@ -17,7 +18,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
     "clsx": "^2.1.1",
-    "framer-motion": "^12.16.0",
+    "framer-motion": "^12.18.1",
     "next": "^15.3.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -25,16 +26,16 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@tailwindcss/postcss": "^4.1.8",
-    "@types/node": "^22.15.30",
-    "@types/react": "^19.1.6",
+    "@tailwindcss/postcss": "^4.1.10",
+    "@types/node": "^22.15.31",
+    "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "eslint": "^9.28.0",
+    "eslint": "^9.29.0",
     "eslint-config-next": "15.3.1",
     "husky": "^9.1.7",
-    "lint-staged": "^16.1.0",
-    "postcss": "^8.5.4",
-    "tailwindcss": "^4.1.8",
+    "lint-staged": "^16.1.1",
+    "postcss": "^8.5.5",
+    "tailwindcss": "^4.1.10",
     "typescript": "^5.8.3"
   },
   "lint-staged": {
