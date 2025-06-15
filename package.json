@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "check": "biome check --write --unsafe .",
+    "format": "biome check --write --unsafe .",
     "prepare": "husky",
     "type:check": "tsc --noEmit"
   },
