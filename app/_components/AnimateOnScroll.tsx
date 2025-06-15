@@ -80,7 +80,7 @@ export const AnimateOnScroll = ({
         },
       },
     },
-  };
+  } as const;
 
   const selectedAnimation = animations[animation];
 
