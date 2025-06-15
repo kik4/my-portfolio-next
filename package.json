@@ -2,6 +2,7 @@
   "name": "my-portfolio-next",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -11,7 +12,11 @@
     "prepare": "husky",
     "type:check": "tsc --noEmit",
     "supabase:start": "supabase start",
-    "supabase:stop": "supabase stop"
+    "supabase:stop": "supabase stop",
+    "supabase:reset": "supabase db reset",
+    "supabase:diff": "supabase db diff",
+    "supabase:type": "supabase gen types typescript --local > database.types.ts",
+    "supabase:sample": "tsx ./tasks/setSampleSupabase.ts "
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
@@ -19,6 +24,7 @@
     "@fortawesome/free-regular-svg-icons": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
+    "@next/env": "^15.3.3",
     "@supabase/supabase-js": "^2.50.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.18.1",
@@ -40,6 +46,7 @@
     "lint-staged": "^16.1.1",
     "postcss": "^8.5.5",
     "tailwindcss": "^4.1.10",
+    "tsx": "^4.20.3",
     "typescript": "^5.8.3"
   },
   "lint-staged": {

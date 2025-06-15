@@ -1,18 +1,24 @@
 "use client";
-
-import type { User } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
 export default function UserInfo() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<{ id: string } | null>(null);
 
   useEffect(() => {
     const getUser = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      setUser(user);
+      if (!user) return;
+      const res = await supabase
+        .from("users")
+        .select("id")
+        .filter("user_id", "eq", user.id)
+        .filter("deleted_at", "is", null)
+        .single();
+      if (!res.data) return;
+      setUser(res.data);
     };
     getUser();
   }, []);
@@ -20,8 +26,8 @@ export default function UserInfo() {
   if (!user) return <div>未ログイン</div>;
 
   return (
-    <div>
-      <p>こんにちは、{user.user_metadata.full_name} さん！</p>
+    <div className="flex flex-col items-center">
+      <p>こんにちは、{user.id} さん！</p>
       <button
         onClick={async () => {
           await supabase.auth.signOut();
