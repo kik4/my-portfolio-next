@@ -438,7 +438,50 @@ export default function Home() {
             </AnimateOnScroll>
 
             <AnimateOnScroll animation="slideUp" delay={0.1}>
-              <div className="mx-auto max-w-4xl rounded-2xl bg-gradient-to-r from-gray-50 to-gray-100 p-8 shadow-lg dark:from-gray-800/50 dark:to-gray-700/50">
+              <div className="mx-auto max-w-4xl rounded-2xl bg-gradient-to-r from-blue-50 to-blue-100 p-8 shadow-lg dark:from-blue-800/50 dark:to-blue-700/50">
+                <div className="flex flex-col items-center gap-6 md:flex-row">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-black text-white shadow-lg">
+                    <FontAwesomeIcon icon={faXTwitter} size="2x" />
+                  </div>
+                  <div className="flex-1 text-center md:text-left">
+                    <h3 className="mb-3 font-bold text-2xl">
+                      Xで技術情報を発信
+                    </h3>
+                    <p className="mb-4 text-gray-600 dark:text-gray-300">
+                      日常的なつぶやきの他に開発の気づき、学習した内容をリアルタイムで投稿。
+                      他の開発者の投稿から学びを得ながら、最新の技術トレンドを追いかけています。
+                    </p>
+                    <div className="mb-6 flex flex-wrap justify-center gap-2 md:justify-start">
+                      {[
+                        "技術トレンド",
+                        "開発Tips",
+                        "学習記録",
+                        "コミュニティ",
+                      ].map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full bg-blue-100 px-3 py-1 text-blue-700 text-sm dark:bg-blue-900/30 dark:text-blue-300"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    <a
+                      href="https://x.com/_kik4_"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-lg bg-black px-6 py-3 font-medium text-white transition hover:bg-gray-800"
+                    >
+                      <FontAwesomeIcon icon={faXTwitter} />
+                      Xプロフィールを見る
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </AnimateOnScroll>
+
+            <AnimateOnScroll animation="slideUp" delay={0.2}>
+              <div className="mx-auto mt-8 max-w-4xl rounded-2xl bg-gradient-to-r from-gray-50 to-gray-100 p-8 shadow-lg dark:from-gray-800/50 dark:to-gray-700/50">
                 <div className="flex flex-col items-center gap-6 md:flex-row">
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-500 text-white shadow-lg">
                     <span className="font-bold text-2xl">Q</span>
