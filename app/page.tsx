@@ -1,4 +1,12 @@
-import { faGithub, faXTwitter } from "@fortawesome/free-brands-svg-icons";
+import {
+  faGithub,
+  faNpm,
+  faXTwitter,
+} from "@fortawesome/free-brands-svg-icons";
+import {
+  faCodeBranch,
+  faExternalLinkAlt,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Image from "next/image";
 import Link from "next/link";
@@ -326,6 +334,87 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <section id="oss" className="bg-gray-50 py-20 dark:bg-gray-50/20">
+          <div className="container mx-auto px-6">
+            <AnimateOnScroll animation="fadeIn">
+              <h2 className="mb-16 text-center font-bold text-3xl">OSS活動</h2>
+            </AnimateOnScroll>
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+              {[
+                {
+                  icon: faCodeBranch,
+                  title: "React公式ドキュメント日本語訳",
+                  description:
+                    "React公式ドキュメントの日本語訳プロジェクトに協力。新機能やAPIの翻訳作業を継続的に実施し、日本の開発者コミュニティへの貢献を行っています。",
+                  link: "https://ja.react.dev/",
+                  linkText: "React日本語ドキュメント",
+                  type: "ドキュメント翻訳",
+                },
+                {
+                  icon: faCodeBranch,
+                  title: "react-intersection-observer",
+                  description:
+                    "人気のReactライブラリのバグ修正PRを送信。Intersection Observer APIを使用したライブラリの安定性向上に貢献しました。",
+                  link: "https://github.com/thebuilder/react-intersection-observer",
+                  linkText: "GitHubリポジトリ",
+                  type: "バグ修正",
+                },
+                {
+                  icon: faNpm,
+                  title: "array-compressor",
+                  description:
+                    "配列の圧縮とセグメント化を効率的に行うnpmパッケージを開発・公開。データ処理の最適化に役立つユーティリティライブラリです。",
+                  link: "https://www.npmjs.com/package/array-compressor",
+                  linkText: "npmパッケージ",
+                  type: "ライブラリ公開",
+                },
+                {
+                  icon: faCodeBranch,
+                  title: "simple-vercel-deploy",
+                  description:
+                    "Vercelへのデプロイを簡素化するGitHub Actionを開発・公開。CI/CDパイプラインの構築を効率化するツールです。",
+                  link: "https://github.com/marketplace/actions/simple-vercel-deploy",
+                  linkText: "GitHub Marketplace",
+                  type: "GitHub Action",
+                },
+              ].map((item, index) => (
+                <AnimateOnScroll
+                  key={item.title}
+                  animation="slideUp"
+                  delay={index * 0.15}
+                  className="hover:-translate-y-1 rounded-lg bg-white p-6 shadow-lg transition-transform dark:bg-gray-50/20"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                      <FontAwesomeIcon icon={item.icon} size="lg" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="mb-2 flex items-center justify-between">
+                        <h3 className="font-bold text-lg">{item.title}</h3>
+                        <span className="rounded-full bg-gray-100 px-3 py-1 text-gray-600 text-xs dark:bg-gray-700/50 dark:text-gray-300">
+                          {item.type}
+                        </span>
+                      </div>
+                      <p className="mb-4 text-gray-600 dark:text-gray-300">
+                        {item.description}
+                      </p>
+                      <a
+                        href={item.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 font-medium text-sm text-white transition hover:bg-blue-700"
+                      >
+                        <FontAwesomeIcon icon={faExternalLinkAlt} size="sm" />
+                        {item.linkText}
+                      </a>
+                    </div>
+                  </div>
+                </AnimateOnScroll>
+              ))}
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer className="bg-gray-800 pt-16 pb-8 text-white">
@@ -362,6 +451,14 @@ export default function Home() {
                     className="text-gray-400 transition hover:text-white"
                   >
                     スキル
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="#oss"
+                    className="text-gray-400 transition hover:text-white"
+                  >
+                    OSS活動
                   </Link>
                 </li>
               </ul>
