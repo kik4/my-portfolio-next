@@ -31,12 +31,13 @@ export default function Home() {
           </Link>
           <div className="flex gap-4">
             <a
-              className="flex items-center gap-1 hover:underline hover:underline-offset-4"
-              href="https://github.com/kik4/my-portfolio-next"
+              className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 font-medium text-gray-700 transition hover:bg-gray-200 hover:text-black dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:text-white"
+              href="https://github.com/kik4"
               target="_blank"
               rel="noopener noreferrer"
             >
-              <FontAwesomeIcon icon={faGithub} size="2x" />
+              <FontAwesomeIcon icon={faGithub} size="lg" />
+              <span className="hidden sm:inline">GitHub</span>
             </a>
             <DarkToggleButton />
           </div>
