@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.2/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.2.4/schema.json",
   "vcs": {
     "enabled": false,
     "clientKind": "git",
@@ -7,22 +7,29 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": [".next"]
+    "includes": ["**", "!**/.next"]
   },
   "formatter": {
     "enabled": true,
     "indentStyle": "space"
   },
-  "organizeImports": {
-    "enabled": true
-  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "enabled": true,
+    "domains": {
+      "next": "recommended",
+      "react": "recommended",
+      "test": "recommended"
+    },
     "rules": {
       "recommended": true,
       "nursery": { "useSortedClasses": "warn" },
       "correctness": {
         "noUnusedImports": "error"
+      },
+      "suspicious": {
+        "noUnknownAtRules": "off",
+        "noDuplicateProperties": "off"
       }
     }
   },

@@ -1,3 +1,7 @@
+import { faGithub, faXTwitter } from "@fortawesome/free-brands-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import Image from "next/image";
+import Link from "next/link";
 import icon from "@/app/img/icon_1000x1000.jpg";
 import projectF from "@/app/img/projectF.jpg";
 import projectN from "@/app/img/projectN.jpg";
@@ -5,10 +9,6 @@ import projectP from "@/app/img/projectP.jpg";
 import projectPf1 from "@/app/img/projectPf1.jpg";
 import projectPf2 from "@/app/img/projectPf2.jpg";
 import projectS from "@/app/img/projectS.jpg";
-import { faGithub, faXTwitter } from "@fortawesome/free-brands-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import Image from "next/image";
-import Link from "next/link";
 import { AnimateOnScroll } from "./_components/AnimateOnScroll";
 import { DarkToggleButton } from "./_components/DarkToggleButton";
 import { WavyBackground } from "./_components/WavyBackground";
