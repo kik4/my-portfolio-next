@@ -415,6 +415,58 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <section id="tech-articles" className="py-20">
+          <div className="container mx-auto px-6">
+            <AnimateOnScroll animation="fadeIn">
+              <h2 className="mb-16 text-center font-bold text-3xl">技術発信</h2>
+            </AnimateOnScroll>
+
+            <AnimateOnScroll animation="slideUp" delay={0.1}>
+              <div className="mx-auto max-w-4xl rounded-2xl bg-gradient-to-r from-gray-50 to-gray-100 p-8 shadow-lg dark:from-gray-800/50 dark:to-gray-700/50">
+                <div className="flex flex-col items-center gap-6 md:flex-row">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-500 text-white shadow-lg">
+                    <span className="font-bold text-2xl">Q</span>
+                  </div>
+                  <div className="flex-1 text-center md:text-left">
+                    <h3 className="mb-3 font-bold text-2xl">
+                      Qiitaで技術記事を執筆
+                    </h3>
+                    <p className="mb-4 text-gray-600 dark:text-gray-300">
+                      C#、.NET、TypeScript、PowerShell等の技術を中心に、実務で得た知見や実験した技術トピックを記事として投稿。
+                      開発者コミュニティへの知識共有と技術普及に貢献しています。
+                    </p>
+                    <div className="mb-6 flex flex-wrap justify-center gap-2 md:justify-start">
+                      {[
+                        "C#",
+                        ".NET",
+                        "TypeScript",
+                        "PowerShell",
+                        "Web開発",
+                      ].map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full bg-green-100 px-3 py-1 text-green-700 text-sm dark:bg-green-900/30 dark:text-green-300"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    <a
+                      href="https://qiita.com/kik4"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-3 font-medium text-white transition hover:bg-green-700"
+                    >
+                      <FontAwesomeIcon icon={faExternalLinkAlt} />
+                      Qiitaプロフィールを見る
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </AnimateOnScroll>
+          </div>
+        </section>
       </main>
 
       <footer className="bg-gray-800 pt-16 pb-8 text-white">
@@ -459,6 +511,14 @@ export default function Home() {
                     className="text-gray-400 transition hover:text-white"
                   >
                     OSS活動
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="#tech-articles"
+                    className="text-gray-400 transition hover:text-white"
+                  >
+                    技術発信
                   </Link>
                 </li>
               </ul>
