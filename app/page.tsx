@@ -127,6 +127,8 @@ export default function Home() {
                     "Vercel",
                     "Prisma",
                     "TailwindCSS",
+                    "PostgreSQL",
+                    "AWS",
                   ].join(", ")}...`,
                 },
                 {
@@ -147,6 +149,7 @@ export default function Home() {
                     "TypeScript",
                     "React (Next.js) / Vue.js",
                     "Node.js",
+                    "Express",
                     "Docker/Docker Compose",
                     "Github",
                     "CircleCI",
@@ -154,6 +157,9 @@ export default function Home() {
                     "TypeORM",
                     "TailwindCSS",
                     "WebSocket",
+                    "PostgreSQL",
+                    "Redis",
+                    "AWS",
                   ].join(", ")}...`,
                 },
                 {
@@ -170,7 +176,7 @@ export default function Home() {
                     "テスト",
                     "運用/保守",
                   ].join(", "),
-                  tech: [
+                  tech: `${[
                     "C#",
                     "ASP.NET Web Forms/MVC",
                     "JavaScript",
@@ -182,7 +188,8 @@ export default function Home() {
                     "IIS",
                     "Jenkins",
                     "GitBucket",
-                  ].join(", "),
+                    "Windows Server",
+                  ].join(", ")}...`,
                 },
                 {
                   category: "業務",
@@ -198,7 +205,7 @@ export default function Home() {
                     "運用/保守",
                     "一部デザイン",
                   ].join(", "),
-                  tech: [
+                  tech: `${[
                     "PHP",
                     "Laravel",
                     "JavaScript",
@@ -209,7 +216,8 @@ export default function Home() {
                     "MariaDB",
                     "BootStrap",
                     "AWS",
-                  ].join(", "),
+                    "Vagrant",
+                  ].join(", ")}...`,
                 },
                 {
                   category: "個人",
@@ -219,15 +227,16 @@ export default function Home() {
                     "本ポートフォリオサイト。Next.js の app router や Biome などの新規技術の試用も兼ねて開発中。",
                   image: projectPf2,
                   responsible: ["全工程"].join(", "),
-                  tech: [
+                  tech: `${[
                     "Next.js (app router)",
                     "React",
                     "TypeScript",
                     "TailwindCSS",
+                    "Vercel",
                     "Biome",
                     "pnpm",
-                    "AI",
-                  ].join(", "),
+                    "AI Coding",
+                  ].join(", ")}...`,
                   link: "https://github.com/kik4/my-portfolio-next",
                 },
                 {
@@ -238,14 +247,14 @@ export default function Home() {
                     "最初に作ったポートフォリオサイト。Nuxt, GAE, Go, Firebase などの技術の試用に作成。",
                   image: projectPf1,
                   responsible: ["全工程"].join(", "),
-                  tech: [
+                  tech: `${[
                     "Nuxt.js",
                     "Vue.js",
                     "JavaScript",
                     "Google App Engine",
                     "Go",
                     "Firebase",
-                  ].join(", "),
+                  ].join(", ")}...`,
                 },
               ].map((project, index) => (
                 <AnimateOnScroll
