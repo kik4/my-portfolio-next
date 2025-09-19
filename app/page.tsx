@@ -228,6 +228,7 @@ export default function Home() {
                     "pnpm",
                     "AI",
                   ].join(", "),
+                  link: "https://github.com/kik4/my-portfolio-next",
                 },
                 {
                   category: "個人",
@@ -262,12 +263,25 @@ export default function Home() {
                     />
                   </div>
                   <div className="p-6">
-                    <p className="mb-2 font-medium text-accent">
-                      {project.category}
-                      <span className="ml-2 text-gray-700/60 text-sm dark:text-gray-200/60">
-                        {project.period}
-                      </span>
-                    </p>
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="font-medium text-accent">
+                        {project.category}
+                        <span className="ml-2 text-gray-700/60 text-sm dark:text-gray-200/60">
+                          {project.period}
+                        </span>
+                      </p>
+                      {project.link && (
+                        <a
+                          href={project.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded bg-gray-600 px-2 py-1 font-medium text-white text-xs transition hover:bg-gray-700"
+                        >
+                          <FontAwesomeIcon icon={faGithub} size="sm" />
+                          GitHub
+                        </a>
+                      )}
+                    </div>
                     <h3 className="mb-3 font-bold text-xl">{project.title}</h3>
                     <div className="flex flex-col gap-2 text-gray-600 dark:text-gray-300">
                       <p className="mb-2 text-gray-600 dark:text-gray-300">
