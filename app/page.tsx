@@ -99,7 +99,7 @@ export default function Home() {
                   title: "倉庫検索ポータルサイト開発",
                   period: "2021〜",
                   description:
-                    "最初の技術選定から始め、バックエンド/フロントエンドのほとんどの設計・開発を担当。主な機能は物件検索、問い合わせ、物件情報を他サービスとの連携、headless CMS を用いた記事掲載。",
+                    "最初の技術選定から始め、バックエンド/フロントエンドのほとんどの設計・開発を担当。主な機能は物件検索、問い合わせ、物件情報を他サービスとの連携、headless CMS を用いた記事掲載。GitHub Actions による CI/CD 環境構築も実施。",
                   image: projectP,
                   responsible: [
                     "要件定義",
@@ -112,7 +112,7 @@ export default function Home() {
                     "TypeScript",
                     "React (Next.js)",
                     "Node.js",
-                    "Docker",
+                    "Docker/Docker Compose",
                     "Github",
                     "Github Actions",
                     "Vercel",
@@ -125,7 +125,7 @@ export default function Home() {
                   title: "業務用倉庫保管管理サービス開発",
                   period: "2018〜",
                   description:
-                    "インフラを除いたバックエンド/フロントエンドの開発を担当。要ログイン業務システム。主な担当業務としては Slack のようなチャットシステムの構築、Vue 2 から Next.js への置き換えを実施した。",
+                    "インフラを除いたバックエンド/フロントエンドの開発を担当。要ログイン業務システム。主な担当業務としては Slack のようなリアルタイムチャットシステムの構築、Vue 2 から Next.js への置き換えを実施した。",
                   image: projectS,
                   responsible: [
                     "要件定義",
@@ -138,12 +138,13 @@ export default function Home() {
                     "TypeScript",
                     "React (Next.js) / Vue.js",
                     "Node.js",
-                    "Docker",
+                    "Docker/Docker Compose",
                     "Github",
                     "CircleCI",
                     "Vercel",
                     "TypeORM",
                     "TailwindCSS",
+                    "WebSocket",
                   ].join(", ")}...`,
                 },
                 {
@@ -151,7 +152,7 @@ export default function Home() {
                   title: "ECサイト群開発",
                   period: "2015〜2018",
                   description:
-                    "複数のサービスを展開する中でバックエンド/フロントエンド新規機能開発、AWS EC2サーバ構築、CI環境構築、DB設計、ASP.NET Web FormsからMVCへの順次移行提案・実施、データ出力カスタムDSLの設計・式木を用いた実行システムの実装。",
+                    "複数のサービスを展開する中でバックエンド/フロントエンド新規機能開発、AWS EC2サーバ構築、JenkinsによるCI環境構築、DB設計、ASP.NET Web FormsからMVCへの順次移行提案・実施、データ出力カスタムDSLの設計・式木を用いた実行システムの実装。",
                   image: projectF,
                   responsible: [
                     "要件定義",
@@ -198,7 +199,7 @@ export default function Home() {
                     "nginx",
                     "MariaDB",
                     "BootStrap",
-                    "BitBucket",
+                    "AWS",
                   ].join(", "),
                 },
                 {
