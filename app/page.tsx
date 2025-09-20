@@ -535,6 +535,148 @@ export default function Home() {
             </AnimateOnScroll>
           </div>
         </section>
+
+        <section
+          id="engineer-value"
+          className="bg-gray-50 py-20 dark:bg-gray-50/20"
+        >
+          <div className="container mx-auto px-6">
+            <AnimateOnScroll animation="fadeIn">
+              <h2 className="mb-16 text-center font-bold text-3xl">
+                エンジニアとしての特徴
+              </h2>
+            </AnimateOnScroll>
+
+            <div className="mx-auto max-w-6xl">
+              <AnimateOnScroll animation="slideUp" delay={0.1}>
+                <div className="mb-8 rounded-2xl bg-gradient-to-r from-purple-50 to-blue-50 p-8 shadow-lg dark:from-purple-800/50 dark:to-blue-800/50">
+                  <div className="mb-6 text-center">
+                    <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full shadow-lg">
+                      <Image
+                        src={icon}
+                        width={80}
+                        height={80}
+                        className="h-full w-full object-cover"
+                        alt="kik4"
+                      />
+                    </div>
+                    <h3 className="mb-4 font-bold text-2xl">
+                      堅実かつ迅速開発に邁進するエンジニア
+                    </h3>
+                    <p className="mx-auto max-w-3xl whitespace-nowrap text-gray-600 dark:text-gray-300">
+                      私は日々の開発業務に集中し、
+                      <wbr />
+                      スピード感のある業務を心がけ、
+                      <wbr />
+                      成長し続けるコードを書き続けてきました。
+                      <wbr />
+                      そんな「もくもく系」の私の特徴をご紹介します。
+                    </p>
+                  </div>
+                </div>
+              </AnimateOnScroll>
+
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {[
+                  {
+                    icon: "📚",
+                    title: "継続的な技術習得",
+                    points: [
+                      "2014年から10年以上の実務経験を積み重ね",
+                      "PHP → C# → TypeScriptとプロダクトと時代に応じて柔軟にアップデート",
+                      "個人プロジェクトで新技術を積極的に試用",
+                    ],
+                  },
+                  {
+                    icon: "⚡",
+                    title: "幅広い開発対応力",
+                    points: [
+                      "バックエンドからフロントエンド、インフラまで担当",
+                      "要件定義から保守まで全工程を経験",
+                      "倉庫管理システムを安定運用中",
+                    ],
+                  },
+                  {
+                    icon: "🏃",
+                    title: "スピードと挑戦を重視した開発",
+                    points: [
+                      "プロジェクトに最適な技術選定を心がけ",
+                      "爆速開発で短期間でのリリースを実現",
+                      "Vue 2→Next.js移行など技術的負債を積極的に解決",
+                    ],
+                  },
+                  {
+                    icon: "🤝",
+                    title: "開発者コミュニティへの貢献",
+                    points: [
+                      "React公式ドキュメントの日本語翻訳に参加",
+                      "Qiitaで実務経験に基づく技術記事を執筆",
+                      "npmパッケージ・GitHub Actionを開発・公開",
+                    ],
+                  },
+                  {
+                    icon: "📈",
+                    title: "リモートワークでの高い生産性",
+                    points: [
+                      "フルリモート・フルフレックス環境で集中開発",
+                      "迅速なアウトプットを維持",
+                      "6年間継続しているプロジェクトで責任感を発揮",
+                    ],
+                  },
+                  {
+                    icon: "💡",
+                    title: "現代開発スタイルへの適応",
+                    points: [
+                      "GitHubでのコードレビュー文化に慣れ親しみ",
+                      "CI/CDやコンテナ技術も積極的に活用",
+                      "AIコーディングツールも効果的に取り入れ",
+                    ],
+                  },
+                ].map((value, index) => (
+                  <AnimateOnScroll
+                    key={value.title}
+                    animation="slideUp"
+                    delay={index * 0.1}
+                    className="hover:-translate-y-1 rounded-lg bg-white p-6 shadow-lg transition-transform dark:bg-gray-50/20"
+                  >
+                    <div className="mb-4 text-center">
+                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-50 text-2xl dark:bg-gray-800/50">
+                        {value.icon}
+                      </div>
+                      <h4 className="font-bold text-lg">{value.title}</h4>
+                    </div>
+                    <ul className="divide-y divide-gray-200 dark:divide-gray-600/50">
+                      {value.points.map((point) => (
+                        <li
+                          key={point}
+                          className="flex items-center gap-2 py-2 text-gray-600 text-sm first:pt-0 last:pb-0 dark:text-gray-300"
+                        >
+                          <span className="flex-shrink-0 text-accent">•</span>
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </AnimateOnScroll>
+                ))}
+              </div>
+
+              <AnimateOnScroll animation="fadeIn" delay={0.3}>
+                <div className="mt-12 rounded-2xl bg-gradient-to-r from-gray-50 to-gray-100 p-8 text-center shadow-lg dark:from-gray-800/50 dark:to-gray-700/50">
+                  <h4 className="mb-4 font-bold text-xl">私のスタンス</h4>
+                  <p className="mx-auto max-w-4xl text-gray-600 dark:text-gray-300">
+                    派手なアピールは得意ではありませんが、
+                    <strong>技術への深い理解</strong>、
+                    <strong>学び続ける姿勢</strong>、
+                    <strong>確実な実装力</strong>
+                    を武器に、チームの信頼できるエンジニアとして貢献したいと考えています。
+                    特にリモートワークが当たり前となった現在、自律的に学習し続け、
+                    安定したアウトプットを提供できることが私の強みです。
+                  </p>
+                </div>
+              </AnimateOnScroll>
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer className="bg-gray-800 pt-16 pb-8 text-white">
@@ -587,6 +729,14 @@ export default function Home() {
                     className="text-gray-400 transition hover:text-white"
                   >
                     技術発信
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="#engineer-value"
+                    className="text-gray-400 transition hover:text-white"
+                  >
+                    特徴
                   </Link>
                 </li>
               </ul>
