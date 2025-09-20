@@ -255,6 +255,7 @@ export default function Home() {
                     "Go",
                     "Firebase",
                   ].join(", ")}...`,
+                  link: "https://github.com/kik4/my-portfolio-nuxt",
                 },
               ].map((project, index) => (
                 <AnimateOnScroll
