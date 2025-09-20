@@ -563,13 +563,10 @@ export default function Home() {
                     <h3 className="mb-4 font-bold text-2xl">
                       堅実かつ迅速開発に邁進するエンジニア
                     </h3>
-                    <p className="mx-auto max-w-3xl whitespace-nowrap text-gray-600 dark:text-gray-300">
+                    <p className="mx-auto max-w-3xl text-gray-600 [line-break:strict] dark:text-gray-300">
                       私は日々の開発業務に集中し、
-                      <wbr />
                       スピード感のある業務を心がけ、
-                      <wbr />
                       成長し続けるコードを書き続けてきました。
-                      <wbr />
                       そんな「もくもく系」の私の特徴をご紹介します。
                     </p>
                   </div>
