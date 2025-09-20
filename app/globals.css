@@ -7,6 +7,8 @@
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  --animate-shake: shake 0.2s ease-in-out infinite;
 }
 
 /*
@@ -59,5 +61,25 @@ svg[data-prefix*="fa"] {
   color: var(--color-blue-600);
   @variant dark {
     color: var(--color-blue-300);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-2px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(2px);
   }
 }

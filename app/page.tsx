@@ -551,7 +551,7 @@ export default function Home() {
               <AnimateOnScroll animation="slideUp" delay={0.1}>
                 <div className="mb-8 rounded-2xl bg-gradient-to-r from-purple-100 to-blue-100 p-8 shadow-lg dark:from-purple-800/50 dark:to-blue-800/50">
                   <div className="mb-6 text-center">
-                    <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full shadow-lg">
+                    <div className="group mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full shadow-lg transition-all duration-300 hover:animate-shake hover:blur-[1px]">
                       <Image
                         src={icon}
                         width={80}
