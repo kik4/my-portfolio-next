@@ -683,7 +683,18 @@ export default function Home() {
         <div className="container mx-auto px-6">
           <div className="mb-12 flex flex-wrap justify-between">
             <div className="mb-8 w-full md:mb-0 md:w-1/3">
-              <h3 className="mb-4 font-bold text-xl">kik4</h3>
+              <div className="mb-4 flex items-center gap-3">
+                <div className="h-8 w-8 overflow-hidden rounded-full">
+                  <Image
+                    src={icon}
+                    width={32}
+                    height={32}
+                    className="h-full w-full object-cover"
+                    alt="kik4"
+                  />
+                </div>
+                <h3 className="font-bold text-xl">kik4</h3>
+              </div>
               <p className="text-gray-400">
                 Webエンジニア。現在はリードエンジニアとして自社開発プロジェクトに従事。フルリモート・フルフレックス勤務。
               </p>
