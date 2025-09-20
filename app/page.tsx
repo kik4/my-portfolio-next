@@ -549,7 +549,7 @@ export default function Home() {
 
             <div className="mx-auto max-w-6xl">
               <AnimateOnScroll animation="slideUp" delay={0.1}>
-                <div className="mb-8 rounded-2xl bg-gradient-to-r from-purple-50 to-blue-50 p-8 shadow-lg dark:from-purple-800/50 dark:to-blue-800/50">
+                <div className="mb-8 rounded-2xl bg-gradient-to-r from-purple-100 to-blue-100 p-8 shadow-lg dark:from-purple-800/50 dark:to-blue-800/50">
                   <div className="mb-6 text-center">
                     <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full shadow-lg">
                       <Image
@@ -637,10 +637,10 @@ export default function Home() {
                     key={value.title}
                     animation="slideUp"
                     delay={index * 0.1}
-                    className="hover:-translate-y-1 rounded-lg bg-white p-6 shadow-lg transition-transform dark:bg-gray-50/20"
+                    className="hover:-translate-y-1 rounded-lg bg-zinc-100 p-6 shadow-lg transition-transform dark:bg-gray-50/20"
                   >
                     <div className="mb-4 text-center">
-                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-50 text-2xl dark:bg-gray-800/50">
+                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-50 text-2xl shadow-sm dark:bg-gray-800/50">
                         {value.icon}
                       </div>
                       <h4 className="font-bold text-lg">{value.title}</h4>
@@ -661,7 +661,7 @@ export default function Home() {
               </div>
 
               <AnimateOnScroll animation="fadeIn" delay={0.3}>
-                <div className="mt-12 rounded-2xl bg-gradient-to-r from-gray-50 to-gray-100 p-8 text-center shadow-lg dark:from-gray-800/50 dark:to-gray-700/50">
+                <div className="mt-12 rounded-2xl bg-gradient-to-r from-gray-200 to-gray-300 p-8 text-center shadow-lg dark:from-gray-800/50 dark:to-gray-700/50">
                   <h4 className="mb-4 font-bold text-xl">私のスタンス</h4>
                   <p className="mx-auto max-w-4xl text-gray-600 dark:text-gray-300">
                     派手なアピールは得意ではありませんが、
