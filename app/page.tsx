@@ -313,7 +313,9 @@ export default function Home() {
         <section id="skills" className="py-20">
           <div className="container mx-auto px-6">
             <AnimateOnScroll animation="fadeIn">
-              <h2 className="mb-16 text-center font-bold text-3xl">スキル</h2>
+              <h2 className="mb-16 text-center font-bold text-3xl">
+                代表スキル
+              </h2>
             </AnimateOnScroll>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
               {[
@@ -330,7 +332,7 @@ export default function Home() {
                 {
                   icon: "⚙️",
                   title: "フロントエンド開発",
-                  skills: "TypeScript, React.js, Next.js, Vue.js",
+                  skills: "TypeScript, React.js, Next.js",
                 },
                 {
                   icon: "🗄️",
@@ -748,7 +750,7 @@ export default function Home() {
                     href="#skills"
                     className="text-gray-400 transition hover:text-white"
                   >
-                    スキル
+                    代表スキル
                   </Link>
                 </li>
                 <li>
