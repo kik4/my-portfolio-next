@@ -677,6 +677,34 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <section id="contact" className="py-20">
+          <div className="container mx-auto px-6">
+            <AnimateOnScroll animation="fadeIn">
+              <h2 className="mb-16 text-center font-bold text-3xl">
+                コンタクト
+              </h2>
+            </AnimateOnScroll>
+
+            <AnimateOnScroll animation="slideUp" delay={0.1}>
+              <div className="mx-auto max-w-3xl rounded-2xl bg-gradient-to-r from-white to-gray-100 p-8 text-center shadow-lg dark:from-black dark:to-gray-800">
+                <div className="mb-6 flex justify-center">
+                  <a
+                    href="https://x.com/_kik4_"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-12 w-12 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-600 shadow-sm transition hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:bg-gray-700"
+                  >
+                    <FontAwesomeIcon icon={faXTwitter} size="lg" />
+                  </a>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400">
+                  気軽にお声がけください
+                </p>
+              </div>
+            </AnimateOnScroll>
+          </div>
+        </section>
       </main>
 
       <footer className="bg-gray-800 pt-16 pb-8 text-white">
@@ -748,6 +776,14 @@ export default function Home() {
                     className="text-gray-400 transition hover:text-white"
                   >
                     特徴
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="#contact"
+                    className="text-gray-400 transition hover:text-white"
+                  >
+                    コンタクト
                   </Link>
                 </li>
               </ul>
