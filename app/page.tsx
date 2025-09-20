@@ -1,11 +1,15 @@
 import {
   faGithub,
+  faNodeJs,
   faNpm,
+  faReact,
   faXTwitter,
 } from "@fortawesome/free-brands-svg-icons";
 import {
   faCodeBranch,
+  faDatabase,
   faExternalLinkAlt,
+  faServer,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Image from "next/image";
@@ -91,6 +95,48 @@ export default function Home() {
                 </div>
               </AnimateOnScroll>
             </div>
+          </div>
+        </section>
+
+        {/* Tech Stack Icons */}
+        <section className="py-16">
+          <div className="container mx-auto px-6">
+            <AnimateOnScroll animation="fadeIn">
+              <div className="flex flex-wrap justify-center gap-8">
+                {[
+                  { name: "TypeScript", icon: "TS", color: "bg-blue-600" },
+                  { name: "React", icon: faReact, color: "bg-cyan-500" },
+                  { name: "Next.js", icon: "N", color: "bg-black" },
+                  { name: "Node.js", icon: faNodeJs, color: "bg-green-700" },
+                  { name: "GitHub", icon: faGithub, color: "bg-gray-800" },
+                  { name: "Express", icon: faServer, color: "bg-green-600" },
+                  {
+                    name: "PostgreSQL",
+                    icon: faDatabase,
+                    color: "bg-blue-800",
+                  },
+                  { name: "Vercel", icon: "▲", color: "bg-black" },
+                ].map((tech) => (
+                  <div
+                    key={tech.name}
+                    className="group flex flex-col items-center gap-2"
+                  >
+                    <div
+                      className={`flex h-16 w-16 items-center justify-center rounded-xl ${tech.color} text-white shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl`}
+                    >
+                      {typeof tech.icon === "string" ? (
+                        <span className="font-bold text-xl">{tech.icon}</span>
+                      ) : (
+                        <FontAwesomeIcon icon={tech.icon} size="xl" />
+                      )}
+                    </div>
+                    <span className="font-medium text-gray-600 text-sm dark:text-gray-400">
+                      {tech.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </AnimateOnScroll>
           </div>
         </section>
 
