@@ -740,8 +740,34 @@ export default function Home() {
               <AnimateOnScroll animation="slideUp" delay={0.1}>
                 <div className="mb-8 rounded-2xl bg-gradient-to-r from-green-100 to-emerald-100 p-8 shadow-lg dark:from-green-800/50 dark:to-emerald-800/50">
                   <div className="text-center">
-                    <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-r from-green-300 to-emerald-300 text-white shadow-lg dark:from-green-600 dark:to-emerald-600">
-                      <span className="text-3xl">🚀</span>
+                    <div className="group relative mx-auto mb-6 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-green-300 to-emerald-300 text-white shadow-lg dark:from-green-600 dark:to-emerald-600">
+                      <span className="relative z-10 text-3xl transition-transform duration-300 group-hover:scale-110 group-hover:animate-pulse">
+                        🚀
+                      </span>
+                      {/* 白い粒のアニメーション */}
+                      <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                        {[
+                          { left: 30, top: 15, delay: 0 },
+                          { left: 110, top: 20, delay: 150 },
+                          { left: 70, top: 25, delay: 300 },
+                          { left: 20, top: 30, delay: 450 },
+                          { left: 65, top: 35, delay: 600 },
+                          { left: 100, top: 40, delay: 750 },
+                          { left: 40, top: 45, delay: 900 },
+                          { left: 85, top: 50, delay: 1050 },
+                        ].map((particle) => (
+                          <div
+                            key={`particle-${particle.left}-${particle.top}`}
+                            className="absolute h-1 w-1 animate-rocket-trail rounded-full bg-white"
+                            style={{
+                              left: `${particle.left}%`,
+                              top: `${particle.top}%`,
+                              animationDelay: `${particle.delay}ms`,
+                              animationDuration: "0.5s",
+                            }}
+                          />
+                        ))}
+                      </div>
                     </div>
                     <h3 className="mb-4 font-bold text-2xl">
                       私が力を発揮できる企業環境

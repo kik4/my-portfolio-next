@@ -9,6 +9,7 @@
   --color-foreground: var(--foreground);
 
   --animate-shake: shake 0.2s ease-in-out infinite;
+  --animate-rocket-trail: rocket-trail 2s ease-out infinite;
 }
 
 /*
@@ -81,5 +82,20 @@ svg[data-prefix*="fa"] {
   60%,
   80% {
     transform: translateX(2px);
+  }
+}
+
+@keyframes rocket-trail {
+  0% {
+    opacity: 0;
+    transform: translate(20px, -20px) scale(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(0px, 0px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-40px, 40px) scale(0.5);
   }
 }
