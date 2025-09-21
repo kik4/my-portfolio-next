@@ -154,7 +154,7 @@ export default function Home() {
                   title: "倉庫検索ポータルサイト開発",
                   period: "2021〜",
                   description:
-                    "最初の技術選定から始め、バックエンド/フロントエンドのほとんどの設計・開発を担当。主な機能は物件検索、問い合わせ、物件情報を他サービスとの連携、headless CMS を用いた記事掲載。GitHub Actions による CI/CD 環境構築も実施。",
+                    "最初の技術選定から始め、バックエンド/フロントエンドのほとんどの設計・開発を一人で担当し半年でリリース。主な機能は物件検索、問い合わせ、物件情報を他サービスとの連携、headless CMS を用いた記事掲載。GitHub Actions による CI/CD 環境構築も実施。",
                   image: projectP,
                   responsible: [
                     "要件定義",
