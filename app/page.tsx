@@ -66,7 +66,7 @@ export default function Home() {
                 <div className="mb-10 space-y-4 text-lg">
                   <p className="border-b pb-1 font-medium">
                     <span className="text-accent">01.</span>{" "}
-                    モダンな技術と効率的な開発で、スピード感あるプロダクト改善を実現。
+                    モダンな技術と効率的な開発環境構築で、プロダクトを高速に改善。
                   </p>
                   <p className="border-b pb-1 font-medium">
                     <span className="text-accent">02.</span>{" "}
@@ -74,7 +74,7 @@ export default function Home() {
                   </p>
                   <p className="border-b pb-1 font-medium">
                     <span className="text-accent">03.</span>{" "}
-                    TypeScriptを主軸に、フロントエンド中心のフルスタック開発。
+                    TypeScriptを主軸に、バックエンドもフロントエンドも対応可能。
                   </p>
                 </div>
                 <Link
