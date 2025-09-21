@@ -427,7 +427,7 @@ export default function Home() {
                   icon: faCodeBranch,
                   title: "React公式ドキュメント日本語訳",
                   description:
-                    "React公式ドキュメントの日本語訳プロジェクトに協力。新機能やAPIの翻訳作業を継続的に実施し、日本の開発者コミュニティへの貢献を行っています。",
+                    "React公式ドキュメントの日本語訳プロジェクトに協力。日本の開発者コミュニティへの貢献を行いました。",
                   link: "https://ja.react.dev/",
                   linkText: "React日本語ドキュメント",
                   type: "ドキュメント翻訳",
@@ -454,7 +454,7 @@ export default function Home() {
                   icon: faCodeBranch,
                   title: "simple-vercel-deploy",
                   description:
-                    "Vercelへのデプロイを簡素化するGitHub Actionを開発・公開。CI/CDパイプラインの構築を効率化するツールです。",
+                    "Vercelへのデプロイを行うシンプルなGitHub Actionを開発・公開。自動デプロイでは足りない部分を補完し、CI/CDパイプラインの構築を効率化するツールです。",
                   link: "https://github.com/marketplace/actions/simple-vercel-deploy",
                   linkText: "GitHub Marketplace",
                   type: "GitHub Action",
