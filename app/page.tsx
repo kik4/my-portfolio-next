@@ -308,7 +308,9 @@ export default function Home() {
                         {project.description}
                       </p>
                       <p className="text-gray-700/60 text-sm italic dark:text-gray-200/60">
-                        {project.responsible}
+                        <span className="text-green-600 dark:text-green-400">
+                          {project.responsible}
+                        </span>
                         <br />
                         <span className="font-medium text-blue-600 dark:text-blue-400">
                           {project.scale}
