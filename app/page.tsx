@@ -731,6 +731,175 @@ export default function Home() {
           </div>
         </section>
 
+        <section id="company-fit" className="py-20">
+          <div className="container mx-auto px-6">
+            <AnimateOnScroll animation="fadeIn">
+              <h2 className="mb-16 text-center font-bold text-3xl">
+                フィットする企業風土
+              </h2>
+            </AnimateOnScroll>
+
+            <div className="mx-auto max-w-6xl">
+              <AnimateOnScroll animation="slideUp" delay={0.1}>
+                <div className="mb-8 rounded-2xl bg-gradient-to-r from-green-100 to-emerald-100 p-8 shadow-lg dark:from-green-800/50 dark:to-emerald-800/50">
+                  <div className="text-center">
+                    <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-r from-green-300 to-emerald-300 text-white shadow-lg dark:from-green-600 dark:to-emerald-600">
+                      <span className="text-3xl">🚀</span>
+                    </div>
+                    <h3 className="mb-4 font-bold text-2xl">
+                      私が力を発揮できる企業環境
+                    </h3>
+                    <p className="mx-auto max-w-3xl text-gray-600 dark:text-gray-300">
+                      開発者の裁量を重視し、挑戦を歓迎するフットワークの軽い企業文化で、
+                      私のスキルと経験を最大限に活かして貢献したいと考えています。
+                    </p>
+                  </div>
+                </div>
+              </AnimateOnScroll>
+
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                {[
+                  {
+                    icon: "⚡",
+                    title: "爆速スタート・スピード重視",
+                    description: "技術選定から実装まで迅速に進める開発体制",
+                    points: [
+                      "6ヶ月以内でのプロダクトリリース実績",
+                      "プロトタイプから本格運用まで一気通貫で対応",
+                      "必要な技術を素早く習得・適用する能力",
+                    ],
+                    color:
+                      "from-orange-100 to-red-100 dark:from-orange-800/50 dark:to-red-800/50",
+                    iconBg:
+                      "bg-gradient-to-r from-orange-300 to-red-300 dark:from-orange-600 dark:to-red-600",
+                  },
+                  {
+                    icon: "🎯",
+                    title: "開発者裁量・技術選択の自由",
+                    description:
+                      "最適な技術スタックを開発者が主導で決められる環境",
+                    points: [
+                      "Vue 2→Next.js移行などモダン化を歓迎",
+                      "プロジェクトに最適なツールを選択・提案",
+                      "AIなどの新技術の導入を積極的に検討・実装",
+                    ],
+                    color:
+                      "from-blue-100 to-cyan-100 dark:from-blue-800/50 dark:to-cyan-800/50",
+                    iconBg:
+                      "bg-gradient-to-r from-blue-300 to-cyan-300 dark:from-blue-600 dark:to-cyan-600",
+                  },
+                  {
+                    icon: "🏃‍♂️",
+                    title: "チャレンジを歓迎する文化",
+                    description: "失敗を恐れず新しい挑戦を推奨する組織風土",
+                    points: [
+                      "新技術への積極的な取り組みを評価",
+                      "改善提案を歓迎し実行に移せる環境",
+                      "継続的な学習・成長をサポート",
+                    ],
+                    color:
+                      "from-purple-100 to-pink-100 dark:from-purple-800/50 dark:to-pink-800/50",
+                    iconBg:
+                      "bg-gradient-to-r from-purple-300 to-pink-300 dark:from-purple-600 dark:to-pink-600",
+                  },
+                  {
+                    icon: "🤝",
+                    title: "フラットな組織・風通しの良さ",
+                    description: "階層に関係なく意見を言い合える開放的な環境",
+                    points: [
+                      "意見を出しやすい活発な雰囲気",
+                      "スピード感のある意思決定",
+                      "リモートワークだからこそ密なコミュニケーション",
+                    ],
+                    color:
+                      "from-emerald-100 to-teal-100 dark:from-emerald-800/50 dark:to-teal-800/50",
+                    iconBg:
+                      "bg-gradient-to-r from-emerald-300 to-teal-300 dark:from-emerald-600 dark:to-teal-600",
+                  },
+                ].map((item, index) => (
+                  <AnimateOnScroll
+                    key={item.title}
+                    animation="slideUp"
+                    delay={index * 0.15}
+                    className={`hover:-translate-y-2 rounded-2xl bg-gradient-to-r ${item.color} p-6 shadow-lg transition-transform`}
+                  >
+                    <div className="mb-4 flex items-start gap-4">
+                      <div
+                        className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl ${item.iconBg} shadow-md`}
+                      >
+                        <span className="text-xl">{item.icon}</span>
+                      </div>
+                      <div>
+                        <h4 className="mb-2 font-bold text-lg">{item.title}</h4>
+                        <p className="mb-4 text-gray-600 text-sm dark:text-gray-300">
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
+                    <ul className="space-y-2">
+                      {item.points.map((point) => (
+                        <li
+                          key={point}
+                          className="flex items-start gap-2 text-gray-700 text-sm dark:text-gray-200"
+                        >
+                          <span className="mt-1 flex-shrink-0 text-green-500">
+                            ✓
+                          </span>
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </AnimateOnScroll>
+                ))}
+              </div>
+
+              <AnimateOnScroll animation="fadeIn" delay={0.6}>
+                <div className="mt-12 rounded-2xl bg-gradient-to-r from-gray-100 to-blue-50 p-8 text-center shadow-lg dark:from-gray-800/50 dark:to-blue-900/50">
+                  <h4 className="mb-4 font-bold text-xl">
+                    理想的な協働スタイル
+                  </h4>
+                  <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-3">
+                    {[
+                      {
+                        icon: "💬",
+                        title: "オープンな議論",
+                        description: "技術的な課題を率直に話し合える関係性",
+                      },
+                      {
+                        icon: "🎯",
+                        title: "成果重視",
+                        description: "プロセスよりも最終的なアウトプットを重視",
+                      },
+                      {
+                        icon: "🌱",
+                        title: "共に成長",
+                        description: "チーム全体の成長を目指す文化",
+                      },
+                    ].map((style) => (
+                      <div key={style.title} className="text-center">
+                        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
+                          <span className="text-xl">{style.icon}</span>
+                        </div>
+                        <h5 className="mb-2 font-semibold">{style.title}</h5>
+                        <p className="text-gray-600 text-sm dark:text-gray-300">
+                          {style.description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-8">
+                    <p className="text-gray-600 dark:text-gray-300">
+                      このような環境で、私の<strong>継続的な学習意欲</strong>と
+                      <strong>実装力</strong>を活かし、
+                      チームの技術的成長とプロダクトの成功に貢献したいと考えています。
+                    </p>
+                  </div>
+                </div>
+              </AnimateOnScroll>
+            </div>
+          </div>
+        </section>
+
         <section id="contact" className="py-20">
           <div className="container mx-auto px-6">
             <AnimateOnScroll animation="fadeIn">
@@ -790,6 +959,7 @@ export default function Home() {
                   { href: "#oss", label: "OSS活動" },
                   { href: "#tech-articles", label: "技術発信" },
                   { href: "#engineer-value", label: "特徴" },
+                  { href: "#company-fit", label: "フィットする企業風土" },
                   { href: "#contact", label: "コンタクト" },
                 ].map(({ href, label }) => (
                   <li key={href}>
