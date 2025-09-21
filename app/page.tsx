@@ -48,7 +48,7 @@ export default function Home() {
         </nav>
       </header>
 
-      <main>
+      <main className="[&>*:nth-child(2n)]:bg-gray-50 [&>*:nth-child(2n)]:dark:bg-gray-50/20">
         <section id="home" className="relative pt-32 pb-20">
           <WavyBackground />
           <div className="container mx-auto px-6">
@@ -98,7 +98,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="work" className="bg-gray-50 py-20 dark:bg-gray-50/20">
+        <section id="work" className="py-20">
           <div className="container mx-auto px-6">
             <AnimateOnScroll animation="fadeIn">
               <h2 className="mb-16 text-center font-bold text-3xl">
@@ -416,7 +416,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="oss" className="bg-gray-50 py-20 dark:bg-gray-50/20">
+        <section id="oss" className="py-20">
           <div className="container mx-auto px-6">
             <AnimateOnScroll animation="fadeIn">
               <h2 className="mb-16 text-center font-bold text-3xl">OSS活動</h2>
@@ -592,10 +592,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section
-          id="engineer-value"
-          className="bg-gray-50 py-20 dark:bg-gray-50/20"
-        >
+        <section id="engineer-value" className="py-20">
           <div className="container mx-auto px-6">
             <AnimateOnScroll animation="fadeIn">
               <h2 className="mb-16 text-center font-bold text-3xl">
