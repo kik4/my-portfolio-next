@@ -775,62 +775,24 @@ export default function Home() {
             <div className="mb-8 w-full md:mb-0 md:w-1/4">
               <h3 className="mb-4 font-bold text-xl">リンク</h3>
               <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="#home"
-                    className="text-gray-400 transition hover:text-white"
-                  >
-                    ホーム
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#work"
-                    className="text-gray-400 transition hover:text-white"
-                  >
-                    プロダクト
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#skills"
-                    className="text-gray-400 transition hover:text-white"
-                  >
-                    代表スキル
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#oss"
-                    className="text-gray-400 transition hover:text-white"
-                  >
-                    OSS活動
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#tech-articles"
-                    className="text-gray-400 transition hover:text-white"
-                  >
-                    技術発信
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#engineer-value"
-                    className="text-gray-400 transition hover:text-white"
-                  >
-                    特徴
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#contact"
-                    className="text-gray-400 transition hover:text-white"
-                  >
-                    コンタクト
-                  </Link>
-                </li>
+                {[
+                  { href: "#home", label: "ホーム" },
+                  { href: "#work", label: "プロダクト" },
+                  { href: "#skills", label: "代表スキル" },
+                  { href: "#oss", label: "OSS活動" },
+                  { href: "#tech-articles", label: "技術発信" },
+                  { href: "#engineer-value", label: "特徴" },
+                  { href: "#contact", label: "コンタクト" },
+                ].map(({ href, label }) => (
+                  <li key={href}>
+                    <Link
+                      href={href}
+                      className="text-gray-400 transition hover:text-white"
+                    >
+                      {label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
             <div className="w-full md:w-1/4">
