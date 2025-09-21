@@ -121,6 +121,7 @@ export default function Home() {
                     "テスト",
                     "保守",
                   ].join(", "),
+                  scale: "小規模・1-2名",
                   tech: `${[
                     "TypeScript",
                     "React (Next.js)",
@@ -149,6 +150,7 @@ export default function Home() {
                     "テスト",
                     "保守",
                   ].join(", "),
+                  scale: "中規模・3-5名",
                   tech: `${[
                     "TypeScript",
                     "React (Next.js) / Vue.js",
@@ -180,6 +182,7 @@ export default function Home() {
                     "テスト",
                     "運用/保守",
                   ].join(", "),
+                  scale: "大規模・10名以上",
                   tech: `${[
                     "C#",
                     "ASP.NET Web Forms/MVC",
@@ -209,6 +212,7 @@ export default function Home() {
                     "運用/保守",
                     "一部デザイン",
                   ].join(", "),
+                  scale: "小規模・2-3名",
                   tech: `${[
                     "PHP",
                     "Laravel",
@@ -231,6 +235,7 @@ export default function Home() {
                     "本ポートフォリオサイト。Next.js の app router や Biome などの新規技術の試用も兼ねて開発中。",
                   image: projectPf2,
                   responsible: ["全工程"].join(", "),
+                  scale: "個人開発・1名",
                   tech: `${[
                     "Next.js (app router)",
                     "React",
@@ -251,6 +256,7 @@ export default function Home() {
                     "最初に作ったポートフォリオサイト。Nuxt, GAE, Go, Firebase などの技術の試用に作成。",
                   image: projectPf1,
                   responsible: ["全工程"].join(", "),
+                  scale: "個人開発・1名",
                   tech: `${[
                     "Nuxt.js",
                     "Vue.js",
@@ -303,6 +309,10 @@ export default function Home() {
                       </p>
                       <p className="text-gray-700/60 text-sm italic dark:text-gray-200/60">
                         {project.responsible}
+                        <br />
+                        <span className="font-medium text-blue-600 dark:text-blue-400">
+                          {project.scale}
+                        </span>
                         <br />
                         {project.tech}
                       </p>
