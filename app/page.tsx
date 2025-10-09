@@ -14,7 +14,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Image from "next/image";
 import Link from "next/link";
-import icon from "@/app/img/icon_1000x1000.jpg";
+import icon from "@/app/img/icon_1024x1024.jpg";
 import projectF from "@/app/img/projectF.jpg";
 import projectN from "@/app/img/projectN.jpg";
 import projectP from "@/app/img/projectP.jpg";
