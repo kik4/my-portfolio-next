@@ -65,8 +65,16 @@ export function GraphCanvas({
       // 重みを表示
       const midX = (fromNode.x + toNode.x) / 2;
       const midY = (fromNode.y + toNode.y) / 2;
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = isInPath ? "#ebfff8" : "#ffffff";
       ctx.fillRect(midX - 15, midY - 12, 30, 24);
+
+      // パスの一部の場合は緑の枠線を追加
+      if (isInPath) {
+        ctx.strokeStyle = "#10b981";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(midX - 15, midY - 12, 30, 24);
+      }
+
       ctx.fillStyle = isInPath ? "#10b981" : "#374151";
       ctx.font = "bold 14px sans-serif";
       ctx.textAlign = "center";
@@ -121,9 +129,24 @@ export function GraphCanvas({
       if (currentStep && !isInPath) {
         const distance = currentStep.distances.get(node.id);
         if (distance !== undefined && distance !== Number.POSITIVE_INFINITY) {
-          ctx.fillStyle = "#1f2937";
-          ctx.font = "12px sans-serif";
-          ctx.fillText(`d=${distance}`, node.x, node.y + 40);
+          const text = `d=${distance}`;
+          const textY = node.y + 40;
+
+          // 薄い青の背景を描画（辺の重みと差別化）
+          ctx.fillStyle = "#dbeafe";
+          ctx.fillRect(node.x - 20, textY - 10, 40, 20);
+
+          // 青い枠線を追加
+          ctx.strokeStyle = "#3b82f6";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(node.x - 20, textY - 10, 40, 20);
+
+          // テキストを描画
+          ctx.fillStyle = "#1e40af";
+          ctx.font = "bold 12px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(text, node.x, textY);
         }
       }
     }
