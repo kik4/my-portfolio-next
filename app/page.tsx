@@ -173,7 +173,7 @@ export default function Home() {
                   title: "ECサイト群開発",
                   period: "2015〜2018",
                   description:
-                    "複数のサービスを展開する中でバックエンド/フロントエンド新規機能開発、AWS EC2サーバ構築、JenkinsによるCI環境構築、DB設計、ASP.NET Web FormsからMVCへの順次移行提案・実施、データ出力カスタムDSLの設計・式木を用いた実行システムの実装。新規サイトの立ち上げも経験。",
+                    "複数のサービスを展開する中でバックエンド/フロントエンド新規機能開発、AWS EC2サーバ構築、JenkinsによるCI環境構築、DB設計、ASP.NET Web FormsからMVCへの順次移行提案・実施、データ出力カスタムDSLの設計・式木を用いた実行システムの実装。新規サイトを開発リーダーとして立ち上げ、運用まで推進。",
                   image: projectF,
                   responsible: [
                     "要件定義",
