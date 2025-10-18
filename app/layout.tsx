@@ -16,8 +16,9 @@ const notoSansJp = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "kik4.work",
-  description: "フロントエンドエンジニア kik4 のポートフォリオ",
+  title: "kik4.work - Webエンジニアのポートフォリオ",
+  description:
+    "kik4.work - Webエンジニア kik4 のポートフォリオサイト。TypeScript、React、Next.jsを用いたフロントエンド・バックエンド開発の実績を紹介。",
 };
 
 export default function RootLayout({

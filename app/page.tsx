@@ -31,9 +31,11 @@ export default function Home() {
     <>
       <header className="fixed top-0 z-50 w-full bg-background/50 shadow-md backdrop-blur-sm">
         <nav className="container mx-auto flex justify-between px-6 py-5">
-          <Link href="/" className="font-bold text-2xl">
-            kik4.work
-          </Link>
+          <h1 className="font-bold text-2xl">
+            <Link href="/" className="font-bold text-2xl">
+              kik4.work
+            </Link>
+          </h1>
           <div className="flex gap-4">
             <a
               className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 font-medium text-gray-700 transition hover:bg-gray-200 hover:text-black dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:text-white"
@@ -58,12 +60,12 @@ export default function Home() {
                 animation="slideRight"
                 className="mb-10 md:mb-0 md:w-1/2"
               >
-                <h1 className="mb-6 font-bold text-5xl leading-tight">
+                <h2 className="mb-6 font-bold text-5xl leading-tight">
                   Webエンジニア、
                   <br />
                   <span className="text-accent">kik4</span>
                   です
-                </h1>
+                </h2>
                 <div className="mb-10 space-y-4 text-lg">
                   <p className="border-b pb-1 font-medium">
                     <span className="text-accent">01.</span>{" "}
