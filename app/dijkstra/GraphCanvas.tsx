@@ -14,6 +14,7 @@ interface GraphCanvasProps {
   onNodeClick: (nodeId: string) => void;
   onNodeDrag: (nodeId: string, x: number, y: number) => void;
   onEdgeClick: (edgeId: string) => void;
+  onEdgeDrag: (edgeId: string, x: number, y: number) => void;
 }
 
 export function GraphCanvas({
@@ -27,9 +28,11 @@ export function GraphCanvas({
   onNodeClick,
   onNodeDrag,
   onEdgeClick,
+  onEdgeDrag,
 }: GraphCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const draggedNodeRef = useRef<string | null>(null);
+  const draggedEdgeRef = useRef<string | null>(null);
 
   // 描画処理
   useEffect(() => {
@@ -183,6 +186,7 @@ export function GraphCanvas({
         const midY = (fromNode.y + toNode.y) / 2;
         const distance = Math.sqrt((midX - x) ** 2 + (midY - y) ** 2);
         if (distance <= 15) {
+          draggedEdgeRef.current = edge.id;
           onEdgeClick(edge.id);
           return;
         }
@@ -194,20 +198,22 @@ export function GraphCanvas({
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!draggedNodeRef.current) return;
-
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-
-    onNodeDrag(draggedNodeRef.current, x, y);
+    if (draggedNodeRef.current) {
+      onNodeDrag(draggedNodeRef.current, x, y);
+    } else if (draggedEdgeRef.current) {
+      onEdgeDrag(draggedEdgeRef.current, x, y);
+    }
   };
 
   const handleMouseUp = () => {
     draggedNodeRef.current = null;
+    draggedEdgeRef.current = null;
   };
 
   return (

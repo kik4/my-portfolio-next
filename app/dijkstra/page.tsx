@@ -109,6 +109,29 @@ export default function DijkstraPage() {
     setNodes(nodes.map((n) => (n.id === nodeId ? { ...n, x, y } : n)));
   };
 
+  const handleEdgeDrag = (edgeId: string, x: number, y: number) => {
+    if (mode !== "move") return;
+    const edge = edges.find((e) => e.id === edgeId);
+    if (!edge) return;
+    const fromNode = nodes.find((n) => n.id === edge.from);
+    const toNode = nodes.find((n) => n.id === edge.to);
+    if (!fromNode || !toNode) return;
+
+    const dx = toNode.x - fromNode.x;
+    const dy = toNode.y - fromNode.y;
+
+    setNodes(
+      nodes.map((n) => {
+        if (n.id === fromNode.id) {
+          return { ...n, x: x - dx / 2, y: y - dy / 2 };
+        } else if (n.id === toNode.id) {
+          return { ...n, x: x + dx / 2, y: y + dy / 2 };
+        }
+        return n;
+      }),
+    );
+  };
+
   const runDijkstra = () => {
     if (!startNode || !endNode) {
       alert("開始点と終了点を設定してください");
@@ -177,6 +200,7 @@ export default function DijkstraPage() {
               onNodeClick={handleNodeClick}
               onNodeDrag={handleNodeDrag}
               onEdgeClick={handleEdgeClick}
+              onEdgeDrag={handleEdgeDrag}
             />
 
             {/* ステップコントロール */}
