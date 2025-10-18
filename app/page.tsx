@@ -13,8 +13,8 @@ import {
   faServer,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { clsx } from "clsx";
 import Image from "next/image";
-import Link from "next/link";
 import icon from "@/app/img/icon_1024x1024.jpg";
 import projectDijkstra from "@/app/img/projectDijkstra.jpg";
 import projectF from "@/app/img/projectF.jpg";
@@ -26,6 +26,7 @@ import projectPf2 from "@/app/img/projectPf2.jpg";
 import projectS from "@/app/img/projectS.jpg";
 import { AnimateOnScroll } from "./_components/AnimateOnScroll";
 import { DarkToggleButton } from "./_components/DarkToggleButton";
+import { MyLink } from "./_components/MyLink";
 import { WavyBackground } from "./_components/WavyBackground";
 
 export default function Home() {
@@ -34,9 +35,9 @@ export default function Home() {
       <header className="fixed top-0 z-50 w-full bg-background/50 shadow-md backdrop-blur-sm">
         <nav className="container mx-auto flex justify-between px-6 py-5">
           <h1 className="font-bold text-2xl">
-            <Link href="/" className="font-bold text-2xl">
+            <MyLink href="/" className="font-bold text-2xl">
               kik4.work
-            </Link>
+            </MyLink>
           </h1>
           <div className="flex gap-4">
             <a
@@ -82,12 +83,12 @@ export default function Home() {
                     TypeScriptを主軸に、バックエンドもフロントエンドも対応可能。
                   </p>
                 </div>
-                <Link
+                <MyLink
                   href="#work"
                   className="rounded-full bg-blue-600 px-8 py-3 font-medium text-white transition hover:bg-blue-700"
                 >
                   プロダクトを見る
-                </Link>
+                </MyLink>
               </AnimateOnScroll>
               <AnimateOnScroll animation="slideLeft" className="md:w-5/12">
                 <div className="relative mx-auto h-80 w-80">
@@ -340,7 +341,7 @@ export default function Home() {
                 {[
                   {
                     title: "ダイクストラ法ビジュアライザー",
-                    category: "技術実験",
+                    category: "技術実験" as const,
                     period: "2025",
                     description:
                       "グラフ理論のダイクストラ法をインタラクティブに体験できるWebアプリ。Canvas APIでグラフを描画し、アルゴリズムの動作をステップバイステップで可視化。",
@@ -357,7 +358,7 @@ export default function Home() {
                   },
                   {
                     title: "ガキが舐めてると潰すぞメーカー",
-                    category: "遊び心",
+                    category: "遊び心" as const,
                     period: "2019",
                     description:
                       "バズったミーム画像を再現できるWebアプリ。Canvas APIを使った画像生成とクライアントサイド完結の実装を実験。",
@@ -376,98 +377,72 @@ export default function Home() {
                     key={project.title}
                     animation="slideUp"
                     delay={index * 0.1}
-                    className="hover:-translate-y-2 overflow-hidden rounded-lg bg-white shadow-lg transition-transform dark:bg-gray-50/20"
+                    className="hover:-translate-y-1 overflow-hidden rounded-lg bg-white shadow-lg transition-transform dark:bg-gray-50/20"
                   >
                     <div className="group overflow-hidden rounded-lg border border-gray-200 bg-gray-50 shadow-lg transition-all hover:border-gray-300 hover:bg-white dark:border-gray-700/50 dark:bg-gray-800/30 dark:hover:border-gray-600 dark:hover:bg-gray-800/50">
-                      {project.link.startsWith("http") ? (
-                        <a
-                          href={project.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex flex-row items-center"
-                        >
-                          <div className="relative ml-2 h-24 w-24 flex-shrink-0 sm:h-32 sm:w-32">
-                            <Image
-                              src={project.image}
-                              fill
-                              className="rounded-lg object-cover opacity-80 group-hover:opacity-100"
-                              alt=""
-                            />
-                          </div>
-                          <div className="flex flex-1 flex-col justify-between p-4">
-                            <div>
-                              <div className="mb-1 flex items-center gap-2">
-                                <span className="rounded bg-purple-100 px-2 py-0.5 font-medium text-purple-600 text-xs dark:bg-purple-900/30 dark:text-purple-400">
-                                  {project.category}
-                                </span>
-                                <span className="text-gray-400 text-xs dark:text-gray-500">
-                                  {project.period}
-                                </span>
-                              </div>
-                              <h3 className="mb-1 font-semibold text-base text-gray-700 group-hover:text-purple-600 dark:text-gray-300 dark:group-hover:text-purple-400">
-                                {project.title}
-                              </h3>
-                              <p className="mb-2 text-gray-500 text-xs leading-relaxed dark:text-gray-400">
-                                {project.description}
-                              </p>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <p className="text-gray-400 text-xs dark:text-gray-500">
-                                {project.tech}
-                              </p>
-                              <span className="inline-flex items-center gap-1 text-purple-500 text-xs dark:text-purple-400">
-                                <FontAwesomeIcon
-                                  icon={project.linkIcon}
-                                  size="sm"
-                                />
+                      <MyLink
+                        href={project.link}
+                        className="flex flex-row items-center"
+                      >
+                        <div className="relative ml-2 h-24 w-24 flex-shrink-0 sm:h-32 sm:w-32">
+                          <Image
+                            src={project.image}
+                            fill
+                            className="rounded-lg object-cover opacity-80 group-hover:opacity-100"
+                            alt=""
+                          />
+                        </div>
+                        <div className="flex flex-1 flex-col justify-between p-4">
+                          <div>
+                            <div className="mb-1 flex items-center gap-2">
+                              <span
+                                className={clsx(
+                                  "rounded px-2 py-0.5 font-medium text-xs",
+                                  project.category === "技術実験"
+                                    ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                                    : "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",
+                                )}
+                              >
+                                {project.category}
+                              </span>
+                              <span className="text-gray-400 text-xs dark:text-gray-500">
+                                {project.period}
                               </span>
                             </div>
+                            <h3
+                              className={clsx(
+                                "mb-1 font-semibold text-base text-gray-700 dark:text-gray-300",
+                                project.category === "技術実験"
+                                  ? "group-hover:text-blue-600 dark:group-hover:text-blue-400"
+                                  : "group-hover:text-purple-600 dark:group-hover:text-purple-400",
+                              )}
+                            >
+                              {project.title}
+                            </h3>
+                            <p className="mb-2 text-gray-500 text-xs leading-relaxed dark:text-gray-400">
+                              {project.description}
+                            </p>
                           </div>
-                        </a>
-                      ) : (
-                        <Link
-                          href={project.link}
-                          className="flex flex-row items-center"
-                        >
-                          <div className="relative ml-2 h-24 w-24 flex-shrink-0 sm:h-32 sm:w-32">
-                            <Image
-                              src={project.image}
-                              fill
-                              className="rounded-lg object-cover opacity-80 group-hover:opacity-100"
-                              alt=""
-                            />
+                          <div className="flex items-center justify-between">
+                            <p className="text-gray-400 text-xs dark:text-gray-500">
+                              {project.tech}
+                            </p>
+                            <span
+                              className={clsx(
+                                "inline-flex items-center gap-1 text-xs",
+                                project.category === "技術実験"
+                                  ? "text-blue-500 dark:text-blue-400"
+                                  : "text-purple-500 dark:text-purple-400",
+                              )}
+                            >
+                              <FontAwesomeIcon
+                                icon={project.linkIcon}
+                                size="sm"
+                              />
+                            </span>
                           </div>
-                          <div className="flex flex-1 flex-col justify-between p-4">
-                            <div>
-                              <div className="mb-1 flex items-center gap-2">
-                                <span className="rounded bg-purple-100 px-2 py-0.5 font-medium text-purple-600 text-xs dark:bg-purple-900/30 dark:text-purple-400">
-                                  {project.category}
-                                </span>
-                                <span className="text-gray-400 text-xs dark:text-gray-500">
-                                  {project.period}
-                                </span>
-                              </div>
-                              <h3 className="mb-1 font-semibold text-base text-gray-700 group-hover:text-purple-600 dark:text-gray-300 dark:group-hover:text-purple-400">
-                                {project.title}
-                              </h3>
-                              <p className="mb-2 text-gray-500 text-xs leading-relaxed dark:text-gray-400">
-                                {project.description}
-                              </p>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <p className="text-gray-400 text-xs dark:text-gray-500">
-                                {project.tech}
-                              </p>
-                              <span className="inline-flex items-center gap-1 text-purple-500 text-xs dark:text-purple-400">
-                                <FontAwesomeIcon
-                                  icon={project.linkIcon}
-                                  size="sm"
-                                />
-                              </span>
-                            </div>
-                          </div>
-                        </Link>
-                      )}
+                        </div>
+                      </MyLink>
                     </div>
                   </AnimateOnScroll>
                 ))}
@@ -1136,12 +1111,12 @@ export default function Home() {
                   { href: "#contact", label: "コンタクト" },
                 ].map(({ href, label }) => (
                   <li key={href}>
-                    <Link
+                    <MyLink
                       href={href}
                       className="text-gray-400 transition hover:text-white"
                     >
                       {label}
-                    </Link>
+                    </MyLink>
                   </li>
                 ))}
               </ul>

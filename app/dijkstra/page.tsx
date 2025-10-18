@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import { MyLink } from "../_components/MyLink";
 import { dijkstra } from "./dijkstraAlgorithm";
 import { GraphCanvas } from "./GraphCanvas";
 import type { DijkstraStep, Edge, Mode, Node } from "./types";
@@ -143,12 +143,12 @@ export default function DijkstraPage() {
     <div className="min-h-screen bg-background">
       <header className="border-b">
         <nav className="container mx-auto flex items-center justify-between px-6 py-3">
-          <Link
+          <MyLink
             href="/"
             className="text-gray-600 text-sm hover:text-accent dark:text-gray-400 dark:hover:text-accent"
           >
             ← ホーム
-          </Link>
+          </MyLink>
           <h1 className="font-bold text-lg">ダイクストラ法ビジュアライザー</h1>
           <div className="w-16" />
         </nav>
