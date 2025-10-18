@@ -17,6 +17,7 @@ import Link from "next/link";
 import icon from "@/app/img/icon_1024x1024.jpg";
 import projectF from "@/app/img/projectF.jpg";
 import projectN from "@/app/img/projectN.jpg";
+import projectNametsubu from "@/app/img/projectNametsubu.jpg";
 import projectP from "@/app/img/projectP.jpg";
 import projectPf1 from "@/app/img/projectPf1.jpg";
 import projectPf2 from "@/app/img/projectPf2.jpg";
@@ -321,6 +322,76 @@ export default function Home() {
                     </div>
                   </div>
                 </AnimateOnScroll>
+              ))}
+            </div>
+
+            {/* 遊び心のプロジェクト */}
+            <div className="mx-auto mt-16 max-w-2xl">
+              <h3 className="mb-4 text-center font-medium text-gray-400 text-sm dark:text-gray-500">
+                + 遊び心のプロジェクト
+              </h3>
+              {[
+                {
+                  title: "ガキが舐めてると潰すぞメーカー",
+                  period: "2019",
+                  description:
+                    "バズったミーム画像を再現できるWebアプリ。Canvas APIを使った画像生成とクライアントサイド完結の実装を実験。",
+                  image: projectNametsubu,
+                  tech: [
+                    "HTML5",
+                    "Canvas API",
+                    "JavaScript",
+                    "GitHub Pages",
+                  ].join(", "),
+                  link: "https://kik4.github.io/nametsubu/",
+                },
+              ].map((project) => (
+                <div
+                  key={project.title}
+                  className="group overflow-hidden rounded-lg border border-gray-200 bg-gray-50 shadow-lg transition-all hover:border-gray-300 hover:bg-white dark:border-gray-700/50 dark:bg-gray-800/30 dark:hover:border-gray-600 dark:hover:bg-gray-800/50"
+                >
+                  <a
+                    href={project.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-row items-center"
+                  >
+                    <div className="relative ml-2 h-24 w-24 flex-shrink-0 sm:h-32 sm:w-32">
+                      <Image
+                        src={project.image}
+                        fill
+                        className="rounded-lg object-cover opacity-80 group-hover:opacity-100"
+                        alt=""
+                      />
+                    </div>
+                    <div className="flex flex-1 flex-col justify-between p-4">
+                      <div>
+                        <div className="mb-1 flex items-center gap-2">
+                          <span className="rounded bg-purple-100 px-2 py-0.5 font-medium text-purple-600 text-xs dark:bg-purple-900/30 dark:text-purple-400">
+                            遊び心
+                          </span>
+                          <span className="text-gray-400 text-xs dark:text-gray-500">
+                            {project.period}
+                          </span>
+                        </div>
+                        <h3 className="mb-1 font-semibold text-base text-gray-700 group-hover:text-purple-600 dark:text-gray-300 dark:group-hover:text-purple-400">
+                          {project.title}
+                        </h3>
+                        <p className="mb-2 text-gray-500 text-xs leading-relaxed dark:text-gray-400">
+                          {project.description}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-gray-400 text-xs dark:text-gray-500">
+                          {project.tech}
+                        </p>
+                        <span className="inline-flex items-center gap-1 text-purple-500 text-xs dark:text-purple-400">
+                          <FontAwesomeIcon icon={faExternalLinkAlt} size="sm" />
+                        </span>
+                      </div>
+                    </div>
+                  </a>
+                </div>
               ))}
             </div>
           </div>
