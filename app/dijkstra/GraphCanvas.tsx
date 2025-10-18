@@ -13,6 +13,7 @@ interface GraphCanvasProps {
   onCanvasClick: (x: number, y: number) => void;
   onNodeClick: (nodeId: string) => void;
   onNodeDrag: (nodeId: string, x: number, y: number) => void;
+  onEdgeClick: (edgeId: string) => void;
 }
 
 export function GraphCanvas({
@@ -25,6 +26,7 @@ export function GraphCanvas({
   onCanvasClick,
   onNodeClick,
   onNodeDrag,
+  onEdgeClick,
 }: GraphCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const draggedNodeRef = useRef<string | null>(null);
@@ -168,6 +170,22 @@ export function GraphCanvas({
         draggedNodeRef.current = node.id;
         onNodeClick(node.id);
         return;
+      }
+    }
+
+    // 辺のクリック判定
+    for (const edge of edges) {
+      const { from, to } = edge;
+      const fromNode = nodes.find((n) => n.id === from);
+      const toNode = nodes.find((n) => n.id === to);
+      if (fromNode && toNode) {
+        const midX = (fromNode.x + toNode.x) / 2;
+        const midY = (fromNode.y + toNode.y) / 2;
+        const distance = Math.sqrt((midX - x) ** 2 + (midY - y) ** 2);
+        if (distance <= 15) {
+          onEdgeClick(edge.id);
+          return;
+        }
       }
     }
 

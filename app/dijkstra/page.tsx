@@ -97,6 +97,13 @@ export default function DijkstraPage() {
     }
   };
 
+  const handleEdgeClick = (edgeId: string) => {
+    if (mode === "delete") {
+      // 辺を削除
+      setEdges(edges.filter((e) => e.id !== edgeId));
+    }
+  };
+
   const handleNodeDrag = (nodeId: string, x: number, y: number) => {
     if (mode !== "move") return;
     setNodes(nodes.map((n) => (n.id === nodeId ? { ...n, x, y } : n)));
@@ -169,6 +176,7 @@ export default function DijkstraPage() {
               onCanvasClick={handleCanvasClick}
               onNodeClick={handleNodeClick}
               onNodeDrag={handleNodeDrag}
+              onEdgeClick={handleEdgeClick}
             />
 
             {/* ステップコントロール */}
