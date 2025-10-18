@@ -76,7 +76,7 @@ export default function DijkstraPage() {
             to: nodeId,
             weight,
           };
-          setEdges([...edges, newEdge]);
+          setEdges([...edges.filter((e) => e.id !== newEdge.id), newEdge]); // 重複する辺は上書き
         }
         setSelectedNode(null);
       }
