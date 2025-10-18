@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { DarkToggleButton } from "../_components/DarkToggleButton";
 import { MyLink } from "../_components/MyLink";
 import { dijkstra } from "./dijkstraAlgorithm";
 import { GraphCanvas } from "./GraphCanvas";
@@ -150,7 +151,7 @@ export default function DijkstraPage() {
             ← ホーム
           </MyLink>
           <h1 className="font-bold text-lg">ダイクストラ法ビジュアライザー</h1>
-          <div className="w-16" />
+          <DarkToggleButton />
         </nav>
       </header>
 
