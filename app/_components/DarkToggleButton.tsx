@@ -33,16 +33,14 @@ export const DarkToggleButton: React.FC = () => {
 
   return (
     <button
-      className="flex items-center rounded-lg border px-2 py-1 text-sm hover:bg-slate-400"
+      className="flex items-center gap-2 rounded-lg border px-3 py-1 text-sm hover:bg-slate-400 sm:px-2"
       type="button"
       onClick={() => {
         setTheme((v) => (v === "dark" ? "light" : "dark"));
       }}
     >
-      <span className="mr-[0.5em] w-4">
-        <FontAwesomeIcon icon={faCircleHalfStroke} />
-      </span>
-      Light / Dark
+      <FontAwesomeIcon icon={faCircleHalfStroke} />
+      <span className="hidden sm:inline">Light / Dark</span>
     </button>
   );
 };

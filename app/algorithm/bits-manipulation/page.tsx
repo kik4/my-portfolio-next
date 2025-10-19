@@ -1,0 +1,64 @@
+import type { Metadata } from "next";
+import { CodeEditor } from "../_components/CodeEditor";
+import { InPageLayout } from "../_components/InPageLayout";
+import { algorithmPageTitle } from "../_lib/articles";
+
+const title = "ビット操作";
+const description = `TypeScriptでビット操作を行う方法`;
+
+export const metadata: Metadata = {
+  title: `${title} | ${algorithmPageTitle} | kik4.work`,
+  description: `${description} | TypeScriptでアルゴリズムを書く方法を紹介します。 | kik4.work - フロントエンドエンジニアkik4のサイト`,
+};
+
+export default function Page() {
+  return (
+    <InPageLayout title={title} description={description}>
+      <article className="prose prose-blue dark:prose-invert max-w-none">
+        <h1>TypeScriptでビット操作を行う</h1>
+
+        <p>
+          ビットとは、コンピュータが情報を扱う最小単位であり、0と1の二値で表現されます。ビット操作は、これらのビットに対して直接的な操作を行う手法であり、効率的なデータ処理やアルゴリズムの最適化に役立ちます。
+        </p>
+
+        <p>
+          ここでは、TypeScriptを用いたビット操作の基本的な使い方を紹介します。
+        </p>
+
+        <p>
+          はじめのページに書いた通り入力は文字列で、0と1が連続したものです。例えば
+          "1011" のような文字列をビット列として扱います。
+          しかし文字列のままではビット操作ができません。ビット列は数値として扱う必要があります。
+        </p>
+
+        <p>
+          TypeScriptでは、parseInt関数を使って文字列を数値に変換できます。また数値はtoString関数を使って文字列に戻すことができます。
+        </p>
+
+        <CodeEditor
+          title="ビット変換"
+          defaultCode={`// 処理
+function main(lines: string[]) {
+  // ビット列に変換
+  const bits = parseInt(lines[0], 2);
+  console.log(bits);
+
+  // 文字列に変換
+  const str = bits.toString(2);
+
+  // 先頭の0が消えるので入力値と長さを揃える
+  const paddedStr = str.padStart(lines[0].length, "0");
+  console.log(paddedStr);
+}
+
+// 入力値
+const input = \`01001010\`;
+
+// 実行
+main(input.split("\\n"));`}
+          height="400px"
+        />
+      </article>
+    </InPageLayout>
+  );
+}

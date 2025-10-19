@@ -8,6 +8,8 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
+  --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+
   --animate-shake: shake 0.2s ease-in-out infinite;
   --animate-rocket-trail: rocket-trail 2s ease-out infinite;
 }

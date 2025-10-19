@@ -12,5 +12,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${baseUrl}/dijkstra`,
       lastModified: new Date(),
     },
+    {
+      url: `${baseUrl}/algorithm/getting-started`,
+      lastModified: new Date(),
+    },
+    {
+      url: `${baseUrl}/algorithm/bits-manipulation`,
+      lastModified: new Date(),
+    },
   ];
 }

@@ -30,8 +30,8 @@ import projectS from "./_img/projectS.jpg";
 
 export default function Home() {
   return (
-    <main className="[&>*:nth-child(2n)]:bg-gray-50 [&>*:nth-child(2n)]:dark:bg-gray-50/20">
-      <section id="home" className="relative pt-32 pb-20">
+    <main className="mt-20 [&>*:nth-child(2n)]:bg-gray-50 [&>*:nth-child(2n)]:dark:bg-gray-50/20">
+      <section id="home" className="relative pt-12 pb-20">
         <WavyBackground />
         <div className="container mx-auto px-6">
           <div className="flex flex-col items-center justify-between md:flex-row">
@@ -70,7 +70,8 @@ export default function Home() {
               <div className="relative mx-auto h-80 w-80">
                 <Image
                   src={icon}
-                  fill
+                  width={320}
+                  height={320}
                   className="rounded-lg object-cover shadow-xl"
                   alt="kik4"
                 />
@@ -258,6 +259,7 @@ export default function Home() {
                   <Image
                     src={project.image}
                     fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     className="object-cover"
                     alt=""
                   />
@@ -271,15 +273,13 @@ export default function Home() {
                       </span>
                     </p>
                     {project.link && (
-                      <a
+                      <MyLink
                         href={project.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 rounded bg-gray-600 px-2 py-1 font-medium text-white text-xs transition hover:bg-gray-700"
                       >
                         <FontAwesomeIcon icon={faGithub} size="sm" />
                         GitHub
-                      </a>
+                      </MyLink>
                     )}
                   </div>
                   <h3 className="mb-3 font-bold text-xl">{project.title}</h3>
@@ -362,6 +362,7 @@ export default function Home() {
                         <Image
                           src={project.image}
                           fill
+                          sizes="33vw"
                           className="rounded-lg object-cover opacity-80 group-hover:opacity-100"
                           alt=""
                         />
@@ -577,15 +578,13 @@ export default function Home() {
                     <p className="mb-4 text-gray-600 dark:text-gray-300">
                       {item.description}
                     </p>
-                    <a
+                    <MyLink
                       href={item.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 font-medium text-sm text-white transition hover:bg-blue-700"
                     >
                       <FontAwesomeIcon icon={faExternalLinkAlt} size="sm" />
                       {item.linkText}
-                    </a>
+                    </MyLink>
                   </div>
                 </div>
               </AnimateOnScroll>
@@ -627,15 +626,13 @@ export default function Home() {
                       </span>
                     ))}
                   </div>
-                  <a
+                  <MyLink
                     href="https://x.com/_kik4_"
-                    target="_blank"
-                    rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 rounded-lg bg-black px-6 py-3 font-medium text-white transition hover:bg-gray-800"
                   >
                     <FontAwesomeIcon icon={faXTwitter} />
                     Xプロフィールを見る
-                  </a>
+                  </MyLink>
                 </div>
               </div>
             </div>
@@ -667,15 +664,13 @@ export default function Home() {
                       ),
                     )}
                   </div>
-                  <a
+                  <MyLink
                     href="https://qiita.com/kik4"
-                    target="_blank"
-                    rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-3 font-medium text-white transition hover:bg-green-700"
                   >
                     <FontAwesomeIcon icon={faExternalLinkAlt} />
                     Qiitaプロフィールを見る
-                  </a>
+                  </MyLink>
                 </div>
               </div>
             </div>
@@ -1019,14 +1014,12 @@ export default function Home() {
           <AnimateOnScroll animation="slideUp" delay={0.1}>
             <div className="mx-auto max-w-3xl rounded-2xl bg-gradient-to-r from-white to-gray-100 p-8 text-center shadow-lg dark:from-black dark:to-gray-800">
               <div className="mb-6 flex justify-center">
-                <a
+                <MyLink
                   href="https://x.com/_kik4_"
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="flex h-12 w-12 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-600 shadow-sm transition hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:bg-gray-700"
                 >
                   <FontAwesomeIcon icon={faXTwitter} size="lg" />
-                </a>
+                </MyLink>
               </div>
               <p className="text-gray-600 dark:text-gray-400">
                 気軽にお声がけください
