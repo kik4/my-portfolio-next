@@ -31,7 +31,7 @@ import projectS from "./_img/projectS.jpg";
 export default function Home() {
   return (
     <main className="mt-20 [&>*:nth-child(2n)]:bg-gray-50 [&>*:nth-child(2n)]:dark:bg-gray-50/20">
-      <section id="home" className="relative pt-12 pb-20">
+      <section className="relative pt-12 pb-20">
         <WavyBackground />
         <div className="container mx-auto px-6">
           <div className="flex flex-col items-center justify-between md:flex-row">
@@ -426,7 +426,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="skills" className="py-20">
+      <section className="py-20">
         <div className="container mx-auto px-6">
           <AnimateOnScroll animation="fadeIn">
             <h2 className="mb-16 text-center font-bold text-3xl">代表スキル</h2>
@@ -514,7 +514,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="oss" className="py-20">
+      <section className="py-20">
         <div className="container mx-auto px-6">
           <AnimateOnScroll animation="fadeIn">
             <h2 className="mb-16 text-center font-bold text-3xl">OSS活動</h2>
@@ -593,7 +593,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="tech-articles" className="py-20">
+      <section className="py-20">
         <div className="container mx-auto px-6">
           <AnimateOnScroll animation="fadeIn">
             <h2 className="mb-16 text-center font-bold text-3xl">技術発信</h2>
@@ -678,7 +678,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="engineer-value" className="py-20">
+      <section className="py-20">
         <div className="container mx-auto px-6">
           <AnimateOnScroll animation="fadeIn">
             <h2 className="mb-16 text-center font-bold text-3xl">
@@ -812,7 +812,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="company-fit" className="py-20">
+      <section className="py-20">
         <div className="container mx-auto px-6">
           <AnimateOnScroll animation="fadeIn">
             <h2 className="mb-16 text-center font-bold text-3xl">
@@ -1005,7 +1005,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="contact" className="py-20">
+      <section className="py-20">
         <div className="container mx-auto px-6">
           <AnimateOnScroll animation="fadeIn">
             <h2 className="mb-16 text-center font-bold text-3xl">コンタクト</h2>
