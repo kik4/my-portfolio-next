@@ -6,7 +6,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <>
       <Header isHome />
       {children}
-      <Footer isHome />
+      <Footer />
     </>
   );
 }

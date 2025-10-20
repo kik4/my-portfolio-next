@@ -4,7 +4,7 @@ import Image from "next/image";
 import icon from "@/app/_img/icon_400x400.jpg";
 import { MyLink } from "./MyLink";
 
-export function Footer({ isHome = false }: { isHome?: boolean }) {
+export function Footer() {
   return (
     <footer className="border-gray-200 border-t bg-gray-800 pt-16 pb-8 text-white dark:border-gray-700 dark:bg-gray-900">
       <div className="container mx-auto px-6">
@@ -31,43 +31,10 @@ export function Footer({ isHome = false }: { isHome?: boolean }) {
             <ul className="space-y-2">
               {[
                 { href: { pathname: "/" }, label: "ホーム" },
-                ...(!isHome
-                  ? [
-                      {
-                        href: { pathname: "/algorithm" },
-                        label: "アルゴリズム",
-                      },
-                    ]
-                  : [
-                      {
-                        href: { pathname: "/", hash: "#work" },
-                        label: "プロダクト",
-                      },
-                      {
-                        href: { pathname: "/", hash: "#skills" },
-                        label: "代表スキル",
-                      },
-                      {
-                        href: { pathname: "/", hash: "#oss" },
-                        label: "OSS活動",
-                      },
-                      {
-                        href: { pathname: "/", hash: "#tech-articles" },
-                        label: "技術発信",
-                      },
-                      {
-                        href: { pathname: "/", hash: "#engineer-value" },
-                        label: "特徴",
-                      },
-                      {
-                        href: { pathname: "/", hash: "#company-fit" },
-                        label: "フィットする企業風土",
-                      },
-                      {
-                        href: { pathname: "/", hash: "#contact" },
-                        label: "コンタクト",
-                      },
-                    ]),
+                {
+                  href: { pathname: "/algorithm" },
+                  label: "TypeScriptでアルゴリズム",
+                },
               ].map(({ href, label }) => (
                 <li key={label}>
                   <MyLink
