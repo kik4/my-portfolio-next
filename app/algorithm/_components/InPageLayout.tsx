@@ -18,8 +18,8 @@ export function InPageLayout({
     <article>
       {/* Header */}
       <header className="relative flex items-center justify-between gap-2 border-gray-200 border-b bg-white px-6 py-4 shadow-sm lg:px-6 dark:border-gray-700 dark:bg-gray-900">
-        <div className="2xl:w-24"></div>
-        <div className="mx-auto flex max-w-4xl flex-1 flex-col items-center justify-between sm:flex-row">
+        <div className="xl:w-24"></div>
+        <div className="mx-auto flex max-w-4xl flex-1 flex-col justify-between md:flex-row md:items-center">
           <div className="ml-12 lg:ml-0">
             <h1 className="font-bold text-2xl text-gray-900 dark:text-white">
               {title}
@@ -28,7 +28,7 @@ export function InPageLayout({
               {description}
             </h2>
           </div>
-          <div className="mt-1 flex items-end gap-2 text-gray-500 text-xs sm:flex-col sm:gap-0 sm:text-sm dark:text-gray-400">
+          <div className="ml-12 flex items-end gap-2 text-gray-500 text-xs md:flex-col md:gap-0 md:text-sm lg:ml-0 dark:text-gray-400">
             <time dateTime={createdAt}>作成日: {createdAt}</time>
             <time dateTime={updatedAt}>更新日: {updatedAt}</time>
           </div>
