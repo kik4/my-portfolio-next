@@ -16,9 +16,9 @@ export default function Layout({ children }: { children: ReactNode }) {
           {/* コンテンツ */}
           <div className="p-6">
             <MyLink href={getPathToAlgorithm()} className="mb-6 block">
-              <h2 className="font-bold text-gray-900 text-medium dark:text-white">
+              <h1 className="font-bold text-gray-900 text-medium dark:text-white">
                 {algorithmPageTitle}
-              </h2>
+              </h1>
             </MyLink>
 
             <nav className="space-y-6">
@@ -48,7 +48,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               className="flex items-center gap-2 text-gray-500 text-sm transition hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             >
               <span>←</span>
-              <h1>kik4.work</h1>
+              kik4.work
             </MyLink>
           </div>
         </Sidebar>
