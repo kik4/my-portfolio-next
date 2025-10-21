@@ -18,7 +18,12 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <InPageLayout title={title} description={description}>
+    <InPageLayout
+      title={title}
+      description={description}
+      createdAt="2025-10-21"
+      updatedAt="2025-10-21"
+    >
       <article className="prose prose-blue dark:prose-invert max-w-none">
         <h1>Dateオブジェクトは使いにくい？</h1>
 
