@@ -27,7 +27,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                   <h3 className="mb-2 font-semibold text-gray-700 text-sm uppercase tracking-wider dark:text-gray-300">
                     {section.title}
                   </h3>
-                  <ul className="space-y-1">
+                  <ul>
                     {section.items.map((item) => (
                       <li key={item.pathname}>
                         <SidebarLink href={item.pathname}>
