@@ -1,8 +1,7 @@
 import type { MetadataRoute } from "next";
+import { baseUrl } from "./_lib/url";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://kik4.work";
-
   return [
     {
       url: baseUrl,
