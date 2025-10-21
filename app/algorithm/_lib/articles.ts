@@ -1,4 +1,5 @@
 import { getPathToAlgorithmBitsManipulation } from "../bits-manipulation/getPath";
+import { getPathToAlgorithmDateObject } from "../date-object/getPath";
 import { getPathToAlgorithmGettingStarted } from "../getting-started/getPath";
 import type { Section } from "./types";
 
@@ -11,6 +12,7 @@ export const sections: Section[] = [
     items: [
       { pathname: getPathToAlgorithmGettingStarted(), title: "はじめに" },
       { pathname: getPathToAlgorithmBitsManipulation(), title: "ビット操作" },
+      { pathname: getPathToAlgorithmDateObject(), title: "Dateオブジェクト" },
     ],
   },
 ];
