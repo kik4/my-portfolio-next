@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { DarkToggleButton } from "../_components/DarkToggleButton";
 import { MyLink } from "../_components/MyLink";
-import { dijkstra } from "./dijkstraAlgorithm";
-import { GraphCanvas } from "./GraphCanvas";
-import type { DijkstraStep, Edge, Mode, Node } from "./types";
+import { dijkstra } from "./_components/dijkstraAlgorithm";
+import { GraphCanvas } from "./_components/GraphCanvas";
+import type { DijkstraStep, Edge, Mode, Node } from "./_components/types";
 
 export default function DijkstraPage() {
   const [nodes, setNodes] = useState<Node[]>([
