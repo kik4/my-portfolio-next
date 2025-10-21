@@ -1,12 +1,16 @@
+import { getPathToAlgorithmBitsManipulation } from "../bits-manipulation/getPath";
+import { getPathToAlgorithmGettingStarted } from "../getting-started/getPath";
+import type { Section } from "./types";
+
 export const algorithmPageTitle = "TypeScriptでアルゴリズム";
 
-export const sections = [
+export const sections: Section[] = [
   {
     id: "basics",
     title: "基礎",
     items: [
-      { slug: "getting-started", title: "はじめに" },
-      { slug: "bits-manipulation", title: "ビット操作" },
+      { pathname: getPathToAlgorithmGettingStarted(), title: "はじめに" },
+      { pathname: getPathToAlgorithmBitsManipulation(), title: "ビット操作" },
     ],
   },
 ];

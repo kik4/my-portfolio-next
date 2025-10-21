@@ -1,6 +1,7 @@
 import { faHome, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { MyLink } from "./_components/MyLink";
+import { getPathToHome } from "./(home)/getPath";
 
 export default function NotFound() {
   return (
@@ -33,7 +34,7 @@ export default function NotFound() {
           {/* Action Buttons */}
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <MyLink
-              href="/"
+              href={getPathToHome()}
               className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-8 py-3 font-medium text-white transition hover:bg-blue-700"
             >
               <FontAwesomeIcon icon={faHome} />

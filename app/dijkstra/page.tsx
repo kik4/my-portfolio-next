@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { DarkToggleButton } from "../_components/DarkToggleButton";
 import { MyLink } from "../_components/MyLink";
+import { getPathToHome } from "../(home)/getPath";
 import { dijkstra } from "./_components/dijkstraAlgorithm";
 import { GraphCanvas } from "./_components/GraphCanvas";
 import type { DijkstraStep, Edge, Mode, Node } from "./_components/types";
@@ -175,7 +176,7 @@ export default function DijkstraPage() {
       <header className="border-b">
         <nav className="container mx-auto flex items-center justify-between px-6 py-3">
           <MyLink
-            href="/"
+            href={getPathToHome()}
             className="text-gray-600 text-sm hover:text-accent dark:text-gray-400 dark:hover:text-accent"
           >
             ← ホーム

@@ -10,6 +10,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { getPathToHome } from "../(home)/getPath";
+import { getPathToAlgorithm } from "../algorithm/getPath";
 import { DarkToggleButton } from "./DarkToggleButton";
 import { MyLink } from "./MyLink";
 
@@ -81,14 +83,14 @@ export function MobileMenu() {
           {/* メニュー項目 */}
           <nav className="flex flex-col gap-2 p-4">
             <MyLink
-              href="/"
+              href={getPathToHome()}
               className="rounded-lg px-4 py-3 font-medium transition hover:bg-gray-100 dark:hover:bg-gray-800"
               onClick={() => setIsOpen(false)}
             >
               Home
             </MyLink>
             <MyLink
-              href="/algorithm"
+              href={getPathToAlgorithm()}
               className="rounded-lg px-4 py-3 font-medium transition hover:bg-gray-100 dark:hover:bg-gray-800"
               onClick={() => setIsOpen(false)}
             >

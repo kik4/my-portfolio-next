@@ -18,6 +18,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { MyLink } from "../_components/MyLink";
 import { baseUrl } from "../_lib/url";
+import { getPathToDijkstra } from "../dijkstra/getPath";
 import { AnimateOnScroll } from "./_components/AnimateOnScroll";
 import { WavyBackground } from "./_components/WavyBackground";
 import icon from "./_img/icon_1024x1024.jpg";
@@ -338,7 +339,7 @@ export default function Home() {
                     "Canvas API",
                     "TailwindCSS",
                   ].join(", "),
-                  link: "/dijkstra",
+                  link: getPathToDijkstra(),
                   linkIcon: faLink,
                 },
                 {

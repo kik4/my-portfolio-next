@@ -2,6 +2,8 @@ import { faGithub, faXTwitter } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Image from "next/image";
 import icon from "@/app/_img/icon_400x400.jpg";
+import { getPathToHome } from "../(home)/getPath";
+import { getPathToAlgorithm } from "../algorithm/getPath";
 import { MyLink } from "./MyLink";
 
 export function Footer() {
@@ -30,9 +32,9 @@ export function Footer() {
             <h3 className="mb-4 font-bold text-xl">リンク</h3>
             <ul className="space-y-2">
               {[
-                { href: { pathname: "/" }, label: "ホーム" },
+                { href: { pathname: getPathToHome() }, label: "ホーム" },
                 {
-                  href: { pathname: "/algorithm" },
+                  href: { pathname: getPathToAlgorithm() },
                   label: "TypeScriptでアルゴリズム",
                 },
               ].map(({ href, label }) => (

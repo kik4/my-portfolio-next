@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
 import { Footer } from "../_components/Footer";
 import { MyLink } from "../_components/MyLink";
+import { getPathToHome } from "../(home)/getPath";
 import { Sidebar } from "./_components/Sidebar";
 import { SidebarLink } from "./_components/SidebarLink";
 import { algorithmPageTitle, sections } from "./_lib/articles";
+import { getPathToAlgorithm } from "./getPath";
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
@@ -13,7 +15,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         <Sidebar>
           {/* コンテンツ */}
           <div className="p-6">
-            <MyLink href="/algorithm" className="mb-6 block">
+            <MyLink href={getPathToAlgorithm()} className="mb-6 block">
               <h2 className="font-bold text-gray-900 text-medium dark:text-white">
                 {algorithmPageTitle}
               </h2>
@@ -27,8 +29,8 @@ export default function Layout({ children }: { children: ReactNode }) {
                   </h3>
                   <ul className="space-y-1">
                     {section.items.map((item) => (
-                      <li key={item.slug}>
-                        <SidebarLink href={`/algorithm/${item.slug}`}>
+                      <li key={item.pathname}>
+                        <SidebarLink href={item.pathname}>
                           {item.title}
                         </SidebarLink>
                       </li>
@@ -42,7 +44,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           {/* トップページに戻るリンク */}
           <div className="border-gray-200 border-t p-4 dark:border-gray-700">
             <MyLink
-              href="/"
+              href={getPathToHome()}
               className="flex items-center gap-2 text-gray-500 text-sm transition hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             >
               <span>←</span>

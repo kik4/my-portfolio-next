@@ -3,6 +3,7 @@ import { baseUrl } from "@/app/_lib/url";
 import { CodeEditor } from "../_components/CodeEditor";
 import { InPageLayout } from "../_components/InPageLayout";
 import { algorithmPageTitle } from "../_lib/articles";
+import { getPathToAlgorithmGettingStarted } from "./getPath";
 
 const title = "はじめに";
 const description = `${algorithmPageTitle} とは`;
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
   title: `${title} | ${algorithmPageTitle} | kik4.work`,
   description: `${description} | TypeScriptでアルゴリズムを書く方法を紹介します。 | kik4.work - フロントエンドエンジニアkik4のサイト`,
   alternates: {
-    canonical: `${baseUrl}/algorithm/getting-started`,
+    canonical: `${baseUrl}${getPathToAlgorithmGettingStarted()}`,
   },
 };
 
