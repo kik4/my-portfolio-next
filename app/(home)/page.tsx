@@ -32,9 +32,7 @@ import projectPf2 from "./_img/projectPf2.jpg";
 import projectS from "./_img/projectS.jpg";
 
 export const metadata: Metadata = {
-  title: "kik4.work - Webエンジニアのポートフォリオ",
-  description:
-    "kik4.work - Webエンジニア kik4 のポートフォリオサイト。TypeScript、React、Next.jsを用いたフロントエンド・バックエンド開発の実績を紹介。",
+  // タイトルと説明はルートの layout.tsx 側で設定
   alternates: {
     canonical: baseUrl,
   },
