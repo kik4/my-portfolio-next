@@ -14,8 +14,10 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { clsx } from "clsx";
+import type { Metadata } from "next";
 import Image from "next/image";
 import { MyLink } from "../_components/MyLink";
+import { baseUrl } from "../_lib/url";
 import { AnimateOnScroll } from "./_components/AnimateOnScroll";
 import { WavyBackground } from "./_components/WavyBackground";
 import icon from "./_img/icon_1024x1024.jpg";
@@ -27,6 +29,15 @@ import projectP from "./_img/projectP.jpg";
 import projectPf1 from "./_img/projectPf1.jpg";
 import projectPf2 from "./_img/projectPf2.jpg";
 import projectS from "./_img/projectS.jpg";
+
+export const metadata: Metadata = {
+  title: "kik4.work - Webエンジニアのポートフォリオ",
+  description:
+    "kik4.work - Webエンジニア kik4 のポートフォリオサイト。TypeScript、React、Next.jsを用いたフロントエンド・バックエンド開発の実績を紹介。",
+  alternates: {
+    canonical: baseUrl,
+  },
+};
 
 export default function Home() {
   return (
