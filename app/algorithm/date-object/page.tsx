@@ -10,7 +10,7 @@ const description = `Dateオブジェクトを使ったシンプルな日付操�
 
 export const metadata: Metadata = {
   title: `${title} | ${algorithmPageTitle} | kik4.work`,
-  description: `${description} | TypeScriptでアルゴリズムを書く方法を紹介します。 | kik4.work - フロントエンドエンジニアkik4のサイト`,
+  description: `${description} | TypeScriptでアルゴリズムを書く方法を実例コードと共に解説します。 | kik4.work - フロントエンドエンジニアkik4のサイト`,
   alternates: {
     canonical: `${baseUrl}${getPathToAlgorithmDateObject()}`,
   },
