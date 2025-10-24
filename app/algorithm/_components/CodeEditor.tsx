@@ -2,7 +2,7 @@
 
 import Editor from "@monaco-editor/react";
 import type * as Monaco from "monaco-editor";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function CodeEditor({
   title,
@@ -18,7 +18,42 @@ export function CodeEditor({
   const [jsCode, setJsCode] = useState("");
   const [activeTab, setActiveTab] = useState<"output" | "javascript">("output");
   const [isRunning, setIsRunning] = useState(false);
+  const [editorHeight, setEditorHeight] = useState(
+    Number.parseInt(height, 10) || 300,
+  );
+  const [isResizing, setIsResizing] = useState(false);
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
+  const resizeStartYRef = useRef(0);
+  const resizeStartHeightRef = useRef(0);
+
+  function handleResizeStart(e: React.MouseEvent) {
+    e.preventDefault();
+    setIsResizing(true);
+    resizeStartYRef.current = e.clientY;
+    resizeStartHeightRef.current = editorHeight;
+  }
+
+  useEffect(() => {
+    function handleMouseMove(e: MouseEvent) {
+      if (!isResizing) return;
+      const deltaY = e.clientY - resizeStartYRef.current;
+      const newHeight = Math.max(200, resizeStartHeightRef.current + deltaY);
+      setEditorHeight(newHeight);
+    }
+
+    function handleMouseUp() {
+      setIsResizing(false);
+    }
+
+    if (isResizing) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+      return () => {
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
+      };
+    }
+  }, [isResizing]);
 
   function handleEditorWillMount(monaco: typeof Monaco) {
     // Monaco Editorの設定
@@ -151,9 +186,9 @@ export function CodeEditor({
       </div>
 
       {/* Editor */}
-      <div className="border-gray-200 border-b dark:border-gray-700">
+      <div className="relative">
         <Editor
-          height={height}
+          height={`${editorHeight}px`}
           defaultLanguage="typescript"
           value={code}
           onChange={(value) => setCode(value || "")}
@@ -170,6 +205,18 @@ export function CodeEditor({
             wordWrap: "on",
           }}
         />
+        {/* Resize Handle */}
+        <button
+          type="button"
+          onMouseDown={handleResizeStart}
+          className={`group absolute inset-x-0 bottom-0 flex h-2 w-full cursor-ns-resize items-center justify-center border-gray-200 border-t bg-gray-100 transition-colors hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 ${
+            isResizing ? "bg-gray-200 dark:bg-gray-700" : ""
+          }`}
+          title="ドラッグしてエディターの高さを調整"
+          aria-label="エディターの高さを調整"
+        >
+          <div className="h-0.5 w-12 rounded-full bg-gray-400 transition-colors group-hover:bg-gray-600 dark:bg-gray-600 dark:group-hover:bg-gray-400" />
+        </button>
       </div>
 
       {/* Output Tabs */}
