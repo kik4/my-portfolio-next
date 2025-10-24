@@ -6,7 +6,7 @@ export const dateObject: AlgorithmContent = {
   title: "Dateオブジェクト",
   description: "Dateオブジェクトを使ったシンプルな日付操作",
   createdAt: "2025-10-21",
-  updatedAt: "2025-10-21",
+  updatedAt: "2025-10-24",
   content: (
     <>
       <h2>Dateオブジェクトは使いにくい？</h2>
@@ -114,6 +114,16 @@ const input = \`19:25
 main(input.split("\\n"));`}
         height="450px"
       />
+
+      <h2>まとめ</h2>
+
+      <p>
+        TypeScript/JavaScriptにおけるDateオブジェクトの基本的な使い方や注意点について説明しました。特にタイムゾーンの扱いやシンプルな時刻操作の実装方法を理解できたかと思います。
+      </p>
+
+      <p>
+        日付操作ライブラリを使う場合でも、Dateオブジェクトの基礎的な理解は重要です。ぜひ、実務での日付操作に役立ててください。
+      </p>
     </>
   ),
 };
