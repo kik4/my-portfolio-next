@@ -1,0 +1,173 @@
+import type { Metadata } from "next";
+import { baseUrl } from "@/app/_lib/url";
+import { CodeEditor } from "../_components/CodeEditor";
+import { InPageLayout } from "../_components/InPageLayout";
+import { algorithmPageTitle } from "../_lib/articles";
+import { getPathToAlgorithm2DArrayYXProblem } from "./getPath";
+
+const title = "二次元配列の[y][x]問題";
+const description = `二次元配列の座標が持つ問題について`;
+
+export const metadata: Metadata = {
+  title: `${title} | ${algorithmPageTitle} | kik4.work`,
+  description: `${description} | TypeScriptでアルゴリズムを書く方法を実例コードと共に解説します。 | kik4.work - フロントエンドエンジニアkik4のサイト`,
+  alternates: {
+    canonical: `${baseUrl}${getPathToAlgorithm2DArrayYXProblem()}`,
+  },
+};
+
+export default function Page() {
+  return (
+    <InPageLayout
+      title={title}
+      description={description}
+      createdAt="2025-10-24"
+      updatedAt="2025-10-24"
+    >
+      <h2>二次元配列の[y][x]問題って？</h2>
+
+      <p>
+        二次元配列とはデータが二次元空間に配置されているデータ構造で、端的に言えば配列の中に配列を入れたものです。行列やグリッドなどを表現するのに一番シンプルな方法でしょう。
+      </p>
+
+      <p>
+        二次元配列は実装は簡単なのですが、多くのプログラマーが一度はひっかかる混乱ポイントがあります。配列の要素にアクセスする際の行と列の指定方法に関する問題です。
+      </p>
+
+      <p>
+        具体的にどういう問題なのか。例えば、入力された数字のグリッドに対して、各座標の数値にその上下左右の数値を足したグリッドを出力する処理を考えます（ちなみに枠外は0とします）。プログラミング問題では大抵最初の一行目に行数と列数が与えられ、その後にグリッドのデータが与えられます。
+      </p>
+
+      <CodeEditor
+        title="グリッドの各数字に上下左右の数字を足す"
+        defaultCode={`// 処理
+function main(lines: string[]) {
+  // 入力の高さと幅を数字に変換
+  const [H, W] = lines[0].split(" ").map(Number);
+  // 入力を二次元配列に変換
+  const grid: number[][] = [];
+  for (let y = 0; y < H; y++) {
+    grid.push(lines[y + 1].split(" ").map(Number));
+  }
+
+  // 行ごとに計算と出力
+  for (let y = 0; y < H; y++) {
+    // 現在の行の結果を格納する配列
+    const l: number[] = [];
+    for (let x = 0; x < W; x++) {
+      // 現在の座標の値に上下左右の値を足す
+      l.push(
+        grid[y][x] +
+          (grid[y + 1]?.[x] ?? 0) +
+          (grid[y]?.[x + 1] ?? 0) +
+          (grid[y - 1]?.[x] ?? 0) +
+          (grid[y]?.[x - 1] ?? 0),
+      );
+    }
+    // 行ごとの結果を出力
+    console.log(l.join(" "));
+  }
+}
+
+// 入力と実行
+main(
+  \`3 4
+12 4 -5 0
+3 1 20 4
+4 5 1 -19\`.split("\\n"),
+);`}
+        height="650px"
+      />
+
+      <p>
+        このコードには直感的ではない部分があります。数学などで二次元の座標を表すのに（x,
+        y）という順番で表すことが多いため、配列のインデックスも[x][y]の順番でアクセスしたくなります。
+        しかし、二次元配列では最初のインデックスが行（y座標）、次のインデックスが列（x座標）であるため、grid[y][x]という形でアクセスする必要があります。
+      </p>
+
+      <p>
+        また、ループもxとyの順番で書きたくなりますが、二次元配列の各行にアクセスするためにはyを外側のループに、xを内側のループにする必要があります。
+        逆にすると正しい結果が得られません。
+      </p>
+
+      <p>
+        このような直感に反する実装はプログラマーに混乱をもたらし、バグの原因となることが多いです。
+      </p>
+
+      <h2>二次元配列の[y][x]問題の解決方法</h2>
+
+      <p>
+        配列のインデックスを[x][y]の順番でアクセスしたいなら、そうできるような仕組みにしてしまいましょう。
+      </p>
+
+      <p>
+        関数、クラスなどなど様々な手段が考えられます。ここではMapオブジェクトを使った実装を紹介します。
+      </p>
+
+      <CodeEditor
+        title="グリッドの各数字に上下左右の数字を足す（Map版）"
+        defaultCode={`// 処理
+function main2(lines: string[]) {
+  // 入力の高さと幅を数字に変換
+  const [H, W] = lines[0].split(" ").map(Number);
+  // 入力をmapに変換
+  const map: Map<string, number> = new Map();
+  const getKey = (x: number, y: number) => \`\${x},\${y}\`;
+  for (let y = 0; y < H; y++) {
+    const line = lines[y + 1].split(" ").map(Number);
+    for (let x = 0; x < W; x++) {
+      // キーを"x,y"の形式で保存
+      map.set(getKey(x, y), line[x]);
+    }
+  }
+
+  // 行ごとに計算と出力
+  for (let y = 0; y < H; y++) {
+    // 現在の行の結果を格納する配列
+    const l: number[] = [];
+    for (let x = 0; x < W; x++) {
+      // 現在の座標の値に上下左右の値を足す
+      l.push(
+        map.get(getKey(x, y))! +
+          (map.get(getKey(x + 1, y)) ?? 0) +
+          (map.get(getKey(x, y + 1)) ?? 0) +
+          (map.get(getKey(x - 1, y)) ?? 0) +
+          (map.get(getKey(x, y - 1)) ?? 0),
+      );
+    }
+    // 行ごとの結果を出力
+    console.log(l.join(" "));
+  }
+}
+
+// 入力と実行
+main2(
+  \`3 4
+12 4 -5 0
+3 1 20 4
+4 5 1 -19\`.split("\\n"),
+);`}
+        height="750px"
+      />
+
+      <p>
+        キーを"x,y"の形式で保存することで、インデックスをx,
+        yの順番でアクセスできるようになりました。これにより、より直感的な順番でアクセスできるようになります。
+      </p>
+
+      <p>
+        Mapを使うことでメモリ効率が悪くなる可能性がありますが、コードの可読性や保守性を向上させることができます。特にチーム開発では、他の開発者がコードを理解しやすくなることが重要です。ちなみにグリッドが疎な場合（二次元空間に対して非ゼロの値が少ない場合）ではMapの方がメモリ効率が良くなる場合もあります。
+      </p>
+
+      <h2>ループの順番は？</h2>
+
+      <p>
+        ループの順番が外側がy、内側がxであることには変わりありません。この問題の解決方法は……私には思いつきません。
+      </p>
+
+      <p>
+        これは入力が行ごとに与えられ、行ごとに出力するアルゴリズム上の制約です。こればかりは仕方がないと割り切るしかないでしょう。
+      </p>
+    </InPageLayout>
+  );
+}
