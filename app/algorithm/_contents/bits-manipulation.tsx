@@ -6,7 +6,7 @@ export const bitsManipulation: AlgorithmContent = {
   title: "ビット操作",
   description: "TypeScriptでビット操作を行う方法",
   createdAt: "2025-10-19",
-  updatedAt: "2025-10-21",
+  updatedAt: "2025-10-24",
   content: (
     <>
       <h2>TypeScriptでビット操作を行う</h2>
@@ -75,7 +75,7 @@ main(\`01001010\`.split("\\n"));`}
       <CodeEditor
         title="重複の判定"
         defaultCode={`// 処理
-function main(lines: string[]) {
+function main2(lines: string[]) {
   // ビット列に変換
   const bitsA = parseInt(lines[0], 2);
   const bitsB = parseInt(lines[1], 2);
@@ -86,10 +86,20 @@ function main(lines: string[]) {
 }
 
 // 入力と実行
-main(\`0101010001
+main2(\`0101010001
 0011001000\`.split("\\n"));`}
         height="350px"
       />
+
+      <h2>まとめ</h2>
+
+      <p>
+        TypeScriptでビット操作を行う方法について説明しました。ビット列の表現方法や基本的なビット操作、使用例を通じて、ビット操作の基礎を理解できたかと思います。
+      </p>
+
+      <p>
+        TypeScriptを使う現場での実業務ではなかなか出番がないかもしれませんが、ビット操作は効率的なデータ処理やアルゴリズムの最適化に役立つため、ぜひ活用してみてください。
+      </p>
     </>
   ),
 };
