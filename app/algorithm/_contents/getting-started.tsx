@@ -1,29 +1,15 @@
-import type { Metadata } from "next";
-import { baseUrl } from "@/app/_lib/url";
 import { CodeEditor } from "../_components/CodeEditor";
-import { InPageLayout } from "../_components/InPageLayout";
-import { algorithmPageTitle } from "../_lib/articles";
-import { getPathToAlgorithmGettingStarted } from "./getPath";
+import { algorithmPageTitle } from "../_lib/consts";
+import type { AlgorithmContent } from "../_lib/types";
 
-const title = "はじめに";
-const description = `${algorithmPageTitle} とは`;
-
-export const metadata: Metadata = {
-  title: `${title} | ${algorithmPageTitle} | kik4.work`,
-  description: `${description} | TypeScriptでアルゴリズムを書く方法を実例コードと共に解説します。 | kik4.work - フロントエンドエンジニアkik4のサイト`,
-  alternates: {
-    canonical: `${baseUrl}${getPathToAlgorithmGettingStarted()}`,
-  },
-};
-
-export default function Page() {
-  return (
-    <InPageLayout
-      title={title}
-      description={description}
-      createdAt="2025-10-19"
-      updatedAt="2025-10-21"
-    >
+export const gettingStarted: AlgorithmContent = {
+  slug: "getting-started",
+  title: "はじめに",
+  description: `${algorithmPageTitle} とは`,
+  createdAt: "2025-10-19",
+  updatedAt: "2025-10-21",
+  content: (
+    <>
       <h2>TypeScriptでアルゴリズムを書く</h2>
 
       <p>
@@ -60,7 +46,7 @@ function main(lines: string[]) {
     // split(" "): スペースで文字列を分割 → ["1", "2", "3"]
     // map(Number): 各要素を数値に変換 → [1, 2, 3]
     const numbers = line.split(" ").map(Number);
-    
+
     // 配列の総和を計算して出力
     const total = sum(numbers);
     console.log(total);
@@ -92,6 +78,6 @@ main(input.split("\\n"));`}
         オンライン実行環境では自由にコードを実行できますが、ブラウザやシステムの動作に影響を与える可能性がありますので注意してください。
         特に無限ループや大量のメモリ消費を伴うコードの実行は注意してください。
       </p>
-    </InPageLayout>
-  );
-}
+    </>
+  ),
+};

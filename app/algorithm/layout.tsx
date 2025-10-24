@@ -4,8 +4,9 @@ import { MyLink } from "../_components/MyLink";
 import { getPathToHome } from "../(home)/getPath";
 import { Sidebar } from "./_components/Sidebar";
 import { SidebarLink } from "./_components/SidebarLink";
-import { algorithmPageTitle, sections } from "./_lib/articles";
-import { getPathToAlgorithm } from "./getPath";
+import { sections } from "./_lib/articles";
+import { algorithmPageTitle } from "./_lib/consts";
+import { getPathToAlgorithm, getPathToAlgorithmArticle } from "./getPath";
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
@@ -29,8 +30,10 @@ export default function Layout({ children }: { children: ReactNode }) {
                   </h3>
                   <ul>
                     {section.items.map((item) => (
-                      <li key={item.pathname}>
-                        <SidebarLink href={item.pathname}>
+                      <li key={getPathToAlgorithmArticle(item.slug)}>
+                        <SidebarLink
+                          href={getPathToAlgorithmArticle(item.slug)}
+                        >
                           {item.title}
                         </SidebarLink>
                       </li>

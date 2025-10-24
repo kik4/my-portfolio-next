@@ -1,29 +1,14 @@
-import type { Metadata } from "next";
-import { baseUrl } from "@/app/_lib/url";
 import { CodeEditor } from "../_components/CodeEditor";
-import { InPageLayout } from "../_components/InPageLayout";
-import { algorithmPageTitle } from "../_lib/articles";
-import { getPathToAlgorithm2DArrayYXProblem } from "./getPath";
+import type { AlgorithmContent } from "../_lib/types";
 
-const title = "二次元配列の[y][x]問題";
-const description = `二次元配列の座標が持つ問題について`;
-
-export const metadata: Metadata = {
-  title: `${title} | ${algorithmPageTitle} | kik4.work`,
-  description: `${description} | TypeScriptでアルゴリズムを書く方法を実例コードと共に解説します。 | kik4.work - フロントエンドエンジニアkik4のサイト`,
-  alternates: {
-    canonical: `${baseUrl}${getPathToAlgorithm2DArrayYXProblem()}`,
-  },
-};
-
-export default function Page() {
-  return (
-    <InPageLayout
-      title={title}
-      description={description}
-      createdAt="2025-10-24"
-      updatedAt="2025-10-24"
-    >
+export const twoDArrayYXProblem: AlgorithmContent = {
+  slug: "2d-array-yx-problem",
+  title: "二次元配列の[y][x]問題",
+  description: "二次元配列の座標が持つ問題について",
+  createdAt: "2025-10-24",
+  updatedAt: "2025-10-24",
+  content: (
+    <>
       <h2>二次元配列の[y][x]問題って？</h2>
 
       <p>
@@ -151,7 +136,7 @@ main2(
       />
 
       <p>
-        キーを"x,y"の形式で保存することで、インデックスをx,
+        キーを&quot;x,y&quot;の形式で保存することで、インデックスをx,
         yの順番でアクセスできるようになりました。これにより、より直感的な順番でアクセスできるようになります。
       </p>
 
@@ -166,8 +151,8 @@ main2(
       </p>
 
       <p>
-        これは入力が行ごとに与えられ、行ごとに出力するアルゴリズム上の制約です。こればかりは仕方がないと割り切るしかないでしょう。
+        これは入力が行ごとに与えられ、行ごとに出力するアルゴリズム上の制約です。例えば別のアルゴリズムではまたループの順番が違う方が効率的かもしれません。こればかりは仕方がないと割り切るしかないでしょう。
       </p>
-    </InPageLayout>
-  );
-}
+    </>
+  ),
+};

@@ -1,29 +1,14 @@
-import type { Metadata } from "next";
-import { baseUrl } from "@/app/_lib/url";
 import { CodeEditor } from "../_components/CodeEditor";
-import { InPageLayout } from "../_components/InPageLayout";
-import { algorithmPageTitle } from "../_lib/articles";
-import { getPathToAlgorithmBitsManipulation } from "./getPath";
+import type { AlgorithmContent } from "../_lib/types";
 
-const title = "ビット操作";
-const description = `TypeScriptでビット操作を行う方法`;
-
-export const metadata: Metadata = {
-  title: `${title} | ${algorithmPageTitle} | kik4.work`,
-  description: `${description} | TypeScriptでアルゴリズムを書く方法を実例コードと共に解説します。 | kik4.work - フロントエンドエンジニアkik4のサイト`,
-  alternates: {
-    canonical: `${baseUrl}${getPathToAlgorithmBitsManipulation()}`,
-  },
-};
-
-export default function Page() {
-  return (
-    <InPageLayout
-      title={title}
-      description={description}
-      createdAt="2025-10-19"
-      updatedAt="2025-10-21"
-    >
+export const bitsManipulation: AlgorithmContent = {
+  slug: "bits-manipulation",
+  title: "ビット操作",
+  description: "TypeScriptでビット操作を行う方法",
+  createdAt: "2025-10-19",
+  updatedAt: "2025-10-21",
+  content: (
+    <>
       <h2>TypeScriptでビット操作を行う</h2>
 
       <p>
@@ -37,7 +22,7 @@ export default function Page() {
       <h2>ビット列の表現</h2>
 
       <p>
-        はじめのページに書いた通り入力は文字列で、ビット列を表現するならビットの0と1が連続したものです。例えば"1011"のような文字列をビット列として扱います。
+        はじめのページに書いた通り入力は文字列で、ビット列を表現するならビットの0と1が連続したものです。例えば&quot;1011&quot;のような文字列をビット列として扱います。
         しかし文字列のままではビット操作ができません。ビット列は数値型に直して扱う必要があります。
       </p>
 
@@ -73,18 +58,18 @@ main(\`01001010\`.split("\\n"));`}
       </p>
 
       <p>
-        AさんとBさんが0-9の数字の書かれたカードをそれぞれ持っているとします。同じ数字のカードを持っているかどうかを判定するために、ビット列を使用します。10枚のカードに対応する10ビットのビット列を用意し、各ビットがその数字のカードを持っているかどうかを示します。"1"はカードを持っていることを示し、"0"は持っていないことを示します。
+        AさんとBさんが0-9の数字の書かれたカードをそれぞれ持っているとします。同じ数字のカードを持っているかどうかを判定するために、ビット列を使用します。10枚のカードに対応する10ビットのビット列を用意し、各ビットがその数字のカードを持っているかどうかを示します。&quot;1&quot;はカードを持っていることを示し、&quot;0&quot;は持っていないことを示します。
       </p>
 
       <p>
         例えば、Aさんが{`{1, 3, 5, 9}`}
-        のカードを持っている場合、左を0としてビット列は"0101010001"となります。同様に、Bさんが
+        のカードを持っている場合、左を0としてビット列は&quot;0101010001&quot;となります。同様に、Bさんが
         {`{2, 3, 6}`}
-        のカードを持っている場合、ビット列は"0011001000"となります。
+        のカードを持っている場合、ビット列は&quot;0011001000&quot;となります。
       </p>
 
       <p>
-        AND演算を行えば、簡単に重複を判定できます。2つのビット列のANDを取って"0000000000"つまり数値型の0でない場合は、重複があることになります。
+        AND演算を行えば、簡単に重複を判定できます。2つのビット列のANDを取って&quot;0000000000&quot;つまり数値型の0でない場合は、重複があることになります。
       </p>
 
       <CodeEditor
@@ -105,6 +90,6 @@ main(\`0101010001
 0011001000\`.split("\\n"));`}
         height="350px"
       />
-    </InPageLayout>
-  );
-}
+    </>
+  ),
+};

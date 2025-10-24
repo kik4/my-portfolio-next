@@ -1,29 +1,14 @@
-import type { Metadata } from "next";
-import { baseUrl } from "@/app/_lib/url";
 import { CodeEditor } from "../_components/CodeEditor";
-import { InPageLayout } from "../_components/InPageLayout";
-import { algorithmPageTitle } from "../_lib/articles";
-import { getPathToAlgorithmDateObject } from "./getPath";
+import type { AlgorithmContent } from "../_lib/types";
 
-const title = "Dateオブジェクト";
-const description = `Dateオブジェクトを使ったシンプルな日付操作`;
-
-export const metadata: Metadata = {
-  title: `${title} | ${algorithmPageTitle} | kik4.work`,
-  description: `${description} | TypeScriptでアルゴリズムを書く方法を実例コードと共に解説します。 | kik4.work - フロントエンドエンジニアkik4のサイト`,
-  alternates: {
-    canonical: `${baseUrl}${getPathToAlgorithmDateObject()}`,
-  },
-};
-
-export default function Page() {
-  return (
-    <InPageLayout
-      title={title}
-      description={description}
-      createdAt="2025-10-21"
-      updatedAt="2025-10-21"
-    >
+export const dateObject: AlgorithmContent = {
+  slug: "date-object",
+  title: "Dateオブジェクト",
+  description: "Dateオブジェクトを使ったシンプルな日付操作",
+  createdAt: "2025-10-21",
+  updatedAt: "2025-10-21",
+  content: (
+    <>
       <h2>Dateオブジェクトは使いにくい？</h2>
 
       <p>
@@ -100,7 +85,7 @@ console.log("JST日時:", jstString.slice(0,10).replaceAll("-", "/"), jstString.
       </p>
 
       <p>
-        このサイトでは入力は文字列です。基準の時刻は"HH:MM"の形式で与えられると仮定します。文字列を時刻に変換するにも、ISO
+        このサイトでは入力は文字列です。基準の時刻は&quot;HH:MM&quot;の形式で与えられると仮定します。文字列を時刻に変換するにも、ISO
         8601形式の文字列を使うと簡単です。
       </p>
 
@@ -129,6 +114,6 @@ const input = \`19:25
 main(input.split("\\n"));`}
         height="450px"
       />
-    </InPageLayout>
-  );
-}
+    </>
+  ),
+};

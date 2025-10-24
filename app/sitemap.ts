@@ -1,8 +1,7 @@
 import type { MetadataRoute } from "next";
 import { baseUrl } from "./_lib/url";
-import { getPathToAlgorithmBitsManipulation } from "./algorithm/bits-manipulation/getPath";
-import { getPathToAlgorithmDateObject } from "./algorithm/date-object/getPath";
-import { getPathToAlgorithmGettingStarted } from "./algorithm/getting-started/getPath";
+import { sections } from "./algorithm/_lib/articles";
+import { getPathToAlgorithmArticle } from "./algorithm/getPath";
 import { getPathToDijkstra } from "./dijkstra/getPath";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -15,17 +14,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${baseUrl}${getPathToDijkstra()}`,
       lastModified: new Date(),
     },
-    {
-      url: `${baseUrl}${getPathToAlgorithmGettingStarted()}`,
+    // Algorithm section
+    ...sections[0].items.map((content) => ({
+      url: getPathToAlgorithmArticle(content.slug),
       lastModified: new Date(),
-    },
-    {
-      url: `${baseUrl}${getPathToAlgorithmBitsManipulation()}`,
-      lastModified: new Date(),
-    },
-    {
-      url: `${baseUrl}${getPathToAlgorithmDateObject()}`,
-      lastModified: new Date(),
-    },
+    })),
   ];
 }
