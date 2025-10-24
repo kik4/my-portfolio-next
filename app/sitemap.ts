@@ -16,7 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     // Algorithm section
     ...sections[0].items.map((content) => ({
-      url: getPathToAlgorithmArticle(content.slug),
+      url: `${baseUrl}${getPathToAlgorithmArticle(content.slug)}`,
       lastModified: new Date(),
     })),
   ];
