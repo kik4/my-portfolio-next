@@ -113,8 +113,8 @@ export default async function OgImage({ params }: Props) {
           <div
             style={{
               display: "flex",
-              width: "100px",
-              height: "100px",
+              width: "120px",
+              height: "120px",
               borderRadius: "14px",
               overflow: "hidden",
               boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.2)",
@@ -124,8 +124,8 @@ export default async function OgImage({ params }: Props) {
             {/** biome-ignore lint/performance/noImgElement: tmp */}
             <img
               src={iconBase64}
-              width="100"
-              height="100"
+              width="120"
+              height="120"
               style={{
                 objectFit: "cover",
               }}
@@ -136,7 +136,7 @@ export default async function OgImage({ params }: Props) {
           {/* ページ全体タイトル */}
           <div
             style={{
-              fontSize: "20px",
+              fontSize: "24px",
               fontWeight: 400,
               color: "#2563eb",
               margin: 0,
@@ -160,7 +160,7 @@ export default async function OgImage({ params }: Props) {
           {/* 記事タイトル */}
           <h1
             style={{
-              fontSize: "58px",
+              fontSize: "70px",
               fontWeight: 700,
               color: "#111111",
               margin: 0,
@@ -173,7 +173,7 @@ export default async function OgImage({ params }: Props) {
           {/* 記事説明 */}
           <div
             style={{
-              fontSize: "26px",
+              fontSize: "32px",
               fontWeight: 400,
               color: "#555555",
               margin: 0,
