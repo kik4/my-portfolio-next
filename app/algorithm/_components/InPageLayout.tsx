@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import type { ReactNode } from "react";
 import { DarkToggleButton } from "@/app/_components/DarkToggleButton";
 
@@ -38,7 +39,16 @@ export function InPageLayout({
 
       {/* Article Content */}
       <div className="mb-16 flex-1 overflow-y-auto bg-white px-8 py-8 dark:bg-gray-800">
-        <div className="mx-auto max-w-3xl [&_h1]:py-2 [&_h1]:font-bold [&_h1]:text-2xl [&_h2]:mt-6 [&_h2]:py-1 [&_h2]:font-bold [&_h2]:text-xl [&_p]:py-2">
+        <div
+          className={clsx(
+            "mx-auto max-w-3xl",
+            "[&_h1]:py-2 [&_h1]:font-bold [&_h1]:text-2xl",
+            "[&_h2]:mt-6 [&_h2]:py-1 [&_h2]:font-bold [&_h2]:text-xl",
+            "[&_p]:py-2",
+            "[&_a]:underline [&_a]:hover:no-underline",
+            "[&_dd]:px-4 [&_dd]:py-2 [&_dt]:pt-4 [&_dt]:font-bold",
+          )}
+        >
           {children}
         </div>
       </div>
