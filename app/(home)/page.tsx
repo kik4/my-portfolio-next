@@ -17,7 +17,6 @@ import { clsx } from "clsx";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { MyLink } from "../_components/MyLink";
-import { baseUrl } from "../_lib/url";
 import { getPathToDijkstra } from "../dijkstra/getPath";
 import { AnimateOnScroll } from "./_components/AnimateOnScroll";
 import { WavyBackground } from "./_components/WavyBackground";
@@ -34,7 +33,7 @@ import projectS from "./_img/projectS.jpg";
 export const metadata: Metadata = {
   // タイトルと説明はルートの layout.tsx 側で設定
   alternates: {
-    canonical: baseUrl,
+    canonical: "/",
   },
 };
 
