@@ -44,6 +44,18 @@ export default async function OgImage({ params }: Props) {
     notFound();
   }
 
+  // タイトルと説明を省略
+  const maxTitleLength = 30;
+  const maxDescriptionLength = 60;
+  const title =
+    content.title.length > maxTitleLength
+      ? `${content.title.slice(0, maxTitleLength)}...`
+      : content.title;
+  const description =
+    content.description.length > maxDescriptionLength
+      ? `${content.description.slice(0, maxDescriptionLength)}...`
+      : content.description;
+
   // アイコン画像を読み込み
   const iconPath = join(
     process.cwd(),
@@ -167,7 +179,7 @@ export default async function OgImage({ params }: Props) {
               lineHeight: 1.1,
             }}
           >
-            {content.title}
+            {title}
           </h1>
 
           {/* 記事説明 */}
@@ -180,7 +192,7 @@ export default async function OgImage({ params }: Props) {
               lineHeight: 1.4,
             }}
           >
-            {content.description}
+            {description}
           </div>
         </div>
       </div>
