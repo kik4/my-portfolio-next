@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${content.title} | ${algorithmPageTitle} | kik4.work`,
-    description: `${content.description} | TypeScriptでアルゴリズムを書く方法を実例コードと共に解説します。 | kik4.work - フロントエンドエンジニアkik4のサイト`,
+    description: `${content.description} | TypeScriptでアルゴリズムを書く方法を実例コードと実際に実行可能な環境と共に解説します。 | kik4.work - フロントエンドエンジニアkik4のサイト`,
     alternates: {
       canonical: `${baseUrl}/algorithm/${slug}`,
     },
