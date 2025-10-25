@@ -3,8 +3,9 @@ import type { AlgorithmContent } from "../_lib/types";
 
 export const removeDuplicates: AlgorithmContent = {
   slug: "remove-duplicates",
-  title: "重複の削除",
-  description: "配列やリストから重複要素を削除する方法",
+  title: "重複の削除と検出/SetとMap",
+  description:
+    "配列やリストから重複要素を削除する方法や検出などのSetとMapの活用例",
   createdAt: "2025-10-25",
   updatedAt: "2025-10-25",
   content: (
