@@ -30,7 +30,7 @@ export function Header({ isHome = false }: { isHome?: boolean }) {
             href={getPathToAlgorithm()}
             className="hidden font-medium text-foreground/80 transition hover:text-foreground hover:underline md:block"
           >
-            Algorithm
+            Tech Articles
           </MyLink>
         </div>
         <div className="flex items-center gap-4">
