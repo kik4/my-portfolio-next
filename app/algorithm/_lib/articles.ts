@@ -2,6 +2,7 @@ import { twoDArrayYXProblem } from "../_contents/2d-array-yx-problem";
 import { bitsManipulation } from "../_contents/bits-manipulation";
 import { dateObject } from "../_contents/date-object";
 import { gettingStarted } from "../_contents/getting-started";
+import { loopTechniques } from "../_contents/loop-techniques";
 import { removeDuplicates } from "../_contents/remove-duplicates";
 import { sortAlgorithm } from "../_contents/sort-algorithm";
 import { sortMethod } from "../_contents/sort-method";
@@ -19,6 +20,7 @@ export const sections: Section[] = [
       removeDuplicates,
       sortMethod,
       sortAlgorithm,
+      loopTechniques,
     ],
   },
 ];

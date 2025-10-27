@@ -99,6 +99,9 @@ export function CodeEditor({
       const originalLog = console.log;
       const originalError = console.error;
       const originalWarn = console.warn;
+      const originalTime = console.time;
+      const originalTimeEnd = console.timeEnd;
+      const timers = new Map<string, number>();
 
       console.log = (...args: unknown[]) => {
         logs.push(
@@ -123,6 +126,23 @@ export function CodeEditor({
         originalWarn(...args);
       };
 
+      console.time = (label?: string) => {
+        const timerLabel = label || "default";
+        timers.set(timerLabel, performance.now());
+        originalTime(timerLabel);
+      };
+
+      console.timeEnd = (label?: string) => {
+        const timerLabel = label || "default";
+        const startTime = timers.get(timerLabel);
+        if (startTime !== undefined) {
+          const duration = performance.now() - startTime;
+          logs.push(`${timerLabel}: ${duration.toFixed(3)}ms`);
+          timers.delete(timerLabel);
+        }
+        originalTimeEnd(timerLabel);
+      };
+
       try {
         // eslint-disable-next-line no-new-func
         const func = new Function(compiledJS);
@@ -141,6 +161,8 @@ export function CodeEditor({
         console.log = originalLog;
         console.error = originalError;
         console.warn = originalWarn;
+        console.time = originalTime;
+        console.timeEnd = originalTimeEnd;
       }
 
       setOutput(logs);

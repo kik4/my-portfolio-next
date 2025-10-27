@@ -47,6 +47,7 @@ export function InPageLayout({
             "[&_p]:py-2",
             "[&_a]:underline [&_a]:hover:no-underline",
             "[&_dd]:px-4 [&_dd]:py-2 [&_dt]:pt-4 [&_dt]:font-bold",
+            "[&_li]:mb-1 [&_li]:list-disc",
           )}
         >
           {children}
