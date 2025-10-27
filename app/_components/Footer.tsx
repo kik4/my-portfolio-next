@@ -1,7 +1,7 @@
 import { faGithub, faXTwitter } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Image from "next/image";
-import icon from "@/app/_img/icon_400x400.jpg";
+import icon from "../(home)/_img/icon_400x400.jpg";
 import { getPathToHome } from "../(home)/getPath";
 import { getPathToAlgorithm } from "../algorithm/getPath";
 import { MyLink } from "./MyLink";
