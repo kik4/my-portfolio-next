@@ -17,9 +17,11 @@ import { clsx } from "clsx";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { MyLink } from "../_components/MyLink";
+import { getPathToAlgorithm } from "../algorithm/getPath";
 import { getPathToDijkstra } from "../dijkstra/getPath";
 import { AnimateOnScroll } from "./_components/AnimateOnScroll";
 import { WavyBackground } from "./_components/WavyBackground";
+import bannerArticles from "./_img/banner_articles.jpg";
 import icon from "./_img/icon_1024x1024.jpg";
 import projectDijkstra from "./_img/projectDijkstra.jpg";
 import projectF from "./_img/projectF.jpg";
@@ -608,7 +610,24 @@ export default function Home() {
             <h2 className="mb-16 text-center font-bold text-3xl">技術発信</h2>
           </AnimateOnScroll>
 
-          <AnimateOnScroll animation="slideUp" delay={0.1}>
+          <div className="mb-8 flex justify-center">
+            <AnimateOnScroll animation="slideUp" delay={0.1}>
+              <MyLink
+                className="hover:-translate-y-0.5 inline-block shadow-lg transition-all hover:shadow-2xl"
+                href={getPathToAlgorithm()}
+              >
+                <Image
+                  src={bannerArticles}
+                  width={480}
+                  height={240}
+                  className="rounded-lg border border-gray-400 object-cover"
+                  alt="技術記事 TypeScriptでアルゴリズム バナー"
+                />
+              </MyLink>
+            </AnimateOnScroll>
+          </div>
+
+          <AnimateOnScroll animation="slideUp" delay={0.2}>
             <div className="mx-auto max-w-4xl rounded-2xl bg-gradient-to-r from-blue-50 to-blue-100 p-8 shadow-lg dark:from-blue-800/50 dark:to-blue-700/50">
               <div className="flex flex-col items-center gap-6 md:flex-row">
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-black text-white shadow-lg">
@@ -647,7 +666,7 @@ export default function Home() {
             </div>
           </AnimateOnScroll>
 
-          <AnimateOnScroll animation="slideUp" delay={0.2}>
+          <AnimateOnScroll animation="slideUp" delay={0.3}>
             <div className="mx-auto mt-8 max-w-4xl rounded-2xl bg-gradient-to-r from-gray-50 to-gray-100 p-8 shadow-lg dark:from-gray-800/50 dark:to-gray-700/50">
               <div className="flex flex-col items-center gap-6 md:flex-row">
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-500 text-white shadow-lg">
