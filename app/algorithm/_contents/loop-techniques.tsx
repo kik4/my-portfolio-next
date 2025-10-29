@@ -7,7 +7,7 @@ export const loopTechniques: AlgorithmContent = {
   description:
     "TypeScriptで使える様々なループの書き方とその使い分けについて解説",
   createdAt: "2025-10-28",
-  updatedAt: "2025-10-28",
+  updatedAt: "2025-10-29",
   content: (
     <>
       <h2>TypeScriptの様々なループ</h2>
@@ -160,6 +160,7 @@ export const loopTechniques: AlgorithmContent = {
 
       <p>
         配列の各要素に対して関数を実行するメソッドです。コールバック関数を使うため、関数型プログラミングのスタイルに適しています。ただし、breakやcontinueが使えない点に注意が必要です。
+        非同期処理も期待通りに動かないため、業務ではあまり使われません。
       </p>
 
       <CodeEditor
@@ -320,10 +321,14 @@ export const loopTechniques: AlgorithmContent = {
         集計処理のreduceは非常に強力で、配列の要素を1つの値にまとめることができます。ただし複雑な処理を行う場合は可読性が低下することがあります。少しでも複雑な集計を行う場合は、for文を使うことを検討してください。
       </p>
 
+      <p>
+        ちなみにmapやsomeやeveryでもforEach的な処理を書くことが出来ますが、本来の目的と異なる書き方で可読性が低下するため避けた方が良いでしょう。
+      </p>
+
       <h2>ループの使い分け</h2>
 
       <p>
-        それぞれのループには適した使用場面があります。以下は私の考えるガイドラインです:
+        それぞれのループには適した使用場面があります。以下は私の考えるガイドラインです。
       </p>
 
       <ul>
@@ -344,7 +349,7 @@ export const loopTechniques: AlgorithmContent = {
         </li>
         <li>
           <b>while/do...while</b>:
-          条件が満たされるまで繰り返す場合。無限ループに注意しなければならないため、業務ではあまり使わない。
+          条件が満たされるまで繰り返す場合。無限ループに注意。
         </li>
         <li>
           <b>for...in</b>: キーの列挙ができるが、紛らわしいので避けたい。
@@ -395,7 +400,7 @@ export const loopTechniques: AlgorithmContent = {
       />
 
       <p>
-        基本的なforが一般的に最も高速と言われていますが、いかがでしたでしょうか？個人的には速度よりもfor...ofやmap/filterを使う方が可読性が高くて好みです。
+        基本的なforが一般的に最も高速と言われていますが、いかがでしたでしょうか？個人的には速度よりもfor...ofやmap/filterを使う方が可読性が高くて好みです。TypeScriptを使う場合、パフォーマンスが極めて重要なケースは限られているため、可読性を優先することが多いです。
       </p>
 
       <h2>まとめ</h2>
@@ -410,6 +415,55 @@ export const loopTechniques: AlgorithmContent = {
         一般的には、配列の値だけを使う場合はfor...ofを、新しい配列を作る場合はmap/filterを使うことが推奨されます。
         パフォーマンスが重要な場合は基本的なforループを検討してください。
       </p>
+
+      <p>最後に、個人的なループの重要度・利用度ランキングを書いておきます。</p>
+
+      <table className="mt-2 [&_td]:border [&_td]:border-white [&_td]:px-4 [&_td]:py-2 [&_th]:border [&_th]:border-white [&_th]:px-4">
+        <thead className="text-sm">
+          <tr>
+            <th>ループの種類</th>
+            <th>重要度</th>
+            <th>業務利用度</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>for...of</td>
+            <td>⭐⭐⭐</td>
+            <td>⭐⭐</td>
+          </tr>
+          <tr>
+            <td>基本的なfor</td>
+            <td>⭐⭐⭐</td>
+            <td>⭐</td>
+          </tr>
+          <tr>
+            <td>forEach</td>
+            <td>⭐</td>
+            <td>-</td>
+          </tr>
+          <tr>
+            <td>map/filter/find</td>
+            <td>⭐⭐⭐</td>
+            <td>⭐⭐⭐</td>
+          </tr>
+          <tr>
+            <td>reduce</td>
+            <td>⭐</td>
+            <td>⭐</td>
+          </tr>
+          <tr>
+            <td>while/do...while</td>
+            <td>⭐⭐</td>
+            <td>-</td>
+          </tr>
+          <tr>
+            <td>for...in</td>
+            <td>-</td>
+            <td>-</td>
+          </tr>
+        </tbody>
+      </table>
     </>
   ),
 };
