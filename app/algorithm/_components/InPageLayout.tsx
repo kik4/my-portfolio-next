@@ -1,6 +1,8 @@
 import clsx from "clsx";
 import type { ReactNode } from "react";
 import { DarkToggleButton } from "@/app/_components/DarkToggleButton";
+import { CopyLinkButton } from "./CopyLinkButton";
+import { XShareButton } from "./XShareButton";
 
 export function InPageLayout({
   children,
@@ -38,7 +40,7 @@ export function InPageLayout({
       </header>
 
       {/* Article Content */}
-      <div className="mb-16 flex-1 overflow-y-auto bg-white px-8 py-8 dark:bg-gray-800">
+      <div className="mb-8 flex-1 overflow-y-auto bg-white px-8 pt-8 dark:bg-gray-800">
         <div
           className={clsx(
             "mx-auto max-w-3xl",
@@ -53,6 +55,12 @@ export function InPageLayout({
           {children}
         </div>
       </div>
+
+      {/* Article Footer */}
+      <footer className="mx-auto mb-16 flex max-w-3xl items-center gap-4 text-sm">
+        <CopyLinkButton />
+        <XShareButton />
+      </footer>
     </article>
   );
 }
