@@ -1,6 +1,7 @@
 import { twoDArrayYXProblem } from "../_contents/2d-array-yx-problem";
 import { bitsManipulation } from "../_contents/bits-manipulation";
 import { dateObject } from "../_contents/date-object";
+import { dijkstraAlgorithm } from "../_contents/dijkstra-algorithm";
 import { gettingStarted } from "../_contents/getting-started";
 import { loopTechniques } from "../_contents/loop-techniques";
 import { removeDuplicates } from "../_contents/remove-duplicates";
@@ -22,5 +23,10 @@ export const sections: Section[] = [
       sortAlgorithm,
       loopTechniques,
     ],
+  },
+  {
+    id: "graph-theory",
+    title: "グラフ理論",
+    items: [dijkstraAlgorithm],
   },
 ];

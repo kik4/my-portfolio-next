@@ -19,7 +19,9 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const content = sections[0].items.find((item) => item.slug === slug);
+  const content = sections
+    .flatMap((s) => s.items)
+    .find((item) => item.slug === slug);
 
   if (!content) {
     return {};
@@ -36,7 +38,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function Page({ params }: Props) {
   const { slug } = await params;
-  const content = sections[0].items.find((item) => item.slug === slug);
+  const content = sections
+    .flatMap((s) => s.items)
+    .find((item) => item.slug === slug);
 
   if (!content) {
     notFound();

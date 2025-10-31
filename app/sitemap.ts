@@ -15,9 +15,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
     },
     // Algorithm section
-    ...sections[0].items.map((content) => ({
-      url: `${baseUrl}${getPathToAlgorithmArticle(content.slug)}`,
-      lastModified: new Date(),
-    })),
+    ...sections.flatMap((section) =>
+      section.items.map((content) => ({
+        url: `${baseUrl}${getPathToAlgorithmArticle(content.slug)}`,
+        lastModified: new Date(),
+      })),
+    ),
   ];
 }
