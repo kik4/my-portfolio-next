@@ -25,8 +25,8 @@ export const sections: Section[] = [
     ],
   },
   {
-    id: "graph-theory",
-    title: "グラフ理論",
+    id: "algorithms",
+    title: "アルゴリズム",
     items: [dijkstraAlgorithm],
   },
 ];
