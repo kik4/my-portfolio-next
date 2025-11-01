@@ -5,6 +5,7 @@ import { dateObject } from "../_contents/date-object";
 import { dijkstraAlgorithm } from "../_contents/dijkstra-algorithm";
 import { gettingStarted } from "../_contents/getting-started";
 import { loopTechniques } from "../_contents/loop-techniques";
+import { priorityQueue } from "../_contents/priority-queue";
 import { removeDuplicates } from "../_contents/remove-duplicates";
 import { sortAlgorithm } from "../_contents/sort-algorithm";
 import { sortMethod } from "../_contents/sort-method";
@@ -28,6 +29,6 @@ export const sections: Section[] = [
   {
     id: "algorithms",
     title: "アルゴリズム",
-    items: [dijkstraAlgorithm, binarySearch],
+    items: [dijkstraAlgorithm, binarySearch, priorityQueue],
   },
 ];
