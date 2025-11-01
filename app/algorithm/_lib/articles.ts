@@ -1,4 +1,5 @@
 import { twoDArrayYXProblem } from "../_contents/2d-array-yx-problem";
+import { binarySearch } from "../_contents/binary-search";
 import { bitsManipulation } from "../_contents/bits-manipulation";
 import { dateObject } from "../_contents/date-object";
 import { dijkstraAlgorithm } from "../_contents/dijkstra-algorithm";
@@ -27,6 +28,6 @@ export const sections: Section[] = [
   {
     id: "algorithms",
     title: "アルゴリズム",
-    items: [dijkstraAlgorithm],
+    items: [dijkstraAlgorithm, binarySearch],
   },
 ];
