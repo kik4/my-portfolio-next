@@ -11,7 +11,7 @@ import clsx from "clsx";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { getPathToHome } from "../(home)/getPath";
-import { getPathToAlgorithm } from "../algorithm/getPath";
+import { getPathToTypeScript } from "../typescript/getPath";
 import { DarkToggleButton } from "./DarkToggleButton";
 import { MyLink } from "./MyLink";
 
@@ -90,7 +90,7 @@ export function MobileMenu() {
               Home
             </MyLink>
             <MyLink
-              href={getPathToAlgorithm()}
+              href={getPathToTypeScript()}
               className="rounded-lg px-4 py-3 font-medium transition hover:bg-gray-100 dark:hover:bg-gray-800"
               onClick={() => setIsOpen(false)}
             >

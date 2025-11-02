@@ -2,7 +2,7 @@ import { faGithub } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import clsx from "clsx";
 import { getPathToHome } from "../(home)/getPath";
-import { getPathToAlgorithm } from "../algorithm/getPath";
+import { getPathToTypeScript } from "../typescript/getPath";
 import { DarkToggleButton } from "./DarkToggleButton";
 import { MobileMenu } from "./MobileMenu";
 import { MyLink } from "./MyLink";
@@ -27,7 +27,7 @@ export function Header({ isHome = false }: { isHome?: boolean }) {
           </h1>
           {/* PC表示用のメニュー */}
           <MyLink
-            href={getPathToAlgorithm()}
+            href={getPathToTypeScript()}
             className="hidden font-medium text-foreground/80 transition hover:text-foreground hover:underline md:block"
           >
             Tech Articles

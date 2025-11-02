@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Image from "next/image";
 import icon from "../(home)/_img/icon_400x400.jpg";
 import { getPathToHome } from "../(home)/getPath";
-import { getPathToAlgorithm } from "../algorithm/getPath";
+import { getPathToTypeScript } from "../typescript/getPath";
 import { MyLink } from "./MyLink";
 
 export function Footer() {
@@ -34,7 +34,7 @@ export function Footer() {
               {[
                 { href: { pathname: getPathToHome() }, label: "ホーム" },
                 {
-                  href: { pathname: getPathToAlgorithm() },
+                  href: { pathname: getPathToTypeScript() },
                   label: "TypeScriptでアルゴリズム",
                 },
               ].map(({ href, label }) => (

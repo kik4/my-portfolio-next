@@ -17,8 +17,8 @@ import { clsx } from "clsx";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { MyLink } from "../_components/MyLink";
-import { getPathToAlgorithm } from "../algorithm/getPath";
 import { getPathToDijkstra } from "../dijkstra/getPath";
+import { getPathToTypeScript } from "../typescript/getPath";
 import { AnimateOnScroll } from "./_components/AnimateOnScroll";
 import { WavyBackground } from "./_components/WavyBackground";
 import bannerArticles from "./_img/banner_articles.jpg";
@@ -614,7 +614,7 @@ export default function Home() {
             <AnimateOnScroll animation="slideUp" delay={0.1}>
               <MyLink
                 className="hover:-translate-y-0.5 inline-block shadow-lg transition-all hover:shadow-2xl"
-                href={getPathToAlgorithm()}
+                href={getPathToTypeScript()}
               >
                 <Image
                   src={bannerArticles}

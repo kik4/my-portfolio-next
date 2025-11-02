@@ -6,7 +6,7 @@ import { Sidebar } from "./_components/Sidebar";
 import { SidebarLink } from "./_components/SidebarLink";
 import { sections } from "./_lib/articles";
 import { algorithmPageTitle } from "./_lib/consts";
-import { getPathToAlgorithm, getPathToAlgorithmArticle } from "./getPath";
+import { getPathToTypeScript, getPathToTypeScriptArticle } from "./getPath";
 
 // Revalidate layout every hour
 export const revalidate = 3600;
@@ -27,7 +27,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         <Sidebar>
           {/* コンテンツ */}
           <div className="p-6">
-            <MyLink href={getPathToAlgorithm()} className="mb-6 block">
+            <MyLink href={getPathToTypeScript()} className="mb-6 block">
               <h1 className="font-bold text-gray-900 text-medium dark:text-white">
                 {algorithmPageTitle}
               </h1>
@@ -41,9 +41,9 @@ export default function Layout({ children }: { children: ReactNode }) {
                   </h3>
                   <ul>
                     {section.items.map((item) => (
-                      <li key={getPathToAlgorithmArticle(item.slug)}>
+                      <li key={getPathToTypeScriptArticle(item.slug)}>
                         <SidebarLink
-                          href={getPathToAlgorithmArticle(item.slug)}
+                          href={getPathToTypeScriptArticle(item.slug)}
                         >
                           {item.title}
                         </SidebarLink>
