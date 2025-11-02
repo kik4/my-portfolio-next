@@ -30,7 +30,7 @@ export function Header({ isHome = false }: { isHome?: boolean }) {
             href={getPathToTypeScript()}
             className="hidden font-medium text-foreground/80 transition hover:text-foreground hover:underline md:block"
           >
-            Tech Articles
+            技術記事
           </MyLink>
         </div>
         <div className="flex items-center gap-4">
