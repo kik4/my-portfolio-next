@@ -7,7 +7,7 @@ export const loopTechniques: AlgorithmContent = {
   description:
     "TypeScriptで使える様々なループの書き方とその使い分けについて解説",
   createdAt: "2025-10-28",
-  updatedAt: "2025-10-29",
+  updatedAt: "2025-11-02",
   content: (
     <>
       <h2>TypeScriptの様々なループ</h2>
@@ -418,7 +418,7 @@ export const loopTechniques: AlgorithmContent = {
 
       <p>最後に、個人的なループの重要度・利用度ランキングを書いておきます。</p>
 
-      <table className="mt-2 [&_td]:border [&_td]:border-white [&_td]:px-4 [&_td]:py-2 [&_th]:border [&_th]:border-white [&_th]:px-4">
+      <table className="mt-2 **:border-gray-600 dark:**:border-white [&_td]:border [&_td]:px-4 [&_td]:py-2 [&_th]:border [&_th]:px-4">
         <thead className="text-sm">
           <tr>
             <th>ループの種類</th>
