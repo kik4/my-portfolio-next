@@ -8,7 +8,18 @@ import { sections } from "./_lib/articles";
 import { algorithmPageTitle } from "./_lib/consts";
 import { getPathToAlgorithm, getPathToAlgorithmArticle } from "./getPath";
 
+// Revalidate layout every hour
+export const revalidate = 3600;
+
 export default function Layout({ children }: { children: ReactNode }) {
+  const now = new Date();
+
+  // Filter sections to only show published articles
+  const publishedSections = sections.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => new Date(item.createdAt) <= now),
+  }));
+
   return (
     <>
       <div className="flex min-h-screen bg-white dark:bg-gray-800">
@@ -23,7 +34,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             </MyLink>
 
             <nav className="space-y-6">
-              {sections.map((section) => (
+              {publishedSections.map((section) => (
                 <div key={section.id}>
                   <h3 className="mb-2 font-semibold text-gray-700 text-sm uppercase tracking-wider dark:text-gray-300">
                     {section.title}

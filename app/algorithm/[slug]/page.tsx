@@ -11,6 +11,9 @@ type Props = {
   }>;
 };
 
+// Revalidate pages every hour
+export const revalidate = 3600;
+
 export async function generateStaticParams() {
   return sections[0].items.map((content) => ({
     slug: content.slug,
@@ -42,7 +45,8 @@ export default async function Page({ params }: Props) {
     .flatMap((s) => s.items)
     .find((item) => item.slug === slug);
 
-  if (!content) {
+  // Return 404 if content doesn't exist or hasn't been published yet
+  if (!content || new Date(content.createdAt) > new Date()) {
     notFound();
   }
 
