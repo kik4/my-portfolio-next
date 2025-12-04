@@ -57,16 +57,16 @@ export function CodeEditor({
 
   function handleEditorWillMount(monaco: typeof Monaco) {
     // Monaco Editorの設定
-    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-      target: monaco.languages.typescript.ScriptTarget.ES2020,
-      module: monaco.languages.typescript.ModuleKind.ESNext,
+    monaco.typescript.typescriptDefaults.setCompilerOptions({
+      target: monaco.typescript.ScriptTarget.ES2020,
+      module: monaco.typescript.ModuleKind.ESNext,
       lib: ["dom", "dom.iterable", "esnext"],
       strict: true,
       esModuleInterop: true,
       skipLibCheck: true,
       forceConsistentCasingInFileNames: true,
       allowNonTsExtensions: true,
-      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+      moduleResolution: monaco.typescript.ModuleResolutionKind.NodeJs,
     });
   }
 
