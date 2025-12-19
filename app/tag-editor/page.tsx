@@ -890,7 +890,7 @@ export default function TagEditor() {
                               }
                             }}
                           >
-                            <div className="relative flex w-32">
+                            <div className="relative flex min-w-32">
                               <input
                                 type="text"
                                 value={tag}
@@ -913,6 +913,9 @@ export default function TagEditor() {
                                     : "border-gray-300 bg-white focus:border-blue-500 focus:ring-blue-500"
                                 }`}
                                 placeholder="タグ"
+                                style={{
+                                  width: `${Math.max(tag.length * 8 + 40, 128)}px`,
+                                }}
                                 title={
                                   isDuplicateTag(group.tags, tag)
                                     ? "警告: このグループ内に同じタグが複数あります"
@@ -1249,7 +1252,7 @@ export default function TagEditor() {
                                       }
                                     }}
                                   >
-                                    <div className="relative flex w-24">
+                                    <div className="relative flex min-w-24">
                                       <input
                                         type="text"
                                         value={tag}
@@ -1278,6 +1281,9 @@ export default function TagEditor() {
                                             : "border-blue-300 bg-white focus:border-blue-500 focus:ring-blue-500"
                                         }`}
                                         placeholder="タグ"
+                                        style={{
+                                          width: `${Math.max(tag.length * 7 + 35, 96)}px`,
+                                        }}
                                         title={
                                           isDuplicateTag(group.tags, tag)
                                             ? "警告: このグループ内に同じタグが複数あります"
@@ -1559,7 +1565,7 @@ export default function TagEditor() {
                                       }
                                     }}
                                   >
-                                    <div className="relative flex w-24">
+                                    <div className="relative flex min-w-24">
                                       <input
                                         type="text"
                                         value={tag}
@@ -1588,6 +1594,9 @@ export default function TagEditor() {
                                             : "border-orange-300 bg-white focus:border-orange-500 focus:ring-orange-500"
                                         }`}
                                         placeholder="タグ"
+                                        style={{
+                                          width: `${Math.max(tag.length * 7 + 35, 96)}px`,
+                                        }}
                                         title={
                                           isDuplicateTag(group.tags, tag)
                                             ? "警告: このグループ内に同じタグが複数あります"
