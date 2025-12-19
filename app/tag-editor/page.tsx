@@ -26,6 +26,9 @@ interface TagData {
 }
 
 export default function TagEditor() {
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  // @ts-expect-error - dragCounter is used indirectly through setDragCounter
+  const [_dragCounter, setDragCounter] = useState(0);
   const [data, setData] = useState<TagData>({
     base: {
       groups: [
@@ -480,6 +483,91 @@ export default function TagEditor() {
     return tags.filter((t) => t === currentTag).length > 1;
   };
 
+  // Handle file drop
+  const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingFile(false);
+    setDragCounter(0);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    const fileExtension = file.name.split(".").pop()?.toLowerCase();
+
+    if (fileExtension === "json") {
+      // Handle JSON file
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const content = event.target?.result as string;
+          const parsed = JSON.parse(content);
+          setData(parsed);
+          setFileName(file.name);
+        } catch (_error) {
+          alert("JSONファイルの読み込みに失敗しました");
+        }
+      };
+      reader.readAsText(file);
+    } else if (fileExtension === "txt") {
+      // Handle TXT file (output file)
+      const confirmed = window.confirm(
+        "Outputファイルを読み込むと、既存のBase GroupsとOutputsがすべて削除されます。よろしいですか？",
+      );
+
+      if (!confirmed) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const content = event.target?.result as string;
+          const tags = content
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter((tag) => tag.length > 0);
+
+          setData({
+            base: {
+              groups: [
+                {
+                  name: file.name.replace(/\.[^/.]+$/, ""),
+                  tags: tags,
+                },
+              ],
+            },
+            outputs: [],
+          });
+          setFileName(file.name);
+        } catch (_error) {
+          alert("ファイルの読み込みに失敗しました");
+        }
+      };
+      reader.readAsText(file);
+    } else {
+      alert("JSONファイルまたはTXTファイルをドロップしてください");
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragCounter((prev) => prev + 1);
+    setIsDraggingFile(true);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragCounter((prev) => {
+      const newCounter = prev - 1;
+      if (newCounter === 0) {
+        setIsDraggingFile(false);
+      }
+      return newCounter;
+    });
+  };
+
   // Helper function: Render preview with duplicate highlighting
   const renderPreviewWithDuplicates = (
     baseGroups: TagGroup[],
@@ -558,8 +646,25 @@ export default function TagEditor() {
       </header>
 
       <div className="mx-auto max-w-6xl p-8">
-        <div className="mb-6 rounded-lg bg-white p-6 shadow-md">
+        <div
+          className={`mb-6 rounded-lg p-6 shadow-md transition-colors ${
+            isDraggingFile
+              ? "border-4 border-blue-500 border-dashed bg-blue-50"
+              : "bg-white"
+          }`}
+          onDrop={handleFileDrop}
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+        >
           <h2 className="mb-4 font-semibold text-xl">ファイル操作</h2>
+          {isDraggingFile && (
+            <div className="mb-4 rounded border-2 border-blue-400 border-dashed bg-blue-100 p-4 text-center">
+              <p className="font-semibold text-blue-600">
+                ここにJSONファイルまたはTXTファイルをドロップ
+              </p>
+            </div>
+          )}
           <div className="flex flex-wrap gap-4">
             <label className="cursor-pointer rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600">
               JSONファイルを読み込む
