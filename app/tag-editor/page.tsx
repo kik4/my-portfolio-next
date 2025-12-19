@@ -480,22 +480,38 @@ export default function TagEditor() {
     return tags.filter((t) => t === currentTag).length > 1;
   };
 
-  // Helper function: Calculate preview tags
-  const calculatePreviewTags = (
+  // Helper function: Render preview with duplicate highlighting
+  const renderPreviewWithDuplicates = (
     baseGroups: TagGroup[],
     outputGroups?: TagGroup[],
     negativeGroups?: TagGroup[],
-  ): string => {
+  ): React.ReactNode => {
     const baseTags = baseGroups
       .flatMap((group) => group.tags)
       .filter((t) => t.trim());
 
     if (!outputGroups && !negativeGroups) {
-      // Base Groups only
-      return baseTags.join(", ");
+      // Base Groups only - check for duplicates
+      const tagCounts = new Map<string, number>();
+      baseTags.forEach((tag) => {
+        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+      });
+
+      return baseTags.map((tag, index) => (
+        <span key={index}>
+          {index > 0 && ", "}
+          <span
+            className={
+              (tagCounts.get(tag) || 0) > 1 ? "font-semibold text-red-600" : ""
+            }
+          >
+            {tag}
+          </span>
+        </span>
+      ));
     }
 
-    // Output preview
+    // Output preview - check for duplicates
     const outputGroupTags = (outputGroups || [])
       .flatMap((group) => group.tags)
       .filter((t) => t.trim());
@@ -506,7 +522,24 @@ export default function TagEditor() {
     const finalTags = allPositiveTags.filter(
       (tag) => !negativeGroupTags.includes(tag),
     );
-    return finalTags.join(", ");
+
+    const tagCounts = new Map<string, number>();
+    finalTags.forEach((tag) => {
+      tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+    });
+
+    return finalTags.map((tag, index) => (
+      <span key={index}>
+        {index > 0 && ", "}
+        <span
+          className={
+            (tagCounts.get(tag) || 0) > 1 ? "font-semibold text-red-600" : ""
+          }
+        >
+          {tag}
+        </span>
+      </span>
+    ));
   };
 
   return (
@@ -796,7 +829,7 @@ export default function TagEditor() {
             </h3>
             <div className="rounded border border-gray-300 bg-white p-3">
               <code className="text-gray-700 text-xs">
-                {calculatePreviewTags(data.base.groups)}
+                {renderPreviewWithDuplicates(data.base.groups)}
               </code>
             </div>
           </div>
@@ -1477,7 +1510,7 @@ export default function TagEditor() {
                   </h3>
                   <div className="rounded border border-gray-300 bg-white p-3">
                     <code className="text-gray-700 text-xs">
-                      {calculatePreviewTags(
+                      {renderPreviewWithDuplicates(
                         data.base.groups,
                         output.groups,
                         output["negative-groups"],
