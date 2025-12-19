@@ -147,16 +147,20 @@ export default function TagEditor() {
 
   const downloadOutputs = () => {
     data.outputs.forEach((output) => {
-      // base.groupsの全タグを取得
-      const baseTags = data.base.groups.flatMap((group) => group.tags);
+      // base.groupsの全タグを取得（空のタグを除外）
+      const baseTags = data.base.groups
+        .flatMap((group) => group.tags)
+        .filter((tag) => tag.trim());
 
-      // outputのgroupsのタグを取得
-      const outputGroupTags = output.groups.flatMap((group) => group.tags);
+      // outputのgroupsのタグを取得（空のタグを除外）
+      const outputGroupTags = output.groups
+        .flatMap((group) => group.tags)
+        .filter((tag) => tag.trim());
 
-      // negative-groupsのタグを取得
-      const negativeGroupTags = output["negative-groups"].flatMap(
-        (group) => group.tags,
-      );
+      // negative-groupsのタグを取得（空のタグを除外）
+      const negativeGroupTags = output["negative-groups"]
+        .flatMap((group) => group.tags)
+        .filter((tag) => tag.trim());
 
       // baseタグとoutputタグを結合
       const allPositiveTags = [...baseTags, ...outputGroupTags];
@@ -470,6 +474,41 @@ export default function TagEditor() {
     setData({ ...data, outputs: newOutputs });
   };
 
+  // Helper function: Check if tag is duplicate in group
+  const isDuplicateTag = (tags: string[], currentTag: string): boolean => {
+    if (!currentTag) return false;
+    return tags.filter((t) => t === currentTag).length > 1;
+  };
+
+  // Helper function: Calculate preview tags
+  const calculatePreviewTags = (
+    baseGroups: TagGroup[],
+    outputGroups?: TagGroup[],
+    negativeGroups?: TagGroup[],
+  ): string => {
+    const baseTags = baseGroups
+      .flatMap((group) => group.tags)
+      .filter((t) => t.trim());
+
+    if (!outputGroups && !negativeGroups) {
+      // Base Groups only
+      return baseTags.join(", ");
+    }
+
+    // Output preview
+    const outputGroupTags = (outputGroups || [])
+      .flatMap((group) => group.tags)
+      .filter((t) => t.trim());
+    const negativeGroupTags = (negativeGroups || [])
+      .flatMap((group) => group.tags)
+      .filter((t) => t.trim());
+    const allPositiveTags = [...baseTags, ...outputGroupTags];
+    const finalTags = allPositiveTags.filter(
+      (tag) => !negativeGroupTags.includes(tag),
+    );
+    return finalTags.join(", ");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-700">
       <header className="border-b bg-white">
@@ -703,14 +742,20 @@ export default function TagEditor() {
                                   e.target.value,
                                 )
                               }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  addTagToBaseGroup(groupIndex);
+                                }
+                              }}
                               className={`w-full cursor-move rounded border py-1 pr-7 pl-2 text-sm shadow-sm focus:outline-none focus:ring-1 ${
-                                group.tags.filter((t) => t === tag).length > 1
+                                isDuplicateTag(group.tags, tag)
                                   ? "border-yellow-500 bg-yellow-100 focus:border-yellow-600 focus:ring-yellow-500"
                                   : "border-gray-300 bg-white focus:border-blue-500 focus:ring-blue-500"
                               }`}
                               placeholder="タグ"
                               title={
-                                group.tags.filter((t) => t === tag).length > 1
+                                isDuplicateTag(group.tags, tag)
                                   ? "警告: このグループ内に同じタグが複数あります"
                                   : ""
                               }
@@ -721,6 +766,7 @@ export default function TagEditor() {
                                 deleteBaseTag(groupIndex, tagIndex)
                               }
                               className="absolute top-0 right-0 flex h-full items-center justify-center rounded-r bg-red-400 px-1.5 text-sm text-white hover:bg-red-500"
+                              aria-label="タグを削除"
                             >
                               ×
                             </button>
@@ -741,7 +787,7 @@ export default function TagEditor() {
             </h3>
             <div className="rounded border border-gray-300 bg-white p-3">
               <code className="text-gray-700 text-xs">
-                {data.base.groups.flatMap((group) => group.tags).join(", ")}
+                {calculatePreviewTags(data.base.groups)}
               </code>
             </div>
           </div>
@@ -1036,16 +1082,24 @@ export default function TagEditor() {
                                         e.target.value,
                                       )
                                     }
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        addTagToOutputGroup(
+                                          outputIndex,
+                                          "groups",
+                                          groupIndex,
+                                        );
+                                      }
+                                    }}
                                     className={`w-full cursor-move rounded border py-1 pr-6 pl-2 text-xs shadow-sm focus:outline-none focus:ring-1 ${
-                                      group.tags.filter((t) => t === tag)
-                                        .length > 1
+                                      isDuplicateTag(group.tags, tag)
                                         ? "border-yellow-500 bg-yellow-100 focus:border-yellow-600 focus:ring-yellow-500"
                                         : "border-blue-300 bg-white focus:border-blue-500 focus:ring-blue-500"
                                     }`}
                                     placeholder="タグ"
                                     title={
-                                      group.tags.filter((t) => t === tag)
-                                        .length > 1
+                                      isDuplicateTag(group.tags, tag)
                                         ? "警告: このグループ内に同じタグが複数あります"
                                         : ""
                                     }
@@ -1061,6 +1115,7 @@ export default function TagEditor() {
                                       )
                                     }
                                     className="absolute top-0 right-0 flex h-full items-center justify-center rounded-r bg-red-300 px-1 text-white text-xs hover:bg-red-400"
+                                    aria-label="タグを削除"
                                   >
                                     ×
                                   </button>
@@ -1327,16 +1382,24 @@ export default function TagEditor() {
                                         e.target.value,
                                       )
                                     }
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        addTagToOutputGroup(
+                                          outputIndex,
+                                          "negative-groups",
+                                          groupIndex,
+                                        );
+                                      }
+                                    }}
                                     className={`w-full cursor-move rounded border py-1 pr-6 pl-2 text-xs shadow-sm focus:outline-none focus:ring-1 ${
-                                      group.tags.filter((t) => t === tag)
-                                        .length > 1
+                                      isDuplicateTag(group.tags, tag)
                                         ? "border-yellow-500 bg-yellow-100 focus:border-yellow-600 focus:ring-yellow-500"
                                         : "border-orange-300 bg-white focus:border-orange-500 focus:ring-orange-500"
                                     }`}
                                     placeholder="タグ"
                                     title={
-                                      group.tags.filter((t) => t === tag)
-                                        .length > 1
+                                      isDuplicateTag(group.tags, tag)
                                         ? "警告: このグループ内に同じタグが複数あります"
                                         : ""
                                     }
@@ -1352,6 +1415,7 @@ export default function TagEditor() {
                                       )
                                     }
                                     className="absolute top-0 right-0 flex h-full items-center justify-center rounded-r bg-red-300 px-1 text-white text-xs hover:bg-red-400"
+                                    aria-label="タグを削除"
                                   >
                                     ×
                                   </button>
@@ -1371,22 +1435,11 @@ export default function TagEditor() {
                 <h3 className="mb-2 font-semibold text-sm">出力プレビュー:</h3>
                 <div className="rounded border border-gray-300 bg-white p-3">
                   <code className="text-gray-700 text-xs">
-                    {(() => {
-                      const baseTags = data.base.groups.flatMap(
-                        (group) => group.tags,
-                      );
-                      const outputGroupTags = output.groups.flatMap(
-                        (group) => group.tags,
-                      );
-                      const negativeGroupTags = output[
-                        "negative-groups"
-                      ].flatMap((group) => group.tags);
-                      const allPositiveTags = [...baseTags, ...outputGroupTags];
-                      const finalTags = allPositiveTags.filter(
-                        (tag) => !negativeGroupTags.includes(tag),
-                      );
-                      return finalTags.join(", ");
-                    })()}
+                    {calculatePreviewTags(
+                      data.base.groups,
+                      output.groups,
+                      output["negative-groups"],
+                    )}
                   </code>
                 </div>
               </div>
