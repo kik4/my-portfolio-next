@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: <for utility> */
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
 /** biome-ignore-all lint/suspicious/noExplicitAny: <for utility> */
 "use client";
 
@@ -205,6 +206,13 @@ export default function TagEditor() {
     });
   };
 
+  const reorderBaseGroup = (fromIndex: number, toIndex: number) => {
+    const newGroups = [...data.base.groups];
+    const [removed] = newGroups.splice(fromIndex, 1);
+    newGroups.splice(toIndex, 0, removed);
+    setData({ ...data, base: { groups: newGroups } });
+  };
+
   const addTagToBaseGroup = (groupIndex: number) => {
     const newGroups = [...data.base.groups];
     newGroups[groupIndex].tags.push("");
@@ -226,6 +234,26 @@ export default function TagEditor() {
     newGroups[groupIndex].tags = newGroups[groupIndex].tags.filter(
       (_, i) => i !== tagIndex,
     );
+    setData({ ...data, base: { groups: newGroups } });
+  };
+
+  const moveBaseTag = (
+    fromGroupIndex: number,
+    fromTagIndex: number,
+    toGroupIndex: number,
+    toTagIndex: number,
+  ) => {
+    const newGroups = [...data.base.groups];
+
+    // タグを取得して削除
+    const tag = newGroups[fromGroupIndex].tags[fromTagIndex];
+    newGroups[fromGroupIndex].tags = newGroups[fromGroupIndex].tags.filter(
+      (_, i) => i !== fromTagIndex,
+    );
+
+    // 移動先に挿入
+    newGroups[toGroupIndex].tags.splice(toTagIndex, 0, tag);
+
     setData({ ...data, base: { groups: newGroups } });
   };
 
@@ -288,6 +316,20 @@ export default function TagEditor() {
     setData({ ...data, outputs: newOutputs });
   };
 
+  const reorderOutputGroup = (
+    outputIndex: number,
+    type: "groups" | "negative-groups",
+    fromIndex: number,
+    toIndex: number,
+  ) => {
+    const newOutputs = [...data.outputs];
+    const groups = [...newOutputs[outputIndex][type]];
+    const [removed] = groups.splice(fromIndex, 1);
+    groups.splice(toIndex, 0, removed);
+    newOutputs[outputIndex][type] = groups;
+    setData({ ...data, outputs: newOutputs });
+  };
+
   const addTagToOutputGroup = (
     outputIndex: number,
     type: "groups" | "negative-groups",
@@ -320,6 +362,111 @@ export default function TagEditor() {
     newOutputs[outputIndex][type][groupIndex].tags = newOutputs[outputIndex][
       type
     ][groupIndex].tags.filter((_, i) => i !== tagIndex);
+    setData({ ...data, outputs: newOutputs });
+  };
+
+  const moveOutputTag = (
+    outputIndex: number,
+    type: "groups" | "negative-groups",
+    fromGroupIndex: number,
+    fromTagIndex: number,
+    toGroupIndex: number,
+    toTagIndex: number,
+  ) => {
+    const newOutputs = [...data.outputs];
+
+    // タグを取得して削除
+    const tag =
+      newOutputs[outputIndex][type][fromGroupIndex].tags[fromTagIndex];
+    newOutputs[outputIndex][type][fromGroupIndex].tags = newOutputs[
+      outputIndex
+    ][type][fromGroupIndex].tags.filter((_, i) => i !== fromTagIndex);
+
+    // 移動先に挿入
+    newOutputs[outputIndex][type][toGroupIndex].tags.splice(toTagIndex, 0, tag);
+
+    setData({ ...data, outputs: newOutputs });
+  };
+
+  // Base Groups から Output/Negative Groups へ移動
+  const moveTagFromBaseToOutput = (
+    fromGroupIndex: number,
+    fromTagIndex: number,
+    toOutputIndex: number,
+    toType: "groups" | "negative-groups",
+    toGroupIndex: number,
+    toTagIndex: number,
+  ) => {
+    const newGroups = [...data.base.groups];
+    const newOutputs = [...data.outputs];
+
+    // Base Groupsからタグを取得して削除
+    const tag = newGroups[fromGroupIndex].tags[fromTagIndex];
+    newGroups[fromGroupIndex].tags = newGroups[fromGroupIndex].tags.filter(
+      (_, i) => i !== fromTagIndex,
+    );
+
+    // Output/Negative Groupsに挿入
+    newOutputs[toOutputIndex][toType][toGroupIndex].tags.splice(
+      toTagIndex,
+      0,
+      tag,
+    );
+
+    setData({ ...data, base: { groups: newGroups }, outputs: newOutputs });
+  };
+
+  // Output/Negative Groups から Base Groups へ移動
+  const moveTagFromOutputToBase = (
+    fromOutputIndex: number,
+    fromType: "groups" | "negative-groups",
+    fromGroupIndex: number,
+    fromTagIndex: number,
+    toGroupIndex: number,
+    toTagIndex: number,
+  ) => {
+    const newGroups = [...data.base.groups];
+    const newOutputs = [...data.outputs];
+
+    // Output/Negative Groupsからタグを取得して削除
+    const tag =
+      newOutputs[fromOutputIndex][fromType][fromGroupIndex].tags[fromTagIndex];
+    newOutputs[fromOutputIndex][fromType][fromGroupIndex].tags = newOutputs[
+      fromOutputIndex
+    ][fromType][fromGroupIndex].tags.filter((_, i) => i !== fromTagIndex);
+
+    // Base Groupsに挿入
+    newGroups[toGroupIndex].tags.splice(toTagIndex, 0, tag);
+
+    setData({ ...data, base: { groups: newGroups }, outputs: newOutputs });
+  };
+
+  // Output/Negative Groups 間で移動
+  const moveTagBetweenOutputTypes = (
+    outputIndex: number,
+    fromType: "groups" | "negative-groups",
+    fromGroupIndex: number,
+    fromTagIndex: number,
+    toType: "groups" | "negative-groups",
+    toGroupIndex: number,
+    toTagIndex: number,
+  ) => {
+    const newOutputs = [...data.outputs];
+
+    // 元のグループからタグを取得して削除
+    const tag =
+      newOutputs[outputIndex][fromType][fromGroupIndex].tags[fromTagIndex];
+    newOutputs[outputIndex][fromType][fromGroupIndex].tags = newOutputs[
+      outputIndex
+    ][fromType][fromGroupIndex].tags.filter((_, i) => i !== fromTagIndex);
+
+    // 移動先に挿入
+    newOutputs[outputIndex][toType][toGroupIndex].tags.splice(
+      toTagIndex,
+      0,
+      tag,
+    );
+
     setData({ ...data, outputs: newOutputs });
   };
 
@@ -412,6 +559,24 @@ export default function TagEditor() {
                 />
                 <button
                   type="button"
+                  onClick={() => reorderBaseGroup(groupIndex, groupIndex - 1)}
+                  disabled={groupIndex === 0}
+                  className="rounded bg-gray-400 px-3 py-2 text-white hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  title="上に移動"
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  onClick={() => reorderBaseGroup(groupIndex, groupIndex + 1)}
+                  disabled={groupIndex === data.base.groups.length - 1}
+                  className="rounded bg-gray-400 px-3 py-2 text-white hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  title="下に移動"
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
                   onClick={() => deleteBaseGroup(groupIndex)}
                   className="rounded bg-red-500 px-3 py-2 text-white hover:bg-red-600"
                 >
@@ -430,27 +595,131 @@ export default function TagEditor() {
                     + タグ追加
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {group.tags.map((tag, tagIndex) => (
-                    <div key={tagIndex} className="flex gap-1">
-                      <input
-                        type="text"
-                        value={tag}
-                        onChange={(e) =>
-                          updateBaseTag(groupIndex, tagIndex, e.target.value)
-                        }
-                        className="w-32 rounded border border-gray-300 bg-white px-2 py-1 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        placeholder="タグ"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => deleteBaseTag(groupIndex, tagIndex)}
-                        className="rounded bg-red-400 px-2 py-1 text-sm text-white hover:bg-red-500"
-                      >
-                        ×
-                      </button>
+                <div
+                  className="min-h-[60px] rounded border-2 border-gray-300 border-dashed bg-gray-50 p-2 transition-colors hover:border-blue-400 hover:bg-blue-50"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    e.currentTarget.classList.add(
+                      "border-blue-500",
+                      "bg-blue-100",
+                    );
+                  }}
+                  onDragLeave={(e) => {
+                    e.currentTarget.classList.remove(
+                      "border-blue-500",
+                      "bg-blue-100",
+                    );
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove(
+                      "border-blue-500",
+                      "bg-blue-100",
+                    );
+                    const dragData = JSON.parse(
+                      e.dataTransfer.getData("text/plain"),
+                    );
+                    if (dragData.type === "base-tag") {
+                      // Base Groups内での移動
+                      moveBaseTag(
+                        dragData.groupIndex,
+                        dragData.tagIndex,
+                        groupIndex,
+                        group.tags.length,
+                      );
+                    } else if (dragData.dragType === "output-tag") {
+                      // Output/Negative GroupsからBase Groupsへの移動
+                      moveTagFromOutputToBase(
+                        dragData.outputIndex,
+                        dragData.type,
+                        dragData.groupIndex,
+                        dragData.tagIndex,
+                        groupIndex,
+                        group.tags.length,
+                      );
+                    }
+                  }}
+                >
+                  {group.tags.length === 0 ? (
+                    <div className="flex h-full items-center justify-center text-gray-400 text-sm">
+                      タグをここにドロップ
                     </div>
-                  ))}
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {group.tags.map((tag, tagIndex) => (
+                        <div
+                          key={tagIndex}
+                          className="flex gap-1"
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.effectAllowed = "move";
+                            e.dataTransfer.setData(
+                              "text/plain",
+                              JSON.stringify({
+                                type: "base-tag",
+                                groupIndex,
+                                tagIndex,
+                              }),
+                            );
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = "move";
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const dragData = JSON.parse(
+                              e.dataTransfer.getData("text/plain"),
+                            );
+                            if (dragData.type === "base-tag") {
+                              moveBaseTag(
+                                dragData.groupIndex,
+                                dragData.tagIndex,
+                                groupIndex,
+                                tagIndex,
+                              );
+                            } else if (dragData.dragType === "output-tag") {
+                              moveTagFromOutputToBase(
+                                dragData.outputIndex,
+                                dragData.type,
+                                dragData.groupIndex,
+                                dragData.tagIndex,
+                                groupIndex,
+                                tagIndex,
+                              );
+                            }
+                          }}
+                        >
+                          <div className="relative flex w-32">
+                            <input
+                              type="text"
+                              value={tag}
+                              onChange={(e) =>
+                                updateBaseTag(
+                                  groupIndex,
+                                  tagIndex,
+                                  e.target.value,
+                                )
+                              }
+                              className="w-full cursor-move rounded border border-gray-300 bg-white py-1 pr-7 pl-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              placeholder="タグ"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                deleteBaseTag(groupIndex, tagIndex)
+                              }
+                              className="absolute top-0 right-0 flex h-full items-center justify-center rounded-r bg-red-400 px-1.5 text-sm text-white hover:bg-red-500"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -537,6 +806,38 @@ export default function TagEditor() {
                       <button
                         type="button"
                         onClick={() =>
+                          reorderOutputGroup(
+                            outputIndex,
+                            "groups",
+                            groupIndex,
+                            groupIndex - 1,
+                          )
+                        }
+                        disabled={groupIndex === 0}
+                        className="rounded bg-gray-400 px-2 py-1 text-white text-xs hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        title="上に移動"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          reorderOutputGroup(
+                            outputIndex,
+                            "groups",
+                            groupIndex,
+                            groupIndex + 1,
+                          )
+                        }
+                        disabled={groupIndex === output.groups.length - 1}
+                        className="rounded bg-gray-400 px-2 py-1 text-white text-xs hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        title="下に移動"
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
                           deleteOutputGroup(outputIndex, "groups", groupIndex)
                         }
                         className="rounded bg-red-400 px-3 py-1 text-sm text-white hover:bg-red-500"
@@ -561,40 +862,181 @@ export default function TagEditor() {
                           + タグ
                         </button>
                       </div>
-                      <div className="flex flex-wrap gap-1">
-                        {group.tags.map((tag, tagIndex) => (
-                          <div key={tagIndex} className="flex gap-1">
-                            <input
-                              type="text"
-                              value={tag}
-                              onChange={(e) =>
-                                updateOutputTag(
-                                  outputIndex,
-                                  "groups",
-                                  groupIndex,
-                                  tagIndex,
-                                  e.target.value,
-                                )
-                              }
-                              className="w-24 rounded border border-blue-300 bg-white px-2 py-1 text-xs shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                              placeholder="タグ"
-                            />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                deleteOutputTag(
-                                  outputIndex,
-                                  "groups",
-                                  groupIndex,
-                                  tagIndex,
-                                )
-                              }
-                              className="rounded bg-red-300 px-2 py-1 text-white text-xs hover:bg-red-400"
-                            >
-                              ×
-                            </button>
+                      <div
+                        className="min-h-[50px] rounded border-2 border-blue-300 border-dashed bg-blue-50 p-2 transition-colors hover:border-blue-500 hover:bg-blue-100"
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = "move";
+                          e.currentTarget.classList.add(
+                            "!border-blue-600",
+                            "!bg-blue-200",
+                          );
+                        }}
+                        onDragLeave={(e) => {
+                          e.currentTarget.classList.remove(
+                            "!border-blue-600",
+                            "!bg-blue-200",
+                          );
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.remove(
+                            "!border-blue-600",
+                            "!bg-blue-200",
+                          );
+                          const dragData = JSON.parse(
+                            e.dataTransfer.getData("text/plain"),
+                          );
+                          if (dragData.type === "base-tag") {
+                            // Base GroupsからOutput Groupsへの移動
+                            moveTagFromBaseToOutput(
+                              dragData.groupIndex,
+                              dragData.tagIndex,
+                              outputIndex,
+                              "groups",
+                              groupIndex,
+                              group.tags.length,
+                            );
+                          } else if (
+                            dragData.dragType === "output-tag" &&
+                            dragData.outputIndex === outputIndex &&
+                            dragData.type === "groups"
+                          ) {
+                            // 同じOutput内のGroups間での移動
+                            moveOutputTag(
+                              outputIndex,
+                              "groups",
+                              dragData.groupIndex,
+                              dragData.tagIndex,
+                              groupIndex,
+                              group.tags.length,
+                            );
+                          } else if (
+                            dragData.dragType === "output-tag" &&
+                            dragData.outputIndex === outputIndex &&
+                            dragData.type === "negative-groups"
+                          ) {
+                            // Negative GroupsからGroupsへの移動
+                            moveTagBetweenOutputTypes(
+                              outputIndex,
+                              "negative-groups",
+                              dragData.groupIndex,
+                              dragData.tagIndex,
+                              "groups",
+                              groupIndex,
+                              group.tags.length,
+                            );
+                          }
+                        }}
+                      >
+                        {group.tags.length === 0 ? (
+                          <div className="flex h-full items-center justify-center text-blue-400 text-xs">
+                            タグをここにドロップ
                           </div>
-                        ))}
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {group.tags.map((tag, tagIndex) => (
+                              <div
+                                key={tagIndex}
+                                className="flex gap-1"
+                                draggable
+                                onDragStart={(e) => {
+                                  e.dataTransfer.effectAllowed = "move";
+                                  e.dataTransfer.setData(
+                                    "text/plain",
+                                    JSON.stringify({
+                                      dragType: "output-tag",
+                                      outputIndex,
+                                      type: "groups",
+                                      groupIndex,
+                                      tagIndex,
+                                    }),
+                                  );
+                                }}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.dataTransfer.dropEffect = "move";
+                                }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  const dragData = JSON.parse(
+                                    e.dataTransfer.getData("text/plain"),
+                                  );
+                                  if (dragData.type === "base-tag") {
+                                    moveTagFromBaseToOutput(
+                                      dragData.groupIndex,
+                                      dragData.tagIndex,
+                                      outputIndex,
+                                      "groups",
+                                      groupIndex,
+                                      tagIndex,
+                                    );
+                                  } else if (
+                                    dragData.dragType === "output-tag" &&
+                                    dragData.outputIndex === outputIndex &&
+                                    dragData.type === "groups"
+                                  ) {
+                                    moveOutputTag(
+                                      outputIndex,
+                                      "groups",
+                                      dragData.groupIndex,
+                                      dragData.tagIndex,
+                                      groupIndex,
+                                      tagIndex,
+                                    );
+                                  } else if (
+                                    dragData.dragType === "output-tag" &&
+                                    dragData.outputIndex === outputIndex &&
+                                    dragData.type === "negative-groups"
+                                  ) {
+                                    moveTagBetweenOutputTypes(
+                                      outputIndex,
+                                      "negative-groups",
+                                      dragData.groupIndex,
+                                      dragData.tagIndex,
+                                      "groups",
+                                      groupIndex,
+                                      tagIndex,
+                                    );
+                                  }
+                                }}
+                              >
+                                <div className="relative flex w-24">
+                                  <input
+                                    type="text"
+                                    value={tag}
+                                    onChange={(e) =>
+                                      updateOutputTag(
+                                        outputIndex,
+                                        "groups",
+                                        groupIndex,
+                                        tagIndex,
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="w-full cursor-move rounded border border-blue-300 bg-white py-1 pr-6 pl-2 text-xs shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    placeholder="タグ"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      deleteOutputTag(
+                                        outputIndex,
+                                        "groups",
+                                        groupIndex,
+                                        tagIndex,
+                                      )
+                                    }
+                                    className="absolute top-0 right-0 flex h-full items-center justify-center rounded-r bg-red-300 px-1 text-white text-xs hover:bg-red-400"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -638,6 +1080,40 @@ export default function TagEditor() {
                       <button
                         type="button"
                         onClick={() =>
+                          reorderOutputGroup(
+                            outputIndex,
+                            "negative-groups",
+                            groupIndex,
+                            groupIndex - 1,
+                          )
+                        }
+                        disabled={groupIndex === 0}
+                        className="rounded bg-gray-400 px-2 py-1 text-white text-xs hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        title="上に移動"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          reorderOutputGroup(
+                            outputIndex,
+                            "negative-groups",
+                            groupIndex,
+                            groupIndex + 1,
+                          )
+                        }
+                        disabled={
+                          groupIndex === output["negative-groups"].length - 1
+                        }
+                        className="rounded bg-gray-400 px-2 py-1 text-white text-xs hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        title="下に移動"
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
                           deleteOutputGroup(
                             outputIndex,
                             "negative-groups",
@@ -666,40 +1142,181 @@ export default function TagEditor() {
                           + タグ
                         </button>
                       </div>
-                      <div className="flex flex-wrap gap-1">
-                        {group.tags.map((tag, tagIndex) => (
-                          <div key={tagIndex} className="flex gap-1">
-                            <input
-                              type="text"
-                              value={tag}
-                              onChange={(e) =>
-                                updateOutputTag(
-                                  outputIndex,
-                                  "negative-groups",
-                                  groupIndex,
-                                  tagIndex,
-                                  e.target.value,
-                                )
-                              }
-                              className="w-24 rounded border border-orange-300 bg-white px-2 py-1 text-xs shadow-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                              placeholder="タグ"
-                            />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                deleteOutputTag(
-                                  outputIndex,
-                                  "negative-groups",
-                                  groupIndex,
-                                  tagIndex,
-                                )
-                              }
-                              className="rounded bg-red-300 px-2 py-1 text-white text-xs hover:bg-red-400"
-                            >
-                              ×
-                            </button>
+                      <div
+                        className="min-h-[50px] rounded border-2 border-orange-300 border-dashed bg-orange-50 p-2 transition-colors hover:border-orange-500 hover:bg-orange-100"
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = "move";
+                          e.currentTarget.classList.add(
+                            "!border-orange-600",
+                            "!bg-orange-200",
+                          );
+                        }}
+                        onDragLeave={(e) => {
+                          e.currentTarget.classList.remove(
+                            "!border-orange-600",
+                            "!bg-orange-200",
+                          );
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.remove(
+                            "!border-orange-600",
+                            "!bg-orange-200",
+                          );
+                          const dragData = JSON.parse(
+                            e.dataTransfer.getData("text/plain"),
+                          );
+                          if (dragData.type === "base-tag") {
+                            // Base GroupsからNegative Groupsへの移動
+                            moveTagFromBaseToOutput(
+                              dragData.groupIndex,
+                              dragData.tagIndex,
+                              outputIndex,
+                              "negative-groups",
+                              groupIndex,
+                              group.tags.length,
+                            );
+                          } else if (
+                            dragData.dragType === "output-tag" &&
+                            dragData.outputIndex === outputIndex &&
+                            dragData.type === "negative-groups"
+                          ) {
+                            // 同じOutput内のNegative Groups間での移動
+                            moveOutputTag(
+                              outputIndex,
+                              "negative-groups",
+                              dragData.groupIndex,
+                              dragData.tagIndex,
+                              groupIndex,
+                              group.tags.length,
+                            );
+                          } else if (
+                            dragData.dragType === "output-tag" &&
+                            dragData.outputIndex === outputIndex &&
+                            dragData.type === "groups"
+                          ) {
+                            // GroupsからNegative Groupsへの移動
+                            moveTagBetweenOutputTypes(
+                              outputIndex,
+                              "groups",
+                              dragData.groupIndex,
+                              dragData.tagIndex,
+                              "negative-groups",
+                              groupIndex,
+                              group.tags.length,
+                            );
+                          }
+                        }}
+                      >
+                        {group.tags.length === 0 ? (
+                          <div className="flex h-full items-center justify-center text-orange-400 text-xs">
+                            タグをここにドロップ
                           </div>
-                        ))}
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {group.tags.map((tag, tagIndex) => (
+                              <div
+                                key={tagIndex}
+                                className="flex gap-1"
+                                draggable
+                                onDragStart={(e) => {
+                                  e.dataTransfer.effectAllowed = "move";
+                                  e.dataTransfer.setData(
+                                    "text/plain",
+                                    JSON.stringify({
+                                      dragType: "output-tag",
+                                      outputIndex,
+                                      type: "negative-groups",
+                                      groupIndex,
+                                      tagIndex,
+                                    }),
+                                  );
+                                }}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.dataTransfer.dropEffect = "move";
+                                }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  const dragData = JSON.parse(
+                                    e.dataTransfer.getData("text/plain"),
+                                  );
+                                  if (dragData.type === "base-tag") {
+                                    moveTagFromBaseToOutput(
+                                      dragData.groupIndex,
+                                      dragData.tagIndex,
+                                      outputIndex,
+                                      "negative-groups",
+                                      groupIndex,
+                                      tagIndex,
+                                    );
+                                  } else if (
+                                    dragData.dragType === "output-tag" &&
+                                    dragData.outputIndex === outputIndex &&
+                                    dragData.type === "negative-groups"
+                                  ) {
+                                    moveOutputTag(
+                                      outputIndex,
+                                      "negative-groups",
+                                      dragData.groupIndex,
+                                      dragData.tagIndex,
+                                      groupIndex,
+                                      tagIndex,
+                                    );
+                                  } else if (
+                                    dragData.dragType === "output-tag" &&
+                                    dragData.outputIndex === outputIndex &&
+                                    dragData.type === "groups"
+                                  ) {
+                                    moveTagBetweenOutputTypes(
+                                      outputIndex,
+                                      "groups",
+                                      dragData.groupIndex,
+                                      dragData.tagIndex,
+                                      "negative-groups",
+                                      groupIndex,
+                                      tagIndex,
+                                    );
+                                  }
+                                }}
+                              >
+                                <div className="relative flex w-24">
+                                  <input
+                                    type="text"
+                                    value={tag}
+                                    onChange={(e) =>
+                                      updateOutputTag(
+                                        outputIndex,
+                                        "negative-groups",
+                                        groupIndex,
+                                        tagIndex,
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="w-full cursor-move rounded border border-orange-300 bg-white py-1 pr-6 pl-2 text-xs shadow-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                                    placeholder="タグ"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      deleteOutputTag(
+                                        outputIndex,
+                                        "negative-groups",
+                                        groupIndex,
+                                        tagIndex,
+                                      )
+                                    }
+                                    className="absolute top-0 right-0 flex h-full items-center justify-center rounded-r bg-red-300 px-1 text-white text-xs hover:bg-red-400"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
