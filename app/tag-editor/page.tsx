@@ -3,7 +3,7 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: <for utility> */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MyLink } from "../_components/MyLink";
 import { getPathToHome } from "../(home)/getPath";
 
@@ -25,47 +25,53 @@ interface TagData {
   outputs: Output[];
 }
 
+const STORAGE_KEY = "tag-editor-data";
+const INITIAL_DATA: TagData = {
+  base: {
+    groups: [],
+  },
+  outputs: [],
+};
+
 export default function TagEditor() {
   const [isDraggingFile, setIsDraggingFile] = useState(false);
-  // @ts-expect-error - dragCounter is used indirectly through setDragCounter
   const [_dragCounter, setDragCounter] = useState(0);
-  const [data, setData] = useState<TagData>({
-    base: {
-      groups: [
-        {
-          name: "Group 1",
-          tags: ["tag 1", "tag 2"],
-        },
-        {
-          name: "Group 2",
-          tags: ["tag 3", "tag 4", "tag 5"],
-        },
-      ],
-    },
-    outputs: [
-      {
-        filename: "1",
-        groups: [],
-        "negative-groups": [],
-      },
-      {
-        filename: "2",
-        groups: [
-          {
-            name: "Group 3",
-            tags: ["tag 6"],
-          },
-        ],
-        "negative-groups": [
-          {
-            name: "Negative Group 1",
-            tags: ["tag 1", "tag 4"],
-          },
-        ],
-      },
-    ],
-  });
+  const [data, setData] = useState<TagData>(INITIAL_DATA);
   const [fileName, setFileName] = useState<string>("");
+
+  // Load data from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setData(parsed);
+      }
+    } catch (error) {
+      console.error("Failed to load data from localStorage:", error);
+    }
+  }, []);
+
+  // Save data to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (error) {
+      console.error("Failed to save data to localStorage:", error);
+    }
+  }, [data]);
+
+  // Reset data to initial state
+  const handleReset = () => {
+    const confirmed = window.confirm(
+      "すべてのデータをリセットしますか？この操作は取り消せません。",
+    );
+    if (confirmed) {
+      setData(INITIAL_DATA);
+      setFileName("");
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -698,6 +704,13 @@ export default function TagEditor() {
               disabled={data.outputs.length === 0}
             >
               Output テキストファイルを出力
+            </button>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+            >
+              すべてリセット
             </button>
           </div>
           {fileName && (
