@@ -703,8 +703,17 @@ export default function TagEditor() {
                                   e.target.value,
                                 )
                               }
-                              className="w-full cursor-move rounded border border-gray-300 bg-white py-1 pr-7 pl-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className={`w-full cursor-move rounded border py-1 pr-7 pl-2 text-sm shadow-sm focus:outline-none focus:ring-1 ${
+                                group.tags.filter((t) => t === tag).length > 1
+                                  ? "border-yellow-500 bg-yellow-100 focus:border-yellow-600 focus:ring-yellow-500"
+                                  : "border-gray-300 bg-white focus:border-blue-500 focus:ring-blue-500"
+                              }`}
                               placeholder="タグ"
+                              title={
+                                group.tags.filter((t) => t === tag).length > 1
+                                  ? "警告: このグループ内に同じタグが複数あります"
+                                  : ""
+                              }
                             />
                             <button
                               type="button"
@@ -1027,8 +1036,19 @@ export default function TagEditor() {
                                         e.target.value,
                                       )
                                     }
-                                    className="w-full cursor-move rounded border border-blue-300 bg-white py-1 pr-6 pl-2 text-xs shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    className={`w-full cursor-move rounded border py-1 pr-6 pl-2 text-xs shadow-sm focus:outline-none focus:ring-1 ${
+                                      group.tags.filter((t) => t === tag)
+                                        .length > 1
+                                        ? "border-yellow-500 bg-yellow-100 focus:border-yellow-600 focus:ring-yellow-500"
+                                        : "border-blue-300 bg-white focus:border-blue-500 focus:ring-blue-500"
+                                    }`}
                                     placeholder="タグ"
+                                    title={
+                                      group.tags.filter((t) => t === tag)
+                                        .length > 1
+                                        ? "警告: このグループ内に同じタグが複数あります"
+                                        : ""
+                                    }
                                   />
                                   <button
                                     type="button"
@@ -1307,8 +1327,19 @@ export default function TagEditor() {
                                         e.target.value,
                                       )
                                     }
-                                    className="w-full cursor-move rounded border border-orange-300 bg-white py-1 pr-6 pl-2 text-xs shadow-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                                    className={`w-full cursor-move rounded border py-1 pr-6 pl-2 text-xs shadow-sm focus:outline-none focus:ring-1 ${
+                                      group.tags.filter((t) => t === tag)
+                                        .length > 1
+                                        ? "border-yellow-500 bg-yellow-100 focus:border-yellow-600 focus:ring-yellow-500"
+                                        : "border-orange-300 bg-white focus:border-orange-500 focus:ring-orange-500"
+                                    }`}
                                     placeholder="タグ"
+                                    title={
+                                      group.tags.filter((t) => t === tag)
+                                        .length > 1
+                                        ? "警告: このグループ内に同じタグが複数あります"
+                                        : ""
+                                    }
                                   />
                                   <button
                                     type="button"
