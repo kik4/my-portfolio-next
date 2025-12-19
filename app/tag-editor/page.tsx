@@ -83,6 +83,55 @@ export default function TagEditor() {
     event.target.value = "";
   };
 
+  const handleOutputFileUpload = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // 確認ダイアログを表示
+    const confirmed = window.confirm(
+      "Outputファイルを読み込むと、既存のBase GroupsとOutputsがすべて削除されます。よろしいですか？",
+    );
+
+    if (!confirmed) {
+      // キャンセルされた場合、input値をリセットして終了
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        // カンマで区切ってタグを抽出し、トリム
+        const tags = content
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter((tag) => tag.length > 0);
+
+        // base groupsとoutputsを新しいグループで置き換え（既存のものは残さない）
+        setData({
+          base: {
+            groups: [
+              {
+                name: file.name.replace(/\.[^/.]+$/, ""), // 拡張子を除いたファイル名をグループ名に
+                tags: tags,
+              },
+            ],
+          },
+          outputs: [],
+        });
+      } catch (_error) {
+        alert("ファイルの読み込みに失敗しました");
+      }
+    };
+    reader.readAsText(file);
+
+    // Reset the input value to allow the same file to be uploaded again
+    event.target.value = "";
+  };
+
   const downloadJSON = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], {
       type: "application/json",
@@ -309,6 +358,15 @@ export default function TagEditor() {
             >
               JSONファイルを保存
             </button>
+            <label className="cursor-pointer rounded bg-orange-500 px-4 py-2 text-white hover:bg-orange-600">
+              Outputファイルを読み込む
+              <input
+                type="file"
+                accept=".txt"
+                onChange={handleOutputFileUpload}
+                className="hidden"
+              />
+            </label>
             <button
               type="button"
               onClick={downloadOutputs}
