@@ -264,7 +264,7 @@ export default function Home() {
                 key={project.title}
                 animation="slideUp"
                 delay={index * 0.1}
-                className="hover:-translate-y-2 overflow-hidden rounded-lg bg-white shadow-lg transition-transform dark:bg-gray-50/20"
+                className="overflow-hidden rounded-lg bg-white shadow-lg transition-transform hover:-translate-y-2 dark:bg-gray-50/20"
               >
                 <div className="relative h-56">
                   <Image
@@ -318,7 +318,7 @@ export default function Home() {
           {/* 遊び心のプロジェクト */}
           <div className="mx-auto mt-16 max-w-2xl">
             <AnimateOnScroll animation="fadeIn">
-              <h3 className="mb-4 text-center font-medium text-gray-400 text-sm dark:text-gray-500">
+              <h3 className="mb-4 text-center font-medium text-gray-400 text-sm dark:text-gray-300">
                 + 遊び心のプロジェクト
               </h3>
             </AnimateOnScroll>
@@ -362,7 +362,7 @@ export default function Home() {
                   key={project.title}
                   animation="slideUp"
                   delay={index * 0.1}
-                  className="hover:-translate-y-1 overflow-hidden rounded-lg bg-white shadow-lg transition-transform dark:bg-gray-50/20"
+                  className="overflow-hidden rounded-lg bg-white shadow-lg transition-transform hover:-translate-y-1 dark:bg-gray-50/20"
                 >
                   <div className="group overflow-hidden rounded-lg border border-gray-200 bg-gray-50 shadow-lg transition-all hover:border-gray-300 hover:bg-white dark:border-gray-700/50 dark:bg-gray-800/30 dark:hover:border-gray-600 dark:hover:bg-gray-800/50">
                     <MyLink
@@ -391,7 +391,7 @@ export default function Home() {
                             >
                               {project.category}
                             </span>
-                            <span className="text-gray-400 text-xs dark:text-gray-500">
+                            <span className="text-gray-400 text-xs dark:text-gray-400">
                               {project.period}
                             </span>
                           </div>
@@ -410,7 +410,7 @@ export default function Home() {
                           </p>
                         </div>
                         <div className="flex items-center justify-between">
-                          <p className="text-gray-400 text-xs dark:text-gray-500">
+                          <p className="text-gray-400 text-xs dark:text-gray-400">
                             {project.tech}
                           </p>
                           <span
@@ -573,7 +573,7 @@ export default function Home() {
                 key={item.title}
                 animation="slideUp"
                 delay={index * 0.15}
-                className="hover:-translate-y-1 rounded-lg bg-white p-6 shadow-lg transition-transform dark:bg-gray-50/20"
+                className="rounded-lg bg-white p-6 shadow-lg transition-transform hover:-translate-y-1 dark:bg-gray-50/20"
               >
                 <div className="flex items-start gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
@@ -613,7 +613,7 @@ export default function Home() {
           <div className="mb-8 flex justify-center">
             <AnimateOnScroll animation="slideUp" delay={0.1}>
               <MyLink
-                className="hover:-translate-y-0.5 inline-block shadow-lg transition-all hover:shadow-2xl"
+                className="inline-block shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-2xl"
                 href={getPathToTypeScript()}
               >
                 <Image
@@ -800,7 +800,7 @@ export default function Home() {
                   key={value.title}
                   animation="slideUp"
                   delay={index * 0.1}
-                  className="hover:-translate-y-1 rounded-lg bg-zinc-100 p-6 shadow-lg transition-transform dark:bg-gray-50/20"
+                  className="rounded-lg bg-zinc-100 p-6 shadow-lg transition-transform hover:-translate-y-1 dark:bg-gray-50/20"
                 >
                   <div className="mb-4 text-center">
                     <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-50 text-2xl shadow-sm dark:bg-gray-800/50">
@@ -956,7 +956,7 @@ export default function Home() {
                   key={item.title}
                   animation="slideUp"
                   delay={index * 0.15}
-                  className={`hover:-translate-y-2 rounded-2xl bg-gradient-to-r ${item.color} p-6 shadow-lg transition-transform`}
+                  className={`rounded-2xl bg-gradient-to-r hover:-translate-y-2 ${item.color} p-6 shadow-lg transition-transform`}
                 >
                   <div className="mb-4 flex items-start gap-4">
                     <div
