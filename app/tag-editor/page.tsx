@@ -724,6 +724,18 @@ export default function TagEditor() {
               </div>
             </div>
           ))}
+
+          {/* Base Groups Preview */}
+          <div className="mt-6">
+            <h3 className="mb-2 font-semibold text-sm">
+              Base Groups プレビュー:
+            </h3>
+            <div className="rounded border border-gray-300 bg-white p-3">
+              <code className="text-gray-700 text-xs">
+                {data.base.groups.flatMap((group) => group.tags).join(", ")}
+              </code>
+            </div>
+          </div>
         </div>
 
         <div className="rounded-lg bg-white p-6 shadow-md">
@@ -1321,6 +1333,31 @@ export default function TagEditor() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Output Preview */}
+              <div className="mt-4">
+                <h3 className="mb-2 font-semibold text-sm">出力プレビュー:</h3>
+                <div className="rounded border border-gray-300 bg-white p-3">
+                  <code className="text-gray-700 text-xs">
+                    {(() => {
+                      const baseTags = data.base.groups.flatMap(
+                        (group) => group.tags,
+                      );
+                      const outputGroupTags = output.groups.flatMap(
+                        (group) => group.tags,
+                      );
+                      const negativeGroupTags = output[
+                        "negative-groups"
+                      ].flatMap((group) => group.tags);
+                      const allPositiveTags = [...baseTags, ...outputGroupTags];
+                      const finalTags = allPositiveTags.filter(
+                        (tag) => !negativeGroupTags.includes(tag),
+                      );
+                      return finalTags.join(", ");
+                    })()}
+                  </code>
+                </div>
               </div>
             </div>
           ))}
