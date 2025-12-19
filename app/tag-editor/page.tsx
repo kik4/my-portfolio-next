@@ -815,27 +815,72 @@ export default function TagEditor() {
                         "border-blue-500",
                         "bg-blue-100",
                       );
-                      const dragData = JSON.parse(
-                        e.dataTransfer.getData("text/plain"),
-                      );
-                      if (dragData.type === "base-tag") {
-                        // Base Groups内での移動
-                        moveBaseTag(
-                          dragData.groupIndex,
-                          dragData.tagIndex,
-                          groupIndex,
-                          group.tags.length,
+
+                      // Check if dropping a file
+                      const files = e.dataTransfer.files;
+                      if (files && files.length > 0) {
+                        const file = files[0];
+                        const fileExtension = file.name
+                          .split(".")
+                          .pop()
+                          ?.toLowerCase();
+
+                        if (fileExtension === "txt") {
+                          // Handle TXT file drop
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            try {
+                              const content = event.target?.result as string;
+                              const tags = content
+                                .split(",")
+                                .map((tag) => tag.trim())
+                                .filter((tag) => tag.length > 0);
+
+                              // Add tags to the current group
+                              const newGroups = [...data.base.groups];
+                              newGroups[groupIndex].tags = [
+                                ...newGroups[groupIndex].tags,
+                                ...tags,
+                              ];
+                              setData({ ...data, base: { groups: newGroups } });
+                            } catch (_error) {
+                              alert("ファイルの読み込みに失敗しました");
+                            }
+                          };
+                          reader.readAsText(file);
+                          return;
+                        } else {
+                          alert("TXTファイルをドロップしてください");
+                          return;
+                        }
+                      }
+
+                      // Handle tag drag and drop
+                      try {
+                        const dragData = JSON.parse(
+                          e.dataTransfer.getData("text/plain"),
                         );
-                      } else if (dragData.dragType === "output-tag") {
-                        // Output/Negative GroupsからBase Groupsへの移動
-                        moveTagFromOutputToBase(
-                          dragData.outputIndex,
-                          dragData.type,
-                          dragData.groupIndex,
-                          dragData.tagIndex,
-                          groupIndex,
-                          group.tags.length,
-                        );
+                        if (dragData.type === "base-tag") {
+                          // Base Groups内での移動
+                          moveBaseTag(
+                            dragData.groupIndex,
+                            dragData.tagIndex,
+                            groupIndex,
+                            group.tags.length,
+                          );
+                        } else if (dragData.dragType === "output-tag") {
+                          // Output/Negative GroupsからBase Groupsへの移動
+                          moveTagFromOutputToBase(
+                            dragData.outputIndex,
+                            dragData.type,
+                            dragData.groupIndex,
+                            dragData.tagIndex,
+                            groupIndex,
+                            group.tags.length,
+                          );
+                        }
+                      } catch (_error) {
+                        // If JSON parsing fails, it might be a file drop without proper handling
                       }
                     }}
                   >
@@ -868,25 +913,38 @@ export default function TagEditor() {
                             onDrop={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              const dragData = JSON.parse(
-                                e.dataTransfer.getData("text/plain"),
-                              );
-                              if (dragData.type === "base-tag") {
-                                moveBaseTag(
-                                  dragData.groupIndex,
-                                  dragData.tagIndex,
-                                  groupIndex,
-                                  tagIndex,
-                                );
-                              } else if (dragData.dragType === "output-tag") {
-                                moveTagFromOutputToBase(
-                                  dragData.outputIndex,
-                                  dragData.type,
-                                  dragData.groupIndex,
-                                  dragData.tagIndex,
-                                  groupIndex,
-                                  tagIndex,
-                                );
+
+                              // Check if dropping a file - if so, let parent handle it
+                              const files = e.dataTransfer.files;
+                              if (files && files.length > 0) {
+                                return; // Let the parent drop handler handle files
+                              }
+
+                              const dataText =
+                                e.dataTransfer.getData("text/plain");
+                              if (!dataText) return; // No data to parse
+
+                              try {
+                                const dragData = JSON.parse(dataText);
+                                if (dragData.type === "base-tag") {
+                                  moveBaseTag(
+                                    dragData.groupIndex,
+                                    dragData.tagIndex,
+                                    groupIndex,
+                                    tagIndex,
+                                  );
+                                } else if (dragData.dragType === "output-tag") {
+                                  moveTagFromOutputToBase(
+                                    dragData.outputIndex,
+                                    dragData.type,
+                                    dragData.groupIndex,
+                                    dragData.tagIndex,
+                                    groupIndex,
+                                    tagIndex,
+                                  );
+                                }
+                              } catch (_error) {
+                                // Invalid JSON, ignore
                               }
                             }}
                           >
