@@ -88,7 +88,7 @@ export const WavyBackground: React.FC = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="-z-10 absolute inset-0"
+      className="absolute inset-0 -z-10"
       style={{ pointerEvents: "none" }}
     />
   );

@@ -18,6 +18,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { MyLink } from "../_components/MyLink";
 import { getPathToDijkstra } from "../dijkstra/getPath";
+import { getPathToTagEditor } from "../tag-editor/getPath";
 import { getPathToTypeScript } from "../typescript/getPath";
 import { AnimateOnScroll } from "./_components/AnimateOnScroll";
 import { WavyBackground } from "./_components/WavyBackground";
@@ -31,6 +32,7 @@ import projectP from "./_img/projectP.jpg";
 import projectPf1 from "./_img/projectPf1.jpg";
 import projectPf2 from "./_img/projectPf2.jpg";
 import projectS from "./_img/projectS.jpg";
+import projectTagEditor from "./_img/tag-editor.jpg";
 
 export const metadata: Metadata = {
   // タイトルと説明はルートの layout.tsx 側で設定
@@ -324,6 +326,19 @@ export default function Home() {
             </AnimateOnScroll>
             <div className="flex flex-col gap-4">
               {[
+                {
+                  title: "タグエディター",
+                  category: "技術実験" as const,
+                  period: "2025",
+                  description:
+                    "JSONファイルでタググループを管理・編集できるWebアプリ。グループとタグの追加・編集・削除が可能で、カンマ区切りテキストファイルへの出力機能も搭載。",
+                  image: projectTagEditor,
+                  tech: ["Next.js", "React", "TypeScript", "TailwindCSS"].join(
+                    ", ",
+                  ),
+                  link: getPathToTagEditor(),
+                  linkIcon: faLink,
+                },
                 {
                   title: "ダイクストラ法ビジュアライザー",
                   category: "技術実験" as const,

@@ -1,0 +1,36 @@
+{
+  "base": {
+    "groups": [
+      {
+        "name": "Group 1",
+        "tags": ["tag 1", "tag 2"]
+      },
+      {
+        "name": "Group 2",
+        "tags": ["tag 3", "tag 4", "tag 5"]
+      }
+    ]
+  },
+  "outputs": [
+    {
+      "filename": "1",
+      "groups": [],
+      "negative-groups": []
+    },
+    {
+      "filename": "2",
+      "groups": [
+        {
+          "name": "Group 3",
+          "tags": ["tag 6"]
+        }
+      ],
+      "negative-groups": [
+        {
+          "name": "Negative Group 1",
+          "tags": ["tag 1", "tag 4"]
+        }
+      ]
+    }
+  ]
+}
