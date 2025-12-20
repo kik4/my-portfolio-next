@@ -180,72 +180,75 @@ export default function TagEditor() {
     });
   };
 
-  const addBaseGroup = () => {
-    setData({
-      ...data,
-      base: {
-        groups: [...data.base.groups, { name: "New Group", tags: [] }],
-      },
-    });
+  // Generic group operations
+  const addGroup = (groups: TagGroup[]): TagGroup[] => {
+    return [...groups, { name: "New Group", tags: [] }];
   };
 
-  const updateBaseGroup = (
+  const updateGroup = (
+    groups: TagGroup[],
     index: number,
     field: keyof TagGroup,
     value: any,
-  ) => {
-    const newGroups = [...data.base.groups];
+  ): TagGroup[] => {
+    const newGroups = [...groups];
     newGroups[index] = { ...newGroups[index], [field]: value };
-    setData({ ...data, base: { groups: newGroups } });
+    return newGroups;
   };
 
-  const deleteBaseGroup = (index: number) => {
-    setData({
-      ...data,
-      base: {
-        groups: data.base.groups.filter((_, i) => i !== index),
-      },
-    });
+  const deleteGroup = (groups: TagGroup[], index: number): TagGroup[] => {
+    return groups.filter((_, i) => i !== index);
   };
 
-  const reorderBaseGroup = (fromIndex: number, toIndex: number) => {
-    const newGroups = [...data.base.groups];
+  const reorderGroup = (
+    groups: TagGroup[],
+    fromIndex: number,
+    toIndex: number,
+  ): TagGroup[] => {
+    const newGroups = [...groups];
     const [removed] = newGroups.splice(fromIndex, 1);
     newGroups.splice(toIndex, 0, removed);
-    setData({ ...data, base: { groups: newGroups } });
+    return newGroups;
   };
 
-  const addTagToBaseGroup = (groupIndex: number) => {
-    const newGroups = [...data.base.groups];
+  // Generic tag operations
+  const addTag = (groups: TagGroup[], groupIndex: number): TagGroup[] => {
+    const newGroups = [...groups];
     newGroups[groupIndex].tags.push("");
-    setData({ ...data, base: { groups: newGroups } });
+    return newGroups;
   };
 
-  const updateBaseTag = (
+  const updateTag = (
+    groups: TagGroup[],
     groupIndex: number,
     tagIndex: number,
     value: string,
-  ) => {
-    const newGroups = [...data.base.groups];
+  ): TagGroup[] => {
+    const newGroups = [...groups];
     newGroups[groupIndex].tags[tagIndex] = value;
-    setData({ ...data, base: { groups: newGroups } });
+    return newGroups;
   };
 
-  const deleteBaseTag = (groupIndex: number, tagIndex: number) => {
-    const newGroups = [...data.base.groups];
+  const deleteTag = (
+    groups: TagGroup[],
+    groupIndex: number,
+    tagIndex: number,
+  ): TagGroup[] => {
+    const newGroups = [...groups];
     newGroups[groupIndex].tags = newGroups[groupIndex].tags.filter(
       (_, i) => i !== tagIndex,
     );
-    setData({ ...data, base: { groups: newGroups } });
+    return newGroups;
   };
 
-  const moveBaseTag = (
+  const moveTag = (
+    groups: TagGroup[],
     fromGroupIndex: number,
     fromTagIndex: number,
     toGroupIndex: number,
     toTagIndex: number,
-  ) => {
-    const newGroups = [...data.base.groups];
+  ): TagGroup[] => {
+    const newGroups = [...groups];
 
     // タグを取得して削除
     const tag = newGroups[fromGroupIndex].tags[fromTagIndex];
@@ -256,9 +259,51 @@ export default function TagEditor() {
     // 移動先に挿入
     newGroups[toGroupIndex].tags.splice(toTagIndex, 0, tag);
 
-    setData({ ...data, base: { groups: newGroups } });
+    return newGroups;
   };
 
+  const addTagsFromFile = (
+    groups: TagGroup[],
+    groupIndex: number,
+    tags: string[],
+  ): TagGroup[] => {
+    const newGroups = [...groups];
+    newGroups[groupIndex].tags = [...newGroups[groupIndex].tags, ...tags];
+    return newGroups;
+  };
+
+  // Helper to update base groups
+  const updateBaseGroups = (updater: (groups: TagGroup[]) => TagGroup[]) => {
+    setData({ ...data, base: { groups: updater(data.base.groups) } });
+  };
+
+  // Base group operations (wrappers around generic functions)
+  const addBaseGroup = () => updateBaseGroups((g) => addGroup(g));
+  const updateBaseGroup = (index: number, field: keyof TagGroup, value: any) =>
+    updateBaseGroups((g) => updateGroup(g, index, field, value));
+  const deleteBaseGroup = (index: number) =>
+    updateBaseGroups((g) => deleteGroup(g, index));
+  const reorderBaseGroup = (fromIndex: number, toIndex: number) =>
+    updateBaseGroups((g) => reorderGroup(g, fromIndex, toIndex));
+  const addTagToBaseGroup = (groupIndex: number) =>
+    updateBaseGroups((g) => addTag(g, groupIndex));
+  const updateBaseTag = (groupIndex: number, tagIndex: number, value: string) =>
+    updateBaseGroups((g) => updateTag(g, groupIndex, tagIndex, value));
+  const deleteBaseTag = (groupIndex: number, tagIndex: number) =>
+    updateBaseGroups((g) => deleteTag(g, groupIndex, tagIndex));
+  const moveBaseTag = (
+    fromGroupIndex: number,
+    fromTagIndex: number,
+    toGroupIndex: number,
+    toTagIndex: number,
+  ) =>
+    updateBaseGroups((g) =>
+      moveTag(g, fromGroupIndex, fromTagIndex, toGroupIndex, toTagIndex),
+    );
+  const addTagsToBaseGroupFromFile = (groupIndex: number, tags: string[]) =>
+    updateBaseGroups((g) => addTagsFromFile(g, groupIndex, tags));
+
+  // Output operations
   const addOutput = () => {
     setData({
       ...data,
@@ -279,101 +324,71 @@ export default function TagEditor() {
     });
   };
 
-  const addGroupToOutput = (outputIndex: number) => {
+  // Helper to update output groups
+  const updateOutputGroups = (
+    outputIndex: number,
+    updater: (groups: TagGroup[]) => TagGroup[],
+  ) => {
     const newOutputs = [...data.outputs];
-    newOutputs[outputIndex].groups.push({ name: "New Group", tags: [] });
+    newOutputs[outputIndex].groups = updater(newOutputs[outputIndex].groups);
     setData({ ...data, outputs: newOutputs });
   };
 
+  // Output group operations (wrappers around generic functions)
+  const addGroupToOutput = (outputIndex: number) =>
+    updateOutputGroups(outputIndex, (g) => addGroup(g));
   const updateOutputGroup = (
     outputIndex: number,
     groupIndex: number,
     field: keyof TagGroup,
     value: any,
-  ) => {
-    const newOutputs = [...data.outputs];
-    newOutputs[outputIndex].groups[groupIndex] = {
-      ...newOutputs[outputIndex].groups[groupIndex],
-      [field]: value,
-    };
-    setData({ ...data, outputs: newOutputs });
-  };
-
-  const deleteOutputGroup = (outputIndex: number, groupIndex: number) => {
-    const newOutputs = [...data.outputs];
-    newOutputs[outputIndex].groups = newOutputs[outputIndex].groups.filter(
-      (_, i) => i !== groupIndex,
+  ) =>
+    updateOutputGroups(outputIndex, (g) =>
+      updateGroup(g, groupIndex, field, value),
     );
-    setData({ ...data, outputs: newOutputs });
-  };
-
+  const deleteOutputGroup = (outputIndex: number, groupIndex: number) =>
+    updateOutputGroups(outputIndex, (g) => deleteGroup(g, groupIndex));
   const reorderOutputGroup = (
     outputIndex: number,
     fromIndex: number,
     toIndex: number,
-  ) => {
-    const newOutputs = [...data.outputs];
-    const groups = [...newOutputs[outputIndex].groups];
-    const [removed] = groups.splice(fromIndex, 1);
-    groups.splice(toIndex, 0, removed);
-    newOutputs[outputIndex].groups = groups;
-    setData({ ...data, outputs: newOutputs });
-  };
-
-  const addTagToOutputGroup = (outputIndex: number, groupIndex: number) => {
-    const newOutputs = [...data.outputs];
-    newOutputs[outputIndex].groups[groupIndex].tags.push("");
-    setData({ ...data, outputs: newOutputs });
-  };
-
+  ) =>
+    updateOutputGroups(outputIndex, (g) => reorderGroup(g, fromIndex, toIndex));
+  const addTagToOutputGroup = (outputIndex: number, groupIndex: number) =>
+    updateOutputGroups(outputIndex, (g) => addTag(g, groupIndex));
   const updateOutputTag = (
     outputIndex: number,
     groupIndex: number,
     tagIndex: number,
     value: string,
-  ) => {
-    const newOutputs = [...data.outputs];
-    newOutputs[outputIndex].groups[groupIndex].tags[tagIndex] = value;
-    setData({ ...data, outputs: newOutputs });
-  };
-
+  ) =>
+    updateOutputGroups(outputIndex, (g) =>
+      updateTag(g, groupIndex, tagIndex, value),
+    );
   const deleteOutputTag = (
     outputIndex: number,
     groupIndex: number,
     tagIndex: number,
-  ) => {
-    const newOutputs = [...data.outputs];
-    newOutputs[outputIndex].groups[groupIndex].tags = newOutputs[
-      outputIndex
-    ].groups[groupIndex].tags.filter((_, i) => i !== tagIndex);
-    setData({ ...data, outputs: newOutputs });
-  };
-
+  ) =>
+    updateOutputGroups(outputIndex, (g) => deleteTag(g, groupIndex, tagIndex));
   const moveOutputTag = (
     outputIndex: number,
     fromGroupIndex: number,
     fromTagIndex: number,
     toGroupIndex: number,
     toTagIndex: number,
-  ) => {
-    const newOutputs = [...data.outputs];
-
-    // タグを取得して削除
-    const tag =
-      newOutputs[outputIndex].groups[fromGroupIndex].tags[fromTagIndex];
-    newOutputs[outputIndex].groups[fromGroupIndex].tags = newOutputs[
-      outputIndex
-    ].groups[fromGroupIndex].tags.filter((_, i) => i !== fromTagIndex);
-
-    // 移動先に挿入
-    newOutputs[outputIndex].groups[toGroupIndex].tags.splice(
-      toTagIndex,
-      0,
-      tag,
+  ) =>
+    updateOutputGroups(outputIndex, (g) =>
+      moveTag(g, fromGroupIndex, fromTagIndex, toGroupIndex, toTagIndex),
     );
-
-    setData({ ...data, outputs: newOutputs });
-  };
+  const addTagsToOutputGroupFromFile = (
+    outputIndex: number,
+    groupIndex: number,
+    tags: string[],
+  ) =>
+    updateOutputGroups(outputIndex, (g) =>
+      addTagsFromFile(g, groupIndex, tags),
+    );
 
   // Base Groups から Output Groups へ移動
   const moveTagFromBaseToOutput = (
@@ -572,6 +587,402 @@ export default function TagEditor() {
     ));
   };
 
+  // GroupList Component
+  interface GroupListProps {
+    groups: TagGroup[];
+    onUpdateGroup: (
+      groupIndex: number,
+      field: keyof TagGroup,
+      value: any,
+    ) => void;
+    onDeleteGroup: (groupIndex: number) => void;
+    onReorderGroup: (fromIndex: number, toIndex: number) => void;
+    onAddTag: (groupIndex: number) => void;
+    onUpdateTag: (groupIndex: number, tagIndex: number, value: string) => void;
+    onDeleteTag: (groupIndex: number, tagIndex: number) => void;
+    onMoveTag: (
+      fromGroupIndex: number,
+      fromTagIndex: number,
+      toGroupIndex: number,
+      toTagIndex: number,
+    ) => void;
+    onFileDropAddTags: (groupIndex: number, tags: string[]) => void;
+    dragType: string;
+    outputIndex?: number;
+    colorScheme?: {
+      containerBg: string;
+      containerBorder: string;
+      groupBg: string;
+      groupBorder: string;
+      inputBorder: string;
+      inputFocus: string;
+      dropZoneBorder: string;
+      dropZoneBg: string;
+      dropZoneBorderHover: string;
+      dropZoneBgHover: string;
+      dropZoneBorderActive: string;
+      dropZoneBgActive: string;
+      emptyTextColor: string;
+      tagMinWidth: string;
+      tagFontSize: string;
+      tagWidthMultiplier: number;
+      tagWidthOffset: number;
+      buttonSize: string;
+      buttonTextSize: string;
+    };
+    emptyMessage?: string;
+    onCrossGroupMove?: (
+      dragData: any,
+      groupIndex: number,
+      tagIndex?: number,
+    ) => void;
+  }
+
+  const GroupList = ({
+    groups,
+    onUpdateGroup,
+    onDeleteGroup,
+    onReorderGroup,
+    onAddTag,
+    onUpdateTag,
+    onDeleteTag,
+    onMoveTag,
+    onFileDropAddTags,
+    dragType,
+    outputIndex,
+    colorScheme = {
+      containerBg: "bg-gray-100",
+      containerBorder: "border",
+      groupBg: "bg-gray-50",
+      groupBorder: "border",
+      inputBorder: "border-gray-300",
+      inputFocus: "focus:border-blue-500 focus:ring-blue-500",
+      dropZoneBorder: "border-gray-300",
+      dropZoneBg: "bg-gray-50",
+      dropZoneBorderHover: "hover:border-blue-400",
+      dropZoneBgHover: "hover:bg-blue-50",
+      dropZoneBorderActive: "border-blue-500",
+      dropZoneBgActive: "bg-blue-100",
+      emptyTextColor: "text-gray-400",
+      tagMinWidth: "min-w-32",
+      tagFontSize: "text-sm",
+      tagWidthMultiplier: 8,
+      tagWidthOffset: 40,
+      buttonSize: "px-3 py-2",
+      buttonTextSize: "text-sm",
+    },
+    emptyMessage = "Groupsがありません。「+ グループ追加」ボタンをクリックしてグループを作成してください。",
+    onCrossGroupMove,
+  }: GroupListProps) => {
+    return (
+      <>
+        {groups.length === 0 ? (
+          <div
+            className={`rounded border-2 border-dashed bg-white p-8 text-center ${colorScheme.dropZoneBorder}`}
+          >
+            <p className="text-gray-500">{emptyMessage}</p>
+          </div>
+        ) : (
+          groups.map((group, groupIndex) => (
+            <div
+              key={groupIndex}
+              className={`mb-4 rounded ${colorScheme.groupBorder} ${colorScheme.groupBg} p-4`}
+            >
+              <div className="mb-3 flex gap-2">
+                <input
+                  type="text"
+                  value={group.name}
+                  onChange={(e) =>
+                    onUpdateGroup(groupIndex, "name", e.target.value)
+                  }
+                  className={`flex-1 rounded border ${colorScheme.inputBorder} bg-white px-3 py-2 shadow-sm focus:outline-none focus:ring-1 ${colorScheme.inputFocus}`}
+                  placeholder="グループ名"
+                />
+                <button
+                  type="button"
+                  onClick={() => onReorderGroup(groupIndex, groupIndex - 1)}
+                  disabled={groupIndex === 0}
+                  className="rounded bg-gray-400 px-3 py-2 text-white hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  title="上に移動"
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onReorderGroup(groupIndex, groupIndex + 1)}
+                  disabled={groupIndex === groups.length - 1}
+                  className="rounded bg-gray-400 px-3 py-2 text-white hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  title="下に移動"
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDeleteGroup(groupIndex)}
+                  className={`rounded bg-red-500 ${colorScheme.buttonSize} text-white hover:bg-red-600`}
+                >
+                  - グループ削除
+                </button>
+              </div>
+
+              <div className="ml-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className={`font-medium ${colorScheme.buttonTextSize}`}>
+                    Tags:{" "}
+                    <span className="text-gray-500">({group.tags.length})</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onAddTag(groupIndex)}
+                    className={`rounded bg-green-500 px-3 py-1 ${colorScheme.buttonTextSize} text-white hover:bg-green-600`}
+                  >
+                    + タグ追加
+                  </button>
+                </div>
+                <div
+                  className={`min-h-[60px] rounded border-2 border-dashed ${colorScheme.dropZoneBorder} ${colorScheme.dropZoneBg} p-2 transition-colors ${colorScheme.dropZoneBorderHover} ${colorScheme.dropZoneBgHover}`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    e.currentTarget.classList.add(
+                      colorScheme.dropZoneBorderActive.replace(
+                        "border-",
+                        "!border-",
+                      ),
+                      colorScheme.dropZoneBgActive.replace("bg-", "!bg-"),
+                    );
+                  }}
+                  onDragLeave={(e) => {
+                    e.currentTarget.classList.remove(
+                      colorScheme.dropZoneBorderActive.replace(
+                        "border-",
+                        "!border-",
+                      ),
+                      colorScheme.dropZoneBgActive.replace("bg-", "!bg-"),
+                    );
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove(
+                      colorScheme.dropZoneBorderActive.replace(
+                        "border-",
+                        "!border-",
+                      ),
+                      colorScheme.dropZoneBgActive.replace("bg-", "!bg-"),
+                    );
+
+                    // Check if dropping a file
+                    const files = e.dataTransfer.files;
+                    if (files && files.length > 0) {
+                      const file = files[0];
+                      const fileExtension = file.name
+                        .split(".")
+                        .pop()
+                        ?.toLowerCase();
+
+                      if (fileExtension === "txt") {
+                        // Handle TXT file drop
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          try {
+                            const content = event.target?.result as string;
+                            const tags = content
+                              .split(",")
+                              .map((tag) => tag.trim())
+                              .filter((tag) => tag.length > 0);
+
+                            // Add tags to the current group
+                            onFileDropAddTags(groupIndex, tags);
+                          } catch (_error) {
+                            alert("ファイルの読み込みに失敗しました");
+                          }
+                        };
+                        reader.readAsText(file);
+                        return;
+                      } else {
+                        alert("TXTファイルをドロップしてください");
+                        return;
+                      }
+                    }
+
+                    // Handle tag drag and drop
+                    try {
+                      const dragData = JSON.parse(
+                        e.dataTransfer.getData("text/plain"),
+                      );
+
+                      // Check if this is a cross-group move (between base and output)
+                      if (onCrossGroupMove) {
+                        onCrossGroupMove(
+                          dragData,
+                          groupIndex,
+                          group.tags.length,
+                        );
+                      } else {
+                        // Same group type move
+                        if (
+                          dragData.type === dragType ||
+                          dragData.dragType === dragType
+                        ) {
+                          onMoveTag(
+                            dragData.groupIndex,
+                            dragData.tagIndex,
+                            groupIndex,
+                            group.tags.length,
+                          );
+                        }
+                      }
+                    } catch (_error) {
+                      // If JSON parsing fails, it might be a file drop without proper handling
+                    }
+                  }}
+                >
+                  {group.tags.length === 0 ? (
+                    <div
+                      className={`flex h-full items-center justify-center ${colorScheme.emptyTextColor} ${colorScheme.buttonTextSize}`}
+                    >
+                      タグをここにドロップ
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {group.tags.map((tag, tagIndex) => (
+                        <div
+                          key={tagIndex}
+                          className="flex gap-1"
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.effectAllowed = "move";
+                            const dragData =
+                              outputIndex !== undefined
+                                ? {
+                                    dragType: dragType,
+                                    outputIndex,
+                                    groupIndex,
+                                    tagIndex,
+                                  }
+                                : {
+                                    type: dragType,
+                                    groupIndex,
+                                    tagIndex,
+                                  };
+                            e.dataTransfer.setData(
+                              "text/plain",
+                              JSON.stringify(dragData),
+                            );
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = "move";
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            // Check if dropping a file - if so, let parent handle it
+                            const files = e.dataTransfer.files;
+                            if (files && files.length > 0) {
+                              return; // Let the parent drop handler handle files
+                            }
+
+                            const dataText =
+                              e.dataTransfer.getData("text/plain");
+                            if (!dataText) return; // No data to parse
+
+                            try {
+                              const dragData = JSON.parse(dataText);
+
+                              // Check if this is a cross-group move
+                              if (onCrossGroupMove) {
+                                onCrossGroupMove(
+                                  dragData,
+                                  groupIndex,
+                                  tagIndex,
+                                );
+                              } else {
+                                // Same group type move
+                                if (
+                                  dragData.type === dragType ||
+                                  dragData.dragType === dragType
+                                ) {
+                                  onMoveTag(
+                                    dragData.groupIndex,
+                                    dragData.tagIndex,
+                                    groupIndex,
+                                    tagIndex,
+                                  );
+                                }
+                              }
+                            } catch (_error) {
+                              // Invalid JSON, ignore
+                            }
+                          }}
+                        >
+                          <div
+                            className={`relative flex ${colorScheme.tagMinWidth}`}
+                          >
+                            <input
+                              type="text"
+                              value={tag}
+                              onChange={(e) =>
+                                onUpdateTag(
+                                  groupIndex,
+                                  tagIndex,
+                                  e.target.value,
+                                )
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  onAddTag(groupIndex);
+                                }
+                              }}
+                              className={`w-full cursor-move rounded border py-1 pr-7 pl-2 ${colorScheme.tagFontSize} shadow-sm focus:outline-none focus:ring-1 ${
+                                isDuplicateTag(group.tags, tag)
+                                  ? "border-yellow-500 bg-yellow-100 focus:border-yellow-600 focus:ring-yellow-500"
+                                  : `${colorScheme.inputBorder} bg-white ${colorScheme.inputFocus}`
+                              }`}
+                              placeholder="タグ"
+                              style={{
+                                width: `${Math.max(
+                                  tag.length * colorScheme.tagWidthMultiplier +
+                                    colorScheme.tagWidthOffset,
+                                  parseInt(
+                                    colorScheme.tagMinWidth.replace(
+                                      "min-w-",
+                                      "",
+                                    ),
+                                    10,
+                                  ) * 4,
+                                )}px`,
+                              }}
+                              title={
+                                isDuplicateTag(group.tags, tag)
+                                  ? "警告: このグループ内に同じタグが複数あります"
+                                  : ""
+                              }
+                            />
+                            <button
+                              type="button"
+                              onClick={() => onDeleteTag(groupIndex, tagIndex)}
+                              className={`absolute top-0 right-0 flex h-full items-center justify-center rounded-r bg-red-400 px-1.5 ${colorScheme.tagFontSize} text-white hover:bg-red-500`}
+                              aria-label="タグを削除"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-700">
       <header className="border-b bg-white">
@@ -668,277 +1079,39 @@ export default function TagEditor() {
             </button>
           </div>
 
-          {data.base.groups.length === 0 ? (
-            <div className="rounded border-2 border-gray-300 border-dashed bg-white p-8 text-center">
-              <p className="text-gray-500">
-                Base Groupsがありません。「+
-                グループ追加」ボタンをクリックしてグループを作成してください。
-              </p>
-            </div>
-          ) : (
-            data.base.groups.map((group, groupIndex) => (
-              <div
-                key={groupIndex}
-                className="mb-4 rounded border bg-gray-50 p-4"
-              >
-                <div className="mb-3 flex gap-2">
-                  <input
-                    type="text"
-                    value={group.name}
-                    onChange={(e) =>
-                      updateBaseGroup(groupIndex, "name", e.target.value)
-                    }
-                    className="flex-1 rounded border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    placeholder="グループ名"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => reorderBaseGroup(groupIndex, groupIndex - 1)}
-                    disabled={groupIndex === 0}
-                    className="rounded bg-gray-400 px-3 py-2 text-white hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
-                    title="上に移動"
-                  >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => reorderBaseGroup(groupIndex, groupIndex + 1)}
-                    disabled={groupIndex === data.base.groups.length - 1}
-                    className="rounded bg-gray-400 px-3 py-2 text-white hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
-                    title="下に移動"
-                  >
-                    ↓
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => deleteBaseGroup(groupIndex)}
-                    className="rounded bg-red-500 px-3 py-2 text-white hover:bg-red-600"
-                  >
-                    - グループ削除
-                  </button>
-                </div>
-
-                <div className="ml-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="font-medium text-sm">
-                      Tags:{" "}
-                      <span className="text-gray-500">
-                        ({group.tags.length})
-                      </span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => addTagToBaseGroup(groupIndex)}
-                      className="rounded bg-green-500 px-3 py-1 text-sm text-white hover:bg-green-600"
-                    >
-                      + タグ追加
-                    </button>
-                  </div>
-                  <div
-                    className="min-h-[60px] rounded border-2 border-gray-300 border-dashed bg-gray-50 p-2 transition-colors hover:border-blue-400 hover:bg-blue-50"
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = "move";
-                      e.currentTarget.classList.add(
-                        "border-blue-500",
-                        "bg-blue-100",
-                      );
-                    }}
-                    onDragLeave={(e) => {
-                      e.currentTarget.classList.remove(
-                        "border-blue-500",
-                        "bg-blue-100",
-                      );
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.classList.remove(
-                        "border-blue-500",
-                        "bg-blue-100",
-                      );
-
-                      // Check if dropping a file
-                      const files = e.dataTransfer.files;
-                      if (files && files.length > 0) {
-                        const file = files[0];
-                        const fileExtension = file.name
-                          .split(".")
-                          .pop()
-                          ?.toLowerCase();
-
-                        if (fileExtension === "txt") {
-                          // Handle TXT file drop
-                          const reader = new FileReader();
-                          reader.onload = (event) => {
-                            try {
-                              const content = event.target?.result as string;
-                              const tags = content
-                                .split(",")
-                                .map((tag) => tag.trim())
-                                .filter((tag) => tag.length > 0);
-
-                              // Add tags to the current group
-                              const newGroups = [...data.base.groups];
-                              newGroups[groupIndex].tags = [
-                                ...newGroups[groupIndex].tags,
-                                ...tags,
-                              ];
-                              setData({ ...data, base: { groups: newGroups } });
-                            } catch (_error) {
-                              alert("ファイルの読み込みに失敗しました");
-                            }
-                          };
-                          reader.readAsText(file);
-                          return;
-                        } else {
-                          alert("TXTファイルをドロップしてください");
-                          return;
-                        }
-                      }
-
-                      // Handle tag drag and drop
-                      try {
-                        const dragData = JSON.parse(
-                          e.dataTransfer.getData("text/plain"),
-                        );
-                        if (dragData.type === "base-tag") {
-                          // Base Groups内での移動
-                          moveBaseTag(
-                            dragData.groupIndex,
-                            dragData.tagIndex,
-                            groupIndex,
-                            group.tags.length,
-                          );
-                        } else if (dragData.dragType === "output-tag") {
-                          // Output GroupsからBase Groupsへの移動
-                          moveTagFromOutputToBase(
-                            dragData.outputIndex,
-                            dragData.groupIndex,
-                            dragData.tagIndex,
-                            groupIndex,
-                            group.tags.length,
-                          );
-                        }
-                      } catch (_error) {
-                        // If JSON parsing fails, it might be a file drop without proper handling
-                      }
-                    }}
-                  >
-                    {group.tags.length === 0 ? (
-                      <div className="flex h-full items-center justify-center text-gray-400 text-sm">
-                        タグをここにドロップ
-                      </div>
-                    ) : (
-                      <div className="flex flex-wrap gap-2">
-                        {group.tags.map((tag, tagIndex) => (
-                          <div
-                            key={tagIndex}
-                            className="flex gap-1"
-                            draggable
-                            onDragStart={(e) => {
-                              e.dataTransfer.effectAllowed = "move";
-                              e.dataTransfer.setData(
-                                "text/plain",
-                                JSON.stringify({
-                                  type: "base-tag",
-                                  groupIndex,
-                                  tagIndex,
-                                }),
-                              );
-                            }}
-                            onDragOver={(e) => {
-                              e.preventDefault();
-                              e.dataTransfer.dropEffect = "move";
-                            }}
-                            onDrop={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-
-                              // Check if dropping a file - if so, let parent handle it
-                              const files = e.dataTransfer.files;
-                              if (files && files.length > 0) {
-                                return; // Let the parent drop handler handle files
-                              }
-
-                              const dataText =
-                                e.dataTransfer.getData("text/plain");
-                              if (!dataText) return; // No data to parse
-
-                              try {
-                                const dragData = JSON.parse(dataText);
-                                if (dragData.type === "base-tag") {
-                                  moveBaseTag(
-                                    dragData.groupIndex,
-                                    dragData.tagIndex,
-                                    groupIndex,
-                                    tagIndex,
-                                  );
-                                } else if (dragData.dragType === "output-tag") {
-                                  moveTagFromOutputToBase(
-                                    dragData.outputIndex,
-                                    dragData.groupIndex,
-                                    dragData.tagIndex,
-                                    groupIndex,
-                                    tagIndex,
-                                  );
-                                }
-                              } catch (_error) {
-                                // Invalid JSON, ignore
-                              }
-                            }}
-                          >
-                            <div className="relative flex min-w-32">
-                              <input
-                                type="text"
-                                value={tag}
-                                onChange={(e) =>
-                                  updateBaseTag(
-                                    groupIndex,
-                                    tagIndex,
-                                    e.target.value,
-                                  )
-                                }
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    addTagToBaseGroup(groupIndex);
-                                  }
-                                }}
-                                className={`w-full cursor-move rounded border py-1 pr-7 pl-2 text-sm shadow-sm focus:outline-none focus:ring-1 ${
-                                  isDuplicateTag(group.tags, tag)
-                                    ? "border-yellow-500 bg-yellow-100 focus:border-yellow-600 focus:ring-yellow-500"
-                                    : "border-gray-300 bg-white focus:border-blue-500 focus:ring-blue-500"
-                                }`}
-                                placeholder="タグ"
-                                style={{
-                                  width: `${Math.max(tag.length * 8 + 40, 128)}px`,
-                                }}
-                                title={
-                                  isDuplicateTag(group.tags, tag)
-                                    ? "警告: このグループ内に同じタグが複数あります"
-                                    : ""
-                                }
-                              />
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  deleteBaseTag(groupIndex, tagIndex)
-                                }
-                                className="absolute top-0 right-0 flex h-full items-center justify-center rounded-r bg-red-400 px-1.5 text-sm text-white hover:bg-red-500"
-                                aria-label="タグを削除"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
+          <GroupList
+            groups={data.base.groups}
+            onUpdateGroup={updateBaseGroup}
+            onDeleteGroup={deleteBaseGroup}
+            onReorderGroup={reorderBaseGroup}
+            onAddTag={addTagToBaseGroup}
+            onUpdateTag={updateBaseTag}
+            onDeleteTag={deleteBaseTag}
+            onMoveTag={moveBaseTag}
+            onFileDropAddTags={addTagsToBaseGroupFromFile}
+            dragType="base-tag"
+            emptyMessage="Base Groupsがありません。「+ グループ追加」ボタンをクリックしてグループを作成してください。"
+            onCrossGroupMove={(dragData, groupIndex, tagIndex) => {
+              if (dragData.type === "base-tag") {
+                // Base Groups内での移動
+                moveBaseTag(
+                  dragData.groupIndex,
+                  dragData.tagIndex,
+                  groupIndex,
+                  tagIndex ?? data.base.groups[groupIndex].tags.length,
+                );
+              } else if (dragData.dragType === "output-tag") {
+                // Output GroupsからBase Groupsへの移動
+                moveTagFromOutputToBase(
+                  dragData.outputIndex,
+                  dragData.groupIndex,
+                  dragData.tagIndex,
+                  groupIndex,
+                  tagIndex ?? data.base.groups[groupIndex].tags.length,
+                );
+              }
+            }}
+          />
 
           {/* Base Groups Preview */}
           <div className="mt-6">
@@ -1017,319 +1190,103 @@ export default function TagEditor() {
                       + グループ追加
                     </button>
                   </div>
-                  {output.groups.length === 0 ? (
-                    <div className="ml-4 rounded border-2 border-blue-300 border-dashed bg-white p-6 text-center">
-                      <p className="text-blue-400 text-sm">
-                        Groupsがありません。「+
-                        グループ追加」ボタンをクリックしてください。
-                      </p>
-                    </div>
-                  ) : (
-                    output.groups.map((group, groupIndex) => (
-                      <div
-                        key={groupIndex}
-                        className="mb-3 ml-4 rounded border bg-blue-50 p-3"
-                      >
-                        <div className="mb-2 flex gap-2">
-                          <input
-                            type="text"
-                            value={group.name}
-                            onChange={(e) =>
-                              updateOutputGroup(
-                                outputIndex,
-                                groupIndex,
-                                "name",
-                                e.target.value,
-                              )
-                            }
-                            className="flex-1 rounded border border-blue-300 bg-white px-3 py-1 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            placeholder="グループ名"
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              reorderOutputGroup(
-                                outputIndex,
-                                groupIndex,
-                                groupIndex - 1,
-                              )
-                            }
-                            disabled={groupIndex === 0}
-                            className="rounded bg-gray-400 px-2 py-1 text-white text-xs hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
-                            title="上に移動"
-                          >
-                            ↑
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              reorderOutputGroup(
-                                outputIndex,
-                                groupIndex,
-                                groupIndex + 1,
-                              )
-                            }
-                            disabled={groupIndex === output.groups.length - 1}
-                            className="rounded bg-gray-400 px-2 py-1 text-white text-xs hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
-                            title="下に移動"
-                          >
-                            ↓
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              deleteOutputGroup(outputIndex, groupIndex)
-                            }
-                            className="rounded bg-red-400 px-3 py-1 text-sm text-white hover:bg-red-500"
-                          >
-                            - グループ削除
-                          </button>
-                        </div>
-                        <div className="ml-4">
-                          <div className="mb-2 flex items-center justify-between">
-                            <span className="font-medium text-xs">
-                              Tags:{" "}
-                              <span className="text-gray-500">
-                                ({group.tags.length})
-                              </span>
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                addTagToOutputGroup(outputIndex, groupIndex)
-                              }
-                              className="rounded bg-green-400 px-2 py-1 text-white text-xs hover:bg-green-500"
-                            >
-                              + タグ
-                            </button>
-                          </div>
-                          <div
-                            className="min-h-[50px] rounded border-2 border-blue-300 border-dashed bg-blue-50 p-2 transition-colors hover:border-blue-500 hover:bg-blue-100"
-                            onDragOver={(e) => {
-                              e.preventDefault();
-                              e.dataTransfer.dropEffect = "move";
-                              e.currentTarget.classList.add(
-                                "!border-blue-600",
-                                "!bg-blue-200",
-                              );
-                            }}
-                            onDragLeave={(e) => {
-                              e.currentTarget.classList.remove(
-                                "!border-blue-600",
-                                "!bg-blue-200",
-                              );
-                            }}
-                            onDrop={(e) => {
-                              e.preventDefault();
-                              e.currentTarget.classList.remove(
-                                "!border-blue-600",
-                                "!bg-blue-200",
-                              );
-
-                              // Check if dropping a file
-                              const files = e.dataTransfer.files;
-                              if (files && files.length > 0) {
-                                const file = files[0];
-                                const fileExtension = file.name
-                                  .split(".")
-                                  .pop()
-                                  ?.toLowerCase();
-
-                                if (fileExtension === "txt") {
-                                  // Handle TXT file drop
-                                  const reader = new FileReader();
-                                  reader.onload = (event) => {
-                                    try {
-                                      const content = event.target
-                                        ?.result as string;
-                                      const tags = content
-                                        .split(",")
-                                        .map((tag) => tag.trim())
-                                        .filter((tag) => tag.length > 0);
-
-                                      // Add tags to the current group
-                                      const newOutputs = [...data.outputs];
-                                      newOutputs[outputIndex].groups[
-                                        groupIndex
-                                      ].tags = [
-                                        ...newOutputs[outputIndex].groups[
-                                          groupIndex
-                                        ].tags,
-                                        ...tags,
-                                      ];
-                                      setData({ ...data, outputs: newOutputs });
-                                    } catch (_error) {
-                                      alert("ファイルの読み込みに失敗しました");
-                                    }
-                                  };
-                                  reader.readAsText(file);
-                                  return;
-                                } else {
-                                  alert("TXTファイルをドロップしてください");
-                                  return;
-                                }
-                              }
-
-                              // Handle tag drag and drop
-                              try {
-                                const dragData = JSON.parse(
-                                  e.dataTransfer.getData("text/plain"),
-                                );
-                                if (dragData.type === "base-tag") {
-                                  // Base GroupsからOutput Groupsへの移動
-                                  moveTagFromBaseToOutput(
-                                    dragData.groupIndex,
-                                    dragData.tagIndex,
-                                    outputIndex,
-                                    groupIndex,
-                                    group.tags.length,
-                                  );
-                                } else if (
-                                  dragData.dragType === "output-tag" &&
-                                  dragData.outputIndex === outputIndex
-                                ) {
-                                  // 同じOutput内のGroups間での移動
-                                  moveOutputTag(
-                                    outputIndex,
-                                    dragData.groupIndex,
-                                    dragData.tagIndex,
-                                    groupIndex,
-                                    group.tags.length,
-                                  );
-                                }
-                              } catch (_error) {
-                                // Invalid JSON, ignore
-                              }
-                            }}
-                          >
-                            {group.tags.length === 0 ? (
-                              <div className="flex h-full items-center justify-center text-blue-400 text-xs">
-                                タグをここにドロップ
-                              </div>
-                            ) : (
-                              <div className="flex flex-wrap gap-1">
-                                {group.tags.map((tag, tagIndex) => (
-                                  <div
-                                    key={tagIndex}
-                                    className="flex gap-1"
-                                    draggable
-                                    onDragStart={(e) => {
-                                      e.dataTransfer.effectAllowed = "move";
-                                      e.dataTransfer.setData(
-                                        "text/plain",
-                                        JSON.stringify({
-                                          dragType: "output-tag",
-                                          outputIndex,
-                                          groupIndex,
-                                          tagIndex,
-                                        }),
-                                      );
-                                    }}
-                                    onDragOver={(e) => {
-                                      e.preventDefault();
-                                      e.dataTransfer.dropEffect = "move";
-                                    }}
-                                    onDrop={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-
-                                      // Check if dropping a file - if so, let parent handle it
-                                      const files = e.dataTransfer.files;
-                                      if (files && files.length > 0) {
-                                        return; // Let the parent drop handler handle files
-                                      }
-
-                                      const dataText =
-                                        e.dataTransfer.getData("text/plain");
-                                      if (!dataText) return; // No data to parse
-
-                                      try {
-                                        const dragData = JSON.parse(dataText);
-                                        if (dragData.type === "base-tag") {
-                                          moveTagFromBaseToOutput(
-                                            dragData.groupIndex,
-                                            dragData.tagIndex,
-                                            outputIndex,
-                                            groupIndex,
-                                            tagIndex,
-                                          );
-                                        } else if (
-                                          dragData.dragType === "output-tag" &&
-                                          dragData.outputIndex === outputIndex
-                                        ) {
-                                          moveOutputTag(
-                                            outputIndex,
-                                            dragData.groupIndex,
-                                            dragData.tagIndex,
-                                            groupIndex,
-                                            tagIndex,
-                                          );
-                                        }
-                                      } catch (_error) {
-                                        // Invalid JSON, ignore
-                                      }
-                                    }}
-                                  >
-                                    <div className="relative flex min-w-24">
-                                      <input
-                                        type="text"
-                                        value={tag}
-                                        onChange={(e) =>
-                                          updateOutputTag(
-                                            outputIndex,
-                                            groupIndex,
-                                            tagIndex,
-                                            e.target.value,
-                                          )
-                                        }
-                                        onKeyDown={(e) => {
-                                          if (e.key === "Enter") {
-                                            e.preventDefault();
-                                            addTagToOutputGroup(
-                                              outputIndex,
-                                              groupIndex,
-                                            );
-                                          }
-                                        }}
-                                        className={`w-full cursor-move rounded border py-1 pr-6 pl-2 text-xs shadow-sm focus:outline-none focus:ring-1 ${
-                                          isDuplicateTag(group.tags, tag)
-                                            ? "border-yellow-500 bg-yellow-100 focus:border-yellow-600 focus:ring-yellow-500"
-                                            : "border-blue-300 bg-white focus:border-blue-500 focus:ring-blue-500"
-                                        }`}
-                                        placeholder="タグ"
-                                        style={{
-                                          width: `${Math.max(tag.length * 7 + 35, 96)}px`,
-                                        }}
-                                        title={
-                                          isDuplicateTag(group.tags, tag)
-                                            ? "警告: このグループ内に同じタグが複数あります"
-                                            : ""
-                                        }
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          deleteOutputTag(
-                                            outputIndex,
-                                            groupIndex,
-                                            tagIndex,
-                                          )
-                                        }
-                                        className="absolute top-0 right-0 flex h-full items-center justify-center rounded-r bg-red-300 px-1 text-white text-xs hover:bg-red-400"
-                                        aria-label="タグを削除"
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
+                  <div className="ml-4">
+                    <GroupList
+                      groups={output.groups}
+                      onUpdateGroup={(groupIndex, field, value) =>
+                        updateOutputGroup(outputIndex, groupIndex, field, value)
+                      }
+                      onDeleteGroup={(groupIndex) =>
+                        deleteOutputGroup(outputIndex, groupIndex)
+                      }
+                      onReorderGroup={(fromIndex, toIndex) =>
+                        reorderOutputGroup(outputIndex, fromIndex, toIndex)
+                      }
+                      onAddTag={(groupIndex) =>
+                        addTagToOutputGroup(outputIndex, groupIndex)
+                      }
+                      onUpdateTag={(groupIndex, tagIndex, value) =>
+                        updateOutputTag(
+                          outputIndex,
+                          groupIndex,
+                          tagIndex,
+                          value,
+                        )
+                      }
+                      onDeleteTag={(groupIndex, tagIndex) =>
+                        deleteOutputTag(outputIndex, groupIndex, tagIndex)
+                      }
+                      onMoveTag={(
+                        fromGroupIndex,
+                        fromTagIndex,
+                        toGroupIndex,
+                        toTagIndex,
+                      ) =>
+                        moveOutputTag(
+                          outputIndex,
+                          fromGroupIndex,
+                          fromTagIndex,
+                          toGroupIndex,
+                          toTagIndex,
+                        )
+                      }
+                      onFileDropAddTags={(groupIndex, tags) =>
+                        addTagsToOutputGroupFromFile(
+                          outputIndex,
+                          groupIndex,
+                          tags,
+                        )
+                      }
+                      dragType="output-tag"
+                      outputIndex={outputIndex}
+                      colorScheme={{
+                        containerBg: "bg-blue-50",
+                        containerBorder: "border-2",
+                        groupBg: "bg-blue-50",
+                        groupBorder: "border",
+                        inputBorder: "border-blue-300",
+                        inputFocus: "focus:border-blue-500 focus:ring-blue-500",
+                        dropZoneBorder: "border-blue-300",
+                        dropZoneBg: "bg-blue-50",
+                        dropZoneBorderHover: "hover:border-blue-500",
+                        dropZoneBgHover: "hover:bg-blue-100",
+                        dropZoneBorderActive: "border-blue-600",
+                        dropZoneBgActive: "bg-blue-200",
+                        emptyTextColor: "text-blue-400",
+                        tagMinWidth: "min-w-24",
+                        tagFontSize: "text-xs",
+                        tagWidthMultiplier: 7,
+                        tagWidthOffset: 35,
+                        buttonSize: "px-3 py-1",
+                        buttonTextSize: "text-xs",
+                      }}
+                      emptyMessage="Groupsがありません。「+ グループ追加」ボタンをクリックしてください。"
+                      onCrossGroupMove={(dragData, groupIndex, tagIndex) => {
+                        if (dragData.type === "base-tag") {
+                          // Base GroupsからOutput Groupsへの移動
+                          moveTagFromBaseToOutput(
+                            dragData.groupIndex,
+                            dragData.tagIndex,
+                            outputIndex,
+                            groupIndex,
+                            tagIndex ?? output.groups[groupIndex].tags.length,
+                          );
+                        } else if (
+                          dragData.dragType === "output-tag" &&
+                          dragData.outputIndex === outputIndex
+                        ) {
+                          // 同じOutput内のGroups間での移動
+                          moveOutputTag(
+                            outputIndex,
+                            dragData.groupIndex,
+                            dragData.tagIndex,
+                            groupIndex,
+                            tagIndex ?? output.groups[groupIndex].tags.length,
+                          );
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {/* Output Preview */}
