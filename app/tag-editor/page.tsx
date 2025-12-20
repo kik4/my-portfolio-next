@@ -784,7 +784,12 @@ export default function TagEditor() {
 
                 <div className="ml-4">
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="font-medium text-sm">Tags:</span>
+                    <span className="font-medium text-sm">
+                      Tags:{" "}
+                      <span className="text-gray-500">
+                        ({group.tags.length})
+                      </span>
+                    </span>
                     <button
                       type="button"
                       onClick={() => addTagToBaseGroup(groupIndex)}
@@ -1155,7 +1160,12 @@ export default function TagEditor() {
                         </div>
                         <div className="ml-4">
                           <div className="mb-2 flex items-center justify-between">
-                            <span className="font-medium text-xs">Tags:</span>
+                            <span className="font-medium text-xs">
+                              Tags:{" "}
+                              <span className="text-gray-500">
+                                ({group.tags.length})
+                              </span>
+                            </span>
                             <button
                               type="button"
                               onClick={() =>
@@ -1192,48 +1202,98 @@ export default function TagEditor() {
                                 "!border-blue-600",
                                 "!bg-blue-200",
                               );
-                              const dragData = JSON.parse(
-                                e.dataTransfer.getData("text/plain"),
-                              );
-                              if (dragData.type === "base-tag") {
-                                // Base GroupsからOutput Groupsへの移動
-                                moveTagFromBaseToOutput(
-                                  dragData.groupIndex,
-                                  dragData.tagIndex,
-                                  outputIndex,
-                                  "groups",
-                                  groupIndex,
-                                  group.tags.length,
+
+                              // Check if dropping a file
+                              const files = e.dataTransfer.files;
+                              if (files && files.length > 0) {
+                                const file = files[0];
+                                const fileExtension = file.name
+                                  .split(".")
+                                  .pop()
+                                  ?.toLowerCase();
+
+                                if (fileExtension === "txt") {
+                                  // Handle TXT file drop
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => {
+                                    try {
+                                      const content = event.target
+                                        ?.result as string;
+                                      const tags = content
+                                        .split(",")
+                                        .map((tag) => tag.trim())
+                                        .filter((tag) => tag.length > 0);
+
+                                      // Add tags to the current group
+                                      const newOutputs = [...data.outputs];
+                                      newOutputs[outputIndex].groups[
+                                        groupIndex
+                                      ].tags = [
+                                        ...newOutputs[outputIndex].groups[
+                                          groupIndex
+                                        ].tags,
+                                        ...tags,
+                                      ];
+                                      setData({ ...data, outputs: newOutputs });
+                                    } catch (_error) {
+                                      alert("ファイルの読み込みに失敗しました");
+                                    }
+                                  };
+                                  reader.readAsText(file);
+                                  return;
+                                } else {
+                                  alert("TXTファイルをドロップしてください");
+                                  return;
+                                }
+                              }
+
+                              // Handle tag drag and drop
+                              try {
+                                const dragData = JSON.parse(
+                                  e.dataTransfer.getData("text/plain"),
                                 );
-                              } else if (
-                                dragData.dragType === "output-tag" &&
-                                dragData.outputIndex === outputIndex &&
-                                dragData.type === "groups"
-                              ) {
-                                // 同じOutput内のGroups間での移動
-                                moveOutputTag(
-                                  outputIndex,
-                                  "groups",
-                                  dragData.groupIndex,
-                                  dragData.tagIndex,
-                                  groupIndex,
-                                  group.tags.length,
-                                );
-                              } else if (
-                                dragData.dragType === "output-tag" &&
-                                dragData.outputIndex === outputIndex &&
-                                dragData.type === "negative-groups"
-                              ) {
-                                // Negative GroupsからGroupsへの移動
-                                moveTagBetweenOutputTypes(
-                                  outputIndex,
-                                  "negative-groups",
-                                  dragData.groupIndex,
-                                  dragData.tagIndex,
-                                  "groups",
-                                  groupIndex,
-                                  group.tags.length,
-                                );
+                                if (dragData.type === "base-tag") {
+                                  // Base GroupsからOutput Groupsへの移動
+                                  moveTagFromBaseToOutput(
+                                    dragData.groupIndex,
+                                    dragData.tagIndex,
+                                    outputIndex,
+                                    "groups",
+                                    groupIndex,
+                                    group.tags.length,
+                                  );
+                                } else if (
+                                  dragData.dragType === "output-tag" &&
+                                  dragData.outputIndex === outputIndex &&
+                                  dragData.type === "groups"
+                                ) {
+                                  // 同じOutput内のGroups間での移動
+                                  moveOutputTag(
+                                    outputIndex,
+                                    "groups",
+                                    dragData.groupIndex,
+                                    dragData.tagIndex,
+                                    groupIndex,
+                                    group.tags.length,
+                                  );
+                                } else if (
+                                  dragData.dragType === "output-tag" &&
+                                  dragData.outputIndex === outputIndex &&
+                                  dragData.type === "negative-groups"
+                                ) {
+                                  // Negative GroupsからGroupsへの移動
+                                  moveTagBetweenOutputTypes(
+                                    outputIndex,
+                                    "negative-groups",
+                                    dragData.groupIndex,
+                                    dragData.tagIndex,
+                                    "groups",
+                                    groupIndex,
+                                    group.tags.length,
+                                  );
+                                }
+                              } catch (_error) {
+                                // Invalid JSON, ignore
                               }
                             }}
                           >
@@ -1268,45 +1328,60 @@ export default function TagEditor() {
                                     onDrop={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      const dragData = JSON.parse(
-                                        e.dataTransfer.getData("text/plain"),
-                                      );
-                                      if (dragData.type === "base-tag") {
-                                        moveTagFromBaseToOutput(
-                                          dragData.groupIndex,
-                                          dragData.tagIndex,
-                                          outputIndex,
-                                          "groups",
-                                          groupIndex,
-                                          tagIndex,
-                                        );
-                                      } else if (
-                                        dragData.dragType === "output-tag" &&
-                                        dragData.outputIndex === outputIndex &&
-                                        dragData.type === "groups"
-                                      ) {
-                                        moveOutputTag(
-                                          outputIndex,
-                                          "groups",
-                                          dragData.groupIndex,
-                                          dragData.tagIndex,
-                                          groupIndex,
-                                          tagIndex,
-                                        );
-                                      } else if (
-                                        dragData.dragType === "output-tag" &&
-                                        dragData.outputIndex === outputIndex &&
-                                        dragData.type === "negative-groups"
-                                      ) {
-                                        moveTagBetweenOutputTypes(
-                                          outputIndex,
-                                          "negative-groups",
-                                          dragData.groupIndex,
-                                          dragData.tagIndex,
-                                          "groups",
-                                          groupIndex,
-                                          tagIndex,
-                                        );
+
+                                      // Check if dropping a file - if so, let parent handle it
+                                      const files = e.dataTransfer.files;
+                                      if (files && files.length > 0) {
+                                        return; // Let the parent drop handler handle files
+                                      }
+
+                                      const dataText =
+                                        e.dataTransfer.getData("text/plain");
+                                      if (!dataText) return; // No data to parse
+
+                                      try {
+                                        const dragData = JSON.parse(dataText);
+                                        if (dragData.type === "base-tag") {
+                                          moveTagFromBaseToOutput(
+                                            dragData.groupIndex,
+                                            dragData.tagIndex,
+                                            outputIndex,
+                                            "groups",
+                                            groupIndex,
+                                            tagIndex,
+                                          );
+                                        } else if (
+                                          dragData.dragType === "output-tag" &&
+                                          dragData.outputIndex ===
+                                            outputIndex &&
+                                          dragData.type === "groups"
+                                        ) {
+                                          moveOutputTag(
+                                            outputIndex,
+                                            "groups",
+                                            dragData.groupIndex,
+                                            dragData.tagIndex,
+                                            groupIndex,
+                                            tagIndex,
+                                          );
+                                        } else if (
+                                          dragData.dragType === "output-tag" &&
+                                          dragData.outputIndex ===
+                                            outputIndex &&
+                                          dragData.type === "negative-groups"
+                                        ) {
+                                          moveTagBetweenOutputTypes(
+                                            outputIndex,
+                                            "negative-groups",
+                                            dragData.groupIndex,
+                                            dragData.tagIndex,
+                                            "groups",
+                                            groupIndex,
+                                            tagIndex,
+                                          );
+                                        }
+                                      } catch (_error) {
+                                        // Invalid JSON, ignore
                                       }
                                     }}
                                   >
@@ -1468,7 +1543,12 @@ export default function TagEditor() {
                         </div>
                         <div className="ml-4">
                           <div className="mb-2 flex items-center justify-between">
-                            <span className="font-medium text-xs">Tags:</span>
+                            <span className="font-medium text-xs">
+                              Tags:{" "}
+                              <span className="text-gray-500">
+                                ({group.tags.length})
+                              </span>
+                            </span>
                             <button
                               type="button"
                               onClick={() =>
@@ -1505,48 +1585,98 @@ export default function TagEditor() {
                                 "!border-orange-600",
                                 "!bg-orange-200",
                               );
-                              const dragData = JSON.parse(
-                                e.dataTransfer.getData("text/plain"),
-                              );
-                              if (dragData.type === "base-tag") {
-                                // Base GroupsからNegative Groupsへの移動
-                                moveTagFromBaseToOutput(
-                                  dragData.groupIndex,
-                                  dragData.tagIndex,
-                                  outputIndex,
-                                  "negative-groups",
-                                  groupIndex,
-                                  group.tags.length,
+
+                              // Check if dropping a file
+                              const files = e.dataTransfer.files;
+                              if (files && files.length > 0) {
+                                const file = files[0];
+                                const fileExtension = file.name
+                                  .split(".")
+                                  .pop()
+                                  ?.toLowerCase();
+
+                                if (fileExtension === "txt") {
+                                  // Handle TXT file drop
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => {
+                                    try {
+                                      const content = event.target
+                                        ?.result as string;
+                                      const tags = content
+                                        .split(",")
+                                        .map((tag) => tag.trim())
+                                        .filter((tag) => tag.length > 0);
+
+                                      // Add tags to the current group
+                                      const newOutputs = [...data.outputs];
+                                      newOutputs[outputIndex][
+                                        "negative-groups"
+                                      ][groupIndex].tags = [
+                                        ...newOutputs[outputIndex][
+                                          "negative-groups"
+                                        ][groupIndex].tags,
+                                        ...tags,
+                                      ];
+                                      setData({ ...data, outputs: newOutputs });
+                                    } catch (_error) {
+                                      alert("ファイルの読み込みに失敗しました");
+                                    }
+                                  };
+                                  reader.readAsText(file);
+                                  return;
+                                } else {
+                                  alert("TXTファイルをドロップしてください");
+                                  return;
+                                }
+                              }
+
+                              // Handle tag drag and drop
+                              try {
+                                const dragData = JSON.parse(
+                                  e.dataTransfer.getData("text/plain"),
                                 );
-                              } else if (
-                                dragData.dragType === "output-tag" &&
-                                dragData.outputIndex === outputIndex &&
-                                dragData.type === "negative-groups"
-                              ) {
-                                // 同じOutput内のNegative Groups間での移動
-                                moveOutputTag(
-                                  outputIndex,
-                                  "negative-groups",
-                                  dragData.groupIndex,
-                                  dragData.tagIndex,
-                                  groupIndex,
-                                  group.tags.length,
-                                );
-                              } else if (
-                                dragData.dragType === "output-tag" &&
-                                dragData.outputIndex === outputIndex &&
-                                dragData.type === "groups"
-                              ) {
-                                // GroupsからNegative Groupsへの移動
-                                moveTagBetweenOutputTypes(
-                                  outputIndex,
-                                  "groups",
-                                  dragData.groupIndex,
-                                  dragData.tagIndex,
-                                  "negative-groups",
-                                  groupIndex,
-                                  group.tags.length,
-                                );
+                                if (dragData.type === "base-tag") {
+                                  // Base GroupsからNegative Groupsへの移動
+                                  moveTagFromBaseToOutput(
+                                    dragData.groupIndex,
+                                    dragData.tagIndex,
+                                    outputIndex,
+                                    "negative-groups",
+                                    groupIndex,
+                                    group.tags.length,
+                                  );
+                                } else if (
+                                  dragData.dragType === "output-tag" &&
+                                  dragData.outputIndex === outputIndex &&
+                                  dragData.type === "negative-groups"
+                                ) {
+                                  // 同じOutput内のNegative Groups間での移動
+                                  moveOutputTag(
+                                    outputIndex,
+                                    "negative-groups",
+                                    dragData.groupIndex,
+                                    dragData.tagIndex,
+                                    groupIndex,
+                                    group.tags.length,
+                                  );
+                                } else if (
+                                  dragData.dragType === "output-tag" &&
+                                  dragData.outputIndex === outputIndex &&
+                                  dragData.type === "groups"
+                                ) {
+                                  // GroupsからNegative Groupsへの移動
+                                  moveTagBetweenOutputTypes(
+                                    outputIndex,
+                                    "groups",
+                                    dragData.groupIndex,
+                                    dragData.tagIndex,
+                                    "negative-groups",
+                                    groupIndex,
+                                    group.tags.length,
+                                  );
+                                }
+                              } catch (_error) {
+                                // Invalid JSON, ignore
                               }
                             }}
                           >
@@ -1581,45 +1711,60 @@ export default function TagEditor() {
                                     onDrop={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      const dragData = JSON.parse(
-                                        e.dataTransfer.getData("text/plain"),
-                                      );
-                                      if (dragData.type === "base-tag") {
-                                        moveTagFromBaseToOutput(
-                                          dragData.groupIndex,
-                                          dragData.tagIndex,
-                                          outputIndex,
-                                          "negative-groups",
-                                          groupIndex,
-                                          tagIndex,
-                                        );
-                                      } else if (
-                                        dragData.dragType === "output-tag" &&
-                                        dragData.outputIndex === outputIndex &&
-                                        dragData.type === "negative-groups"
-                                      ) {
-                                        moveOutputTag(
-                                          outputIndex,
-                                          "negative-groups",
-                                          dragData.groupIndex,
-                                          dragData.tagIndex,
-                                          groupIndex,
-                                          tagIndex,
-                                        );
-                                      } else if (
-                                        dragData.dragType === "output-tag" &&
-                                        dragData.outputIndex === outputIndex &&
-                                        dragData.type === "groups"
-                                      ) {
-                                        moveTagBetweenOutputTypes(
-                                          outputIndex,
-                                          "groups",
-                                          dragData.groupIndex,
-                                          dragData.tagIndex,
-                                          "negative-groups",
-                                          groupIndex,
-                                          tagIndex,
-                                        );
+
+                                      // Check if dropping a file - if so, let parent handle it
+                                      const files = e.dataTransfer.files;
+                                      if (files && files.length > 0) {
+                                        return; // Let the parent drop handler handle files
+                                      }
+
+                                      const dataText =
+                                        e.dataTransfer.getData("text/plain");
+                                      if (!dataText) return; // No data to parse
+
+                                      try {
+                                        const dragData = JSON.parse(dataText);
+                                        if (dragData.type === "base-tag") {
+                                          moveTagFromBaseToOutput(
+                                            dragData.groupIndex,
+                                            dragData.tagIndex,
+                                            outputIndex,
+                                            "negative-groups",
+                                            groupIndex,
+                                            tagIndex,
+                                          );
+                                        } else if (
+                                          dragData.dragType === "output-tag" &&
+                                          dragData.outputIndex ===
+                                            outputIndex &&
+                                          dragData.type === "negative-groups"
+                                        ) {
+                                          moveOutputTag(
+                                            outputIndex,
+                                            "negative-groups",
+                                            dragData.groupIndex,
+                                            dragData.tagIndex,
+                                            groupIndex,
+                                            tagIndex,
+                                          );
+                                        } else if (
+                                          dragData.dragType === "output-tag" &&
+                                          dragData.outputIndex ===
+                                            outputIndex &&
+                                          dragData.type === "groups"
+                                        ) {
+                                          moveTagBetweenOutputTypes(
+                                            outputIndex,
+                                            "groups",
+                                            dragData.groupIndex,
+                                            dragData.tagIndex,
+                                            "negative-groups",
+                                            groupIndex,
+                                            tagIndex,
+                                          );
+                                        }
+                                      } catch (_error) {
+                                        // Invalid JSON, ignore
                                       }
                                     }}
                                   >
