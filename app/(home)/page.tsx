@@ -18,7 +18,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { MyLink } from "../_components/MyLink";
 import { getPathToDijkstra } from "../dijkstra/getPath";
-import { getPathToTagEditor } from "../tag-editor/getPath";
+import { getPathToTextTagEditor } from "../text-tag-editor/getPath";
 import { getPathToTypeScript } from "../typescript/getPath";
 import { AnimateOnScroll } from "./_components/AnimateOnScroll";
 import { WavyBackground } from "./_components/WavyBackground";
@@ -327,16 +327,16 @@ export default function Home() {
             <div className="flex flex-col gap-4">
               {[
                 {
-                  title: "タグエディター",
+                  title: "テキストタグエディター",
                   category: "技術実験" as const,
                   period: "2025",
                   description:
-                    "JSONファイルでタググループを管理・編集できるWebアプリ。グループとタグの追加・編集・削除が可能で、カンマ区切りテキストファイルへの出力機能も搭載。",
+                    "テキストベースでタグ管理ができるエディター。タグデータをテキスト形式で保存・読み込み可能。共通タグの抽出機能も搭載し、タグ管理を効率化。",
                   image: projectTagEditor,
                   tech: ["Next.js", "React", "TypeScript", "TailwindCSS"].join(
                     ", ",
                   ),
-                  link: getPathToTagEditor(),
+                  link: getPathToTextTagEditor(),
                   linkIcon: faLink,
                 },
                 {
