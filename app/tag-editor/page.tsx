@@ -1,5 +1,5 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: <for utility> */
-/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <ok> */
 /** biome-ignore-all lint/suspicious/noExplicitAny: <for utility> */
 "use client";
 
@@ -15,7 +15,6 @@ interface TagGroup {
 interface Output {
   filename: string;
   groups: TagGroup[];
-  "negative-groups": TagGroup[];
 }
 
 interface TagData {
@@ -166,18 +165,8 @@ export default function TagEditor() {
         .flatMap((group) => group.tags)
         .filter((tag) => tag.trim());
 
-      // negative-groupsのタグを取得（空のタグを除外）
-      const negativeGroupTags = output["negative-groups"]
-        .flatMap((group) => group.tags)
-        .filter((tag) => tag.trim());
-
       // baseタグとoutputタグを結合
-      const allPositiveTags = [...baseTags, ...outputGroupTags];
-
-      // negativeタグを除外
-      const finalTags = allPositiveTags.filter(
-        (tag) => !negativeGroupTags.includes(tag),
-      );
+      const finalTags = [...baseTags, ...outputGroupTags];
 
       const content = finalTags.join(", ");
 
@@ -273,10 +262,7 @@ export default function TagEditor() {
   const addOutput = () => {
     setData({
       ...data,
-      outputs: [
-        ...data.outputs,
-        { filename: "", groups: [], "negative-groups": [] },
-      ],
+      outputs: [...data.outputs, { filename: "", groups: [] }],
     });
   };
 
@@ -293,37 +279,29 @@ export default function TagEditor() {
     });
   };
 
-  const addGroupToOutput = (
-    outputIndex: number,
-    type: "groups" | "negative-groups",
-  ) => {
+  const addGroupToOutput = (outputIndex: number) => {
     const newOutputs = [...data.outputs];
-    newOutputs[outputIndex][type].push({ name: "New Group", tags: [] });
+    newOutputs[outputIndex].groups.push({ name: "New Group", tags: [] });
     setData({ ...data, outputs: newOutputs });
   };
 
   const updateOutputGroup = (
     outputIndex: number,
-    type: "groups" | "negative-groups",
     groupIndex: number,
     field: keyof TagGroup,
     value: any,
   ) => {
     const newOutputs = [...data.outputs];
-    newOutputs[outputIndex][type][groupIndex] = {
-      ...newOutputs[outputIndex][type][groupIndex],
+    newOutputs[outputIndex].groups[groupIndex] = {
+      ...newOutputs[outputIndex].groups[groupIndex],
       [field]: value,
     };
     setData({ ...data, outputs: newOutputs });
   };
 
-  const deleteOutputGroup = (
-    outputIndex: number,
-    type: "groups" | "negative-groups",
-    groupIndex: number,
-  ) => {
+  const deleteOutputGroup = (outputIndex: number, groupIndex: number) => {
     const newOutputs = [...data.outputs];
-    newOutputs[outputIndex][type] = newOutputs[outputIndex][type].filter(
+    newOutputs[outputIndex].groups = newOutputs[outputIndex].groups.filter(
       (_, i) => i !== groupIndex,
     );
     setData({ ...data, outputs: newOutputs });
@@ -331,56 +309,48 @@ export default function TagEditor() {
 
   const reorderOutputGroup = (
     outputIndex: number,
-    type: "groups" | "negative-groups",
     fromIndex: number,
     toIndex: number,
   ) => {
     const newOutputs = [...data.outputs];
-    const groups = [...newOutputs[outputIndex][type]];
+    const groups = [...newOutputs[outputIndex].groups];
     const [removed] = groups.splice(fromIndex, 1);
     groups.splice(toIndex, 0, removed);
-    newOutputs[outputIndex][type] = groups;
+    newOutputs[outputIndex].groups = groups;
     setData({ ...data, outputs: newOutputs });
   };
 
-  const addTagToOutputGroup = (
-    outputIndex: number,
-    type: "groups" | "negative-groups",
-    groupIndex: number,
-  ) => {
+  const addTagToOutputGroup = (outputIndex: number, groupIndex: number) => {
     const newOutputs = [...data.outputs];
-    newOutputs[outputIndex][type][groupIndex].tags.push("");
+    newOutputs[outputIndex].groups[groupIndex].tags.push("");
     setData({ ...data, outputs: newOutputs });
   };
 
   const updateOutputTag = (
     outputIndex: number,
-    type: "groups" | "negative-groups",
     groupIndex: number,
     tagIndex: number,
     value: string,
   ) => {
     const newOutputs = [...data.outputs];
-    newOutputs[outputIndex][type][groupIndex].tags[tagIndex] = value;
+    newOutputs[outputIndex].groups[groupIndex].tags[tagIndex] = value;
     setData({ ...data, outputs: newOutputs });
   };
 
   const deleteOutputTag = (
     outputIndex: number,
-    type: "groups" | "negative-groups",
     groupIndex: number,
     tagIndex: number,
   ) => {
     const newOutputs = [...data.outputs];
-    newOutputs[outputIndex][type][groupIndex].tags = newOutputs[outputIndex][
-      type
-    ][groupIndex].tags.filter((_, i) => i !== tagIndex);
+    newOutputs[outputIndex].groups[groupIndex].tags = newOutputs[
+      outputIndex
+    ].groups[groupIndex].tags.filter((_, i) => i !== tagIndex);
     setData({ ...data, outputs: newOutputs });
   };
 
   const moveOutputTag = (
     outputIndex: number,
-    type: "groups" | "negative-groups",
     fromGroupIndex: number,
     fromTagIndex: number,
     toGroupIndex: number,
@@ -390,23 +360,26 @@ export default function TagEditor() {
 
     // タグを取得して削除
     const tag =
-      newOutputs[outputIndex][type][fromGroupIndex].tags[fromTagIndex];
-    newOutputs[outputIndex][type][fromGroupIndex].tags = newOutputs[
+      newOutputs[outputIndex].groups[fromGroupIndex].tags[fromTagIndex];
+    newOutputs[outputIndex].groups[fromGroupIndex].tags = newOutputs[
       outputIndex
-    ][type][fromGroupIndex].tags.filter((_, i) => i !== fromTagIndex);
+    ].groups[fromGroupIndex].tags.filter((_, i) => i !== fromTagIndex);
 
     // 移動先に挿入
-    newOutputs[outputIndex][type][toGroupIndex].tags.splice(toTagIndex, 0, tag);
+    newOutputs[outputIndex].groups[toGroupIndex].tags.splice(
+      toTagIndex,
+      0,
+      tag,
+    );
 
     setData({ ...data, outputs: newOutputs });
   };
 
-  // Base Groups から Output/Negative Groups へ移動
+  // Base Groups から Output Groups へ移動
   const moveTagFromBaseToOutput = (
     fromGroupIndex: number,
     fromTagIndex: number,
     toOutputIndex: number,
-    toType: "groups" | "negative-groups",
     toGroupIndex: number,
     toTagIndex: number,
   ) => {
@@ -419,8 +392,8 @@ export default function TagEditor() {
       (_, i) => i !== fromTagIndex,
     );
 
-    // Output/Negative Groupsに挿入
-    newOutputs[toOutputIndex][toType][toGroupIndex].tags.splice(
+    // Output Groupsに挿入
+    newOutputs[toOutputIndex].groups[toGroupIndex].tags.splice(
       toTagIndex,
       0,
       tag,
@@ -429,10 +402,9 @@ export default function TagEditor() {
     setData({ ...data, base: { groups: newGroups }, outputs: newOutputs });
   };
 
-  // Output/Negative Groups から Base Groups へ移動
+  // Output Groups から Base Groups へ移動
   const moveTagFromOutputToBase = (
     fromOutputIndex: number,
-    fromType: "groups" | "negative-groups",
     fromGroupIndex: number,
     fromTagIndex: number,
     toGroupIndex: number,
@@ -441,46 +413,17 @@ export default function TagEditor() {
     const newGroups = [...data.base.groups];
     const newOutputs = [...data.outputs];
 
-    // Output/Negative Groupsからタグを取得して削除
+    // Output Groupsからタグを取得して削除
     const tag =
-      newOutputs[fromOutputIndex][fromType][fromGroupIndex].tags[fromTagIndex];
-    newOutputs[fromOutputIndex][fromType][fromGroupIndex].tags = newOutputs[
+      newOutputs[fromOutputIndex].groups[fromGroupIndex].tags[fromTagIndex];
+    newOutputs[fromOutputIndex].groups[fromGroupIndex].tags = newOutputs[
       fromOutputIndex
-    ][fromType][fromGroupIndex].tags.filter((_, i) => i !== fromTagIndex);
+    ].groups[fromGroupIndex].tags.filter((_, i) => i !== fromTagIndex);
 
     // Base Groupsに挿入
     newGroups[toGroupIndex].tags.splice(toTagIndex, 0, tag);
 
     setData({ ...data, base: { groups: newGroups }, outputs: newOutputs });
-  };
-
-  // Output/Negative Groups 間で移動
-  const moveTagBetweenOutputTypes = (
-    outputIndex: number,
-    fromType: "groups" | "negative-groups",
-    fromGroupIndex: number,
-    fromTagIndex: number,
-    toType: "groups" | "negative-groups",
-    toGroupIndex: number,
-    toTagIndex: number,
-  ) => {
-    const newOutputs = [...data.outputs];
-
-    // 元のグループからタグを取得して削除
-    const tag =
-      newOutputs[outputIndex][fromType][fromGroupIndex].tags[fromTagIndex];
-    newOutputs[outputIndex][fromType][fromGroupIndex].tags = newOutputs[
-      outputIndex
-    ][fromType][fromGroupIndex].tags.filter((_, i) => i !== fromTagIndex);
-
-    // 移動先に挿入
-    newOutputs[outputIndex][toType][toGroupIndex].tags.splice(
-      toTagIndex,
-      0,
-      tag,
-    );
-
-    setData({ ...data, outputs: newOutputs });
   };
 
   // Helper function: Check if tag is duplicate in group
@@ -578,13 +521,12 @@ export default function TagEditor() {
   const renderPreviewWithDuplicates = (
     baseGroups: TagGroup[],
     outputGroups?: TagGroup[],
-    negativeGroups?: TagGroup[],
   ): React.ReactNode => {
     const baseTags = baseGroups
       .flatMap((group) => group.tags)
       .filter((t) => t.trim());
 
-    if (!outputGroups && !negativeGroups) {
+    if (!outputGroups) {
       // Base Groups only - check for duplicates
       const tagCounts = new Map<string, number>();
       baseTags.forEach((tag) => {
@@ -606,16 +548,10 @@ export default function TagEditor() {
     }
 
     // Output preview - check for duplicates
-    const outputGroupTags = (outputGroups || [])
+    const outputGroupTags = outputGroups
       .flatMap((group) => group.tags)
       .filter((t) => t.trim());
-    const negativeGroupTags = (negativeGroups || [])
-      .flatMap((group) => group.tags)
-      .filter((t) => t.trim());
-    const allPositiveTags = [...baseTags, ...outputGroupTags];
-    const finalTags = allPositiveTags.filter(
-      (tag) => !negativeGroupTags.includes(tag),
-    );
+    const finalTags = [...baseTags, ...outputGroupTags];
 
     const tagCounts = new Map<string, number>();
     finalTags.forEach((tag) => {
@@ -874,10 +810,9 @@ export default function TagEditor() {
                             group.tags.length,
                           );
                         } else if (dragData.dragType === "output-tag") {
-                          // Output/Negative GroupsからBase Groupsへの移動
+                          // Output GroupsからBase Groupsへの移動
                           moveTagFromOutputToBase(
                             dragData.outputIndex,
-                            dragData.type,
                             dragData.groupIndex,
                             dragData.tagIndex,
                             groupIndex,
@@ -941,7 +876,6 @@ export default function TagEditor() {
                                 } else if (dragData.dragType === "output-tag") {
                                   moveTagFromOutputToBase(
                                     dragData.outputIndex,
-                                    dragData.type,
                                     dragData.groupIndex,
                                     dragData.tagIndex,
                                     groupIndex,
@@ -1077,7 +1011,7 @@ export default function TagEditor() {
                     <h3 className="font-semibold">Groups</h3>
                     <button
                       type="button"
-                      onClick={() => addGroupToOutput(outputIndex, "groups")}
+                      onClick={() => addGroupToOutput(outputIndex)}
                       className="rounded bg-green-500 px-3 py-1 text-sm text-white hover:bg-green-600"
                     >
                       + グループ追加
@@ -1103,7 +1037,6 @@ export default function TagEditor() {
                             onChange={(e) =>
                               updateOutputGroup(
                                 outputIndex,
-                                "groups",
                                 groupIndex,
                                 "name",
                                 e.target.value,
@@ -1117,7 +1050,6 @@ export default function TagEditor() {
                             onClick={() =>
                               reorderOutputGroup(
                                 outputIndex,
-                                "groups",
                                 groupIndex,
                                 groupIndex - 1,
                               )
@@ -1133,7 +1065,6 @@ export default function TagEditor() {
                             onClick={() =>
                               reorderOutputGroup(
                                 outputIndex,
-                                "groups",
                                 groupIndex,
                                 groupIndex + 1,
                               )
@@ -1147,11 +1078,7 @@ export default function TagEditor() {
                           <button
                             type="button"
                             onClick={() =>
-                              deleteOutputGroup(
-                                outputIndex,
-                                "groups",
-                                groupIndex,
-                              )
+                              deleteOutputGroup(outputIndex, groupIndex)
                             }
                             className="rounded bg-red-400 px-3 py-1 text-sm text-white hover:bg-red-500"
                           >
@@ -1169,11 +1096,7 @@ export default function TagEditor() {
                             <button
                               type="button"
                               onClick={() =>
-                                addTagToOutputGroup(
-                                  outputIndex,
-                                  "groups",
-                                  groupIndex,
-                                )
+                                addTagToOutputGroup(outputIndex, groupIndex)
                               }
                               className="rounded bg-green-400 px-2 py-1 text-white text-xs hover:bg-green-500"
                             >
@@ -1258,36 +1181,18 @@ export default function TagEditor() {
                                     dragData.groupIndex,
                                     dragData.tagIndex,
                                     outputIndex,
-                                    "groups",
                                     groupIndex,
                                     group.tags.length,
                                   );
                                 } else if (
                                   dragData.dragType === "output-tag" &&
-                                  dragData.outputIndex === outputIndex &&
-                                  dragData.type === "groups"
+                                  dragData.outputIndex === outputIndex
                                 ) {
                                   // 同じOutput内のGroups間での移動
                                   moveOutputTag(
                                     outputIndex,
-                                    "groups",
                                     dragData.groupIndex,
                                     dragData.tagIndex,
-                                    groupIndex,
-                                    group.tags.length,
-                                  );
-                                } else if (
-                                  dragData.dragType === "output-tag" &&
-                                  dragData.outputIndex === outputIndex &&
-                                  dragData.type === "negative-groups"
-                                ) {
-                                  // Negative GroupsからGroupsへの移動
-                                  moveTagBetweenOutputTypes(
-                                    outputIndex,
-                                    "negative-groups",
-                                    dragData.groupIndex,
-                                    dragData.tagIndex,
-                                    "groups",
                                     groupIndex,
                                     group.tags.length,
                                   );
@@ -1315,7 +1220,6 @@ export default function TagEditor() {
                                         JSON.stringify({
                                           dragType: "output-tag",
                                           outputIndex,
-                                          type: "groups",
                                           groupIndex,
                                           tagIndex,
                                         }),
@@ -1346,36 +1250,17 @@ export default function TagEditor() {
                                             dragData.groupIndex,
                                             dragData.tagIndex,
                                             outputIndex,
-                                            "groups",
                                             groupIndex,
                                             tagIndex,
                                           );
                                         } else if (
                                           dragData.dragType === "output-tag" &&
-                                          dragData.outputIndex ===
-                                            outputIndex &&
-                                          dragData.type === "groups"
+                                          dragData.outputIndex === outputIndex
                                         ) {
                                           moveOutputTag(
                                             outputIndex,
-                                            "groups",
                                             dragData.groupIndex,
                                             dragData.tagIndex,
-                                            groupIndex,
-                                            tagIndex,
-                                          );
-                                        } else if (
-                                          dragData.dragType === "output-tag" &&
-                                          dragData.outputIndex ===
-                                            outputIndex &&
-                                          dragData.type === "negative-groups"
-                                        ) {
-                                          moveTagBetweenOutputTypes(
-                                            outputIndex,
-                                            "negative-groups",
-                                            dragData.groupIndex,
-                                            dragData.tagIndex,
-                                            "groups",
                                             groupIndex,
                                             tagIndex,
                                           );
@@ -1392,7 +1277,6 @@ export default function TagEditor() {
                                         onChange={(e) =>
                                           updateOutputTag(
                                             outputIndex,
-                                            "groups",
                                             groupIndex,
                                             tagIndex,
                                             e.target.value,
@@ -1403,7 +1287,6 @@ export default function TagEditor() {
                                             e.preventDefault();
                                             addTagToOutputGroup(
                                               outputIndex,
-                                              "groups",
                                               groupIndex,
                                             );
                                           }
@@ -1428,390 +1311,6 @@ export default function TagEditor() {
                                         onClick={() =>
                                           deleteOutputTag(
                                             outputIndex,
-                                            "groups",
-                                            groupIndex,
-                                            tagIndex,
-                                          )
-                                        }
-                                        className="absolute top-0 right-0 flex h-full items-center justify-center rounded-r bg-red-300 px-1 text-white text-xs hover:bg-red-400"
-                                        aria-label="タグを削除"
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <h3 className="font-semibold">Negative Groups</h3>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        addGroupToOutput(outputIndex, "negative-groups")
-                      }
-                      className="rounded bg-orange-500 px-3 py-1 text-sm text-white hover:bg-orange-600"
-                    >
-                      + Negativeグループ追加
-                    </button>
-                  </div>
-                  {output["negative-groups"].length === 0 ? (
-                    <div className="ml-4 rounded border-2 border-orange-300 border-dashed bg-white p-6 text-center">
-                      <p className="text-orange-400 text-sm">
-                        Negative Groupsがありません。「+
-                        Negativeグループ追加」ボタンをクリックしてください。
-                      </p>
-                    </div>
-                  ) : (
-                    output["negative-groups"].map((group, groupIndex) => (
-                      <div
-                        key={groupIndex}
-                        className="mb-3 ml-4 rounded border bg-orange-50 p-3"
-                      >
-                        <div className="mb-2 flex gap-2">
-                          <input
-                            type="text"
-                            value={group.name}
-                            onChange={(e) =>
-                              updateOutputGroup(
-                                outputIndex,
-                                "negative-groups",
-                                groupIndex,
-                                "name",
-                                e.target.value,
-                              )
-                            }
-                            className="flex-1 rounded border border-orange-300 bg-white px-3 py-1 text-sm shadow-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                            placeholder="グループ名"
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              reorderOutputGroup(
-                                outputIndex,
-                                "negative-groups",
-                                groupIndex,
-                                groupIndex - 1,
-                              )
-                            }
-                            disabled={groupIndex === 0}
-                            className="rounded bg-gray-400 px-2 py-1 text-white text-xs hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
-                            title="上に移動"
-                          >
-                            ↑
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              reorderOutputGroup(
-                                outputIndex,
-                                "negative-groups",
-                                groupIndex,
-                                groupIndex + 1,
-                              )
-                            }
-                            disabled={
-                              groupIndex ===
-                              output["negative-groups"].length - 1
-                            }
-                            className="rounded bg-gray-400 px-2 py-1 text-white text-xs hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
-                            title="下に移動"
-                          >
-                            ↓
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              deleteOutputGroup(
-                                outputIndex,
-                                "negative-groups",
-                                groupIndex,
-                              )
-                            }
-                            className="rounded bg-red-400 px-3 py-1 text-sm text-white hover:bg-red-500"
-                          >
-                            - グループ削除
-                          </button>
-                        </div>
-                        <div className="ml-4">
-                          <div className="mb-2 flex items-center justify-between">
-                            <span className="font-medium text-xs">
-                              Tags:{" "}
-                              <span className="text-gray-500">
-                                ({group.tags.length})
-                              </span>
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                addTagToOutputGroup(
-                                  outputIndex,
-                                  "negative-groups",
-                                  groupIndex,
-                                )
-                              }
-                              className="rounded bg-orange-400 px-2 py-1 text-white text-xs hover:bg-orange-500"
-                            >
-                              + タグ
-                            </button>
-                          </div>
-                          <div
-                            className="min-h-[50px] rounded border-2 border-orange-300 border-dashed bg-orange-50 p-2 transition-colors hover:border-orange-500 hover:bg-orange-100"
-                            onDragOver={(e) => {
-                              e.preventDefault();
-                              e.dataTransfer.dropEffect = "move";
-                              e.currentTarget.classList.add(
-                                "!border-orange-600",
-                                "!bg-orange-200",
-                              );
-                            }}
-                            onDragLeave={(e) => {
-                              e.currentTarget.classList.remove(
-                                "!border-orange-600",
-                                "!bg-orange-200",
-                              );
-                            }}
-                            onDrop={(e) => {
-                              e.preventDefault();
-                              e.currentTarget.classList.remove(
-                                "!border-orange-600",
-                                "!bg-orange-200",
-                              );
-
-                              // Check if dropping a file
-                              const files = e.dataTransfer.files;
-                              if (files && files.length > 0) {
-                                const file = files[0];
-                                const fileExtension = file.name
-                                  .split(".")
-                                  .pop()
-                                  ?.toLowerCase();
-
-                                if (fileExtension === "txt") {
-                                  // Handle TXT file drop
-                                  const reader = new FileReader();
-                                  reader.onload = (event) => {
-                                    try {
-                                      const content = event.target
-                                        ?.result as string;
-                                      const tags = content
-                                        .split(",")
-                                        .map((tag) => tag.trim())
-                                        .filter((tag) => tag.length > 0);
-
-                                      // Add tags to the current group
-                                      const newOutputs = [...data.outputs];
-                                      newOutputs[outputIndex][
-                                        "negative-groups"
-                                      ][groupIndex].tags = [
-                                        ...newOutputs[outputIndex][
-                                          "negative-groups"
-                                        ][groupIndex].tags,
-                                        ...tags,
-                                      ];
-                                      setData({ ...data, outputs: newOutputs });
-                                    } catch (_error) {
-                                      alert("ファイルの読み込みに失敗しました");
-                                    }
-                                  };
-                                  reader.readAsText(file);
-                                  return;
-                                } else {
-                                  alert("TXTファイルをドロップしてください");
-                                  return;
-                                }
-                              }
-
-                              // Handle tag drag and drop
-                              try {
-                                const dragData = JSON.parse(
-                                  e.dataTransfer.getData("text/plain"),
-                                );
-                                if (dragData.type === "base-tag") {
-                                  // Base GroupsからNegative Groupsへの移動
-                                  moveTagFromBaseToOutput(
-                                    dragData.groupIndex,
-                                    dragData.tagIndex,
-                                    outputIndex,
-                                    "negative-groups",
-                                    groupIndex,
-                                    group.tags.length,
-                                  );
-                                } else if (
-                                  dragData.dragType === "output-tag" &&
-                                  dragData.outputIndex === outputIndex &&
-                                  dragData.type === "negative-groups"
-                                ) {
-                                  // 同じOutput内のNegative Groups間での移動
-                                  moveOutputTag(
-                                    outputIndex,
-                                    "negative-groups",
-                                    dragData.groupIndex,
-                                    dragData.tagIndex,
-                                    groupIndex,
-                                    group.tags.length,
-                                  );
-                                } else if (
-                                  dragData.dragType === "output-tag" &&
-                                  dragData.outputIndex === outputIndex &&
-                                  dragData.type === "groups"
-                                ) {
-                                  // GroupsからNegative Groupsへの移動
-                                  moveTagBetweenOutputTypes(
-                                    outputIndex,
-                                    "groups",
-                                    dragData.groupIndex,
-                                    dragData.tagIndex,
-                                    "negative-groups",
-                                    groupIndex,
-                                    group.tags.length,
-                                  );
-                                }
-                              } catch (_error) {
-                                // Invalid JSON, ignore
-                              }
-                            }}
-                          >
-                            {group.tags.length === 0 ? (
-                              <div className="flex h-full items-center justify-center text-orange-400 text-xs">
-                                タグをここにドロップ
-                              </div>
-                            ) : (
-                              <div className="flex flex-wrap gap-1">
-                                {group.tags.map((tag, tagIndex) => (
-                                  <div
-                                    key={tagIndex}
-                                    className="flex gap-1"
-                                    draggable
-                                    onDragStart={(e) => {
-                                      e.dataTransfer.effectAllowed = "move";
-                                      e.dataTransfer.setData(
-                                        "text/plain",
-                                        JSON.stringify({
-                                          dragType: "output-tag",
-                                          outputIndex,
-                                          type: "negative-groups",
-                                          groupIndex,
-                                          tagIndex,
-                                        }),
-                                      );
-                                    }}
-                                    onDragOver={(e) => {
-                                      e.preventDefault();
-                                      e.dataTransfer.dropEffect = "move";
-                                    }}
-                                    onDrop={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-
-                                      // Check if dropping a file - if so, let parent handle it
-                                      const files = e.dataTransfer.files;
-                                      if (files && files.length > 0) {
-                                        return; // Let the parent drop handler handle files
-                                      }
-
-                                      const dataText =
-                                        e.dataTransfer.getData("text/plain");
-                                      if (!dataText) return; // No data to parse
-
-                                      try {
-                                        const dragData = JSON.parse(dataText);
-                                        if (dragData.type === "base-tag") {
-                                          moveTagFromBaseToOutput(
-                                            dragData.groupIndex,
-                                            dragData.tagIndex,
-                                            outputIndex,
-                                            "negative-groups",
-                                            groupIndex,
-                                            tagIndex,
-                                          );
-                                        } else if (
-                                          dragData.dragType === "output-tag" &&
-                                          dragData.outputIndex ===
-                                            outputIndex &&
-                                          dragData.type === "negative-groups"
-                                        ) {
-                                          moveOutputTag(
-                                            outputIndex,
-                                            "negative-groups",
-                                            dragData.groupIndex,
-                                            dragData.tagIndex,
-                                            groupIndex,
-                                            tagIndex,
-                                          );
-                                        } else if (
-                                          dragData.dragType === "output-tag" &&
-                                          dragData.outputIndex ===
-                                            outputIndex &&
-                                          dragData.type === "groups"
-                                        ) {
-                                          moveTagBetweenOutputTypes(
-                                            outputIndex,
-                                            "groups",
-                                            dragData.groupIndex,
-                                            dragData.tagIndex,
-                                            "negative-groups",
-                                            groupIndex,
-                                            tagIndex,
-                                          );
-                                        }
-                                      } catch (_error) {
-                                        // Invalid JSON, ignore
-                                      }
-                                    }}
-                                  >
-                                    <div className="relative flex min-w-24">
-                                      <input
-                                        type="text"
-                                        value={tag}
-                                        onChange={(e) =>
-                                          updateOutputTag(
-                                            outputIndex,
-                                            "negative-groups",
-                                            groupIndex,
-                                            tagIndex,
-                                            e.target.value,
-                                          )
-                                        }
-                                        onKeyDown={(e) => {
-                                          if (e.key === "Enter") {
-                                            e.preventDefault();
-                                            addTagToOutputGroup(
-                                              outputIndex,
-                                              "negative-groups",
-                                              groupIndex,
-                                            );
-                                          }
-                                        }}
-                                        className={`w-full cursor-move rounded border py-1 pr-6 pl-2 text-xs shadow-sm focus:outline-none focus:ring-1 ${
-                                          isDuplicateTag(group.tags, tag)
-                                            ? "border-yellow-500 bg-yellow-100 focus:border-yellow-600 focus:ring-yellow-500"
-                                            : "border-orange-300 bg-white focus:border-orange-500 focus:ring-orange-500"
-                                        }`}
-                                        placeholder="タグ"
-                                        style={{
-                                          width: `${Math.max(tag.length * 7 + 35, 96)}px`,
-                                        }}
-                                        title={
-                                          isDuplicateTag(group.tags, tag)
-                                            ? "警告: このグループ内に同じタグが複数あります"
-                                            : ""
-                                        }
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          deleteOutputTag(
-                                            outputIndex,
-                                            "negative-groups",
                                             groupIndex,
                                             tagIndex,
                                           )
@@ -1843,7 +1342,6 @@ export default function TagEditor() {
                       {renderPreviewWithDuplicates(
                         data.base.groups,
                         output.groups,
-                        output["negative-groups"],
                       )}
                     </code>
                   </div>
