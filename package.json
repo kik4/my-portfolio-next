@@ -22,7 +22,7 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.26",
     "monaco-editor": "^0.55.1",
-    "next": "^16.1.0",
+    "next": "^16.1.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-intersection-observer": "^10.0.0",
