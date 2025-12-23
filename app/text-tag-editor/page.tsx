@@ -4,6 +4,7 @@ import {
   faDownload,
   faFileExport,
   faTrash,
+  faUnderline,
   faUpLong,
   faUpload,
 } from "@fortawesome/free-solid-svg-icons";
@@ -13,6 +14,7 @@ import { toast } from "react-toastify";
 import { MyLink } from "../_components/MyLink";
 import { getPathToHome } from "../(home)/getPath";
 import { MyEditor } from "./_components/MyEditor";
+import { formatCode } from "./_utils/formatCode";
 import { getTagWithPositions } from "./_utils/getTagWithPositions";
 import { loadFromFile } from "./_utils/loadFromJsonFile";
 import { saveToFile } from "./_utils/saveToJsonFile";
@@ -216,8 +218,8 @@ export default function TagEditor() {
       </header>
 
       <div className="mx-auto max-w-7xl p-8">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="mb-4 flex items-end justify-between">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={resetToDefault}
@@ -335,6 +337,22 @@ export default function TagEditor() {
             >
               <FontAwesomeIcon className="mr-2" icon={faFileExport} />
               タグファイルを出力
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEditors((prev) =>
+                  prev.map((editor) => ({
+                    ...editor,
+                    code: formatCode(editor.code),
+                  })),
+                );
+              }}
+              className="rounded border border-b-emerald-500 bg-emerald-500 px-4 py-2 text-sm text-white hover:bg-emerald-600"
+              title="全てのエディターのテキストをフォーマットします"
+            >
+              <FontAwesomeIcon className="mr-2" icon={faUnderline} />
+              テキストをフォーマット
             </button>
           </div>
           <button
