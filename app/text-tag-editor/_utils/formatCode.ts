@@ -8,11 +8,14 @@ export const formatCode = (content: string): string => {
       }
 
       // タグ行をフォーマット: カンマの後にスペースを追加、余分なスペースを削除
-      return line
+      const joined = line
         .split(",")
         .map((tag) => tag.trim())
         .filter((tag) => tag.length > 0)
         .join(", ");
+
+      // カンマで終わるようにする
+      return joined ? `${joined},` : "";
     })
     .join("\n");
 };
