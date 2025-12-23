@@ -416,11 +416,9 @@ export const MyEditor = ({
                         ? "border-yellow-400 bg-yellow-100 text-yellow-700"
                         : "border-gray-300",
                     )}
-                    title={`Line ${tagObj.lineNumber}, Col ${tagObj.startColumn}-${tagObj.endColumn}${
+                    title={`Base: Line ${tagObj.lineNumber}, Col ${tagObj.startColumn}-${tagObj.endColumn}${
                       isBaseEditorDuplicate ? " (Baseエディターとの重複)" : ""
                     }`}
-                    onMouseEnter={() => handleTagHover(tagObj)}
-                    onMouseLeave={handleTagLeave}
                     role="button"
                     tabIndex={0}
                   >
