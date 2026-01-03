@@ -265,47 +265,50 @@ export default function TagEditor() {
             <button
               type="button"
               onClick={() => {
+                if (crossEditorDuplicates.size === 0) {
+                  toast.info("共通する差分タグはありません");
+                  return;
+                }
+
                 crossEditorDuplicates.forEach((tag) => {
                   // すべてのエディターからタグを削除
                   setEditors((prevEditors) =>
                     prevEditors.map((editor) => ({
                       ...editor,
-                      code: editor.code
-                        .split("\n")
-                        .map((line) =>
-                          line
-                            .split(",")
-                            .map((part) =>
-                              part
-                                .split(" ")
-                                .filter((t) => t.trim() !== tag)
-                                .join(" "),
-                            )
-                            .filter((part) => part.trim() !== "")
-                            .join(", "),
-                        )
-                        .filter((line) => line.trim() !== "")
-                        .join("\n"),
+                      code: formatCode(
+                        formatCode(editor.code)
+                          .split("\n")
+                          .map((line) =>
+                            line.length && !line.startsWith("#")
+                              ? `${line
+                                  .slice(0, -1)
+                                  .split(", ")
+                                  .filter((t) => t.trim() !== tag)
+                                  .join(", ")},`
+                              : line,
+                          )
+                          .join("\n"),
+                      ),
                     })),
                   );
-
-                  // Baseエディターにタグを追加
-                  setEditors((prevEditors) =>
-                    prevEditors.map((editor) => {
-                      if (editor.id === BASE_EDITOR_ID) {
-                        const lines = editor.code.split("\n");
-                        if (lines.length === 0) {
-                          return { ...editor, code: tag };
-                        } else {
-                          lines[lines.length - 1] +=
-                            (lines[lines.length - 1].trim() ? ", " : "") + tag;
-                          return { ...editor, code: lines.join("\n") };
-                        }
-                      }
-                      return editor;
-                    }),
-                  );
                 });
+
+                // Baseエディターにタグを追加
+                setEditors((prevEditors) =>
+                  prevEditors.map((editor) => {
+                    if (editor.id === BASE_EDITOR_ID) {
+                      const lines = formatCode(editor.code).split("\n");
+                      const toPush = [...crossEditorDuplicates.values()].join(
+                        ", ",
+                      );
+                      if (toPush.length) {
+                        lines.push(`${toPush},`);
+                      }
+                      return { ...editor, code: lines.join("\n") };
+                    }
+                    return editor;
+                  }),
+                );
               }}
               className="rounded border border-orange-500 bg-orange-500 px-4 py-2 text-sm text-white hover:bg-orange-600"
               title="共通する差分タグを共通タグへ移動します"

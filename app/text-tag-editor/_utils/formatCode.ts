@@ -1,5 +1,5 @@
 export const formatCode = (content: string): string => {
-  return content
+  const formatted = content
     .split("\n")
     .map((line) => {
       // コメント行はそのまま
@@ -18,4 +18,10 @@ export const formatCode = (content: string): string => {
       return joined ? `${joined},` : "";
     })
     .join("\n");
+
+  // 空行を1つにまとめる（空白文字だけの行も含む）
+  const reduced = formatted.replace(/(\n\s*){3,}/g, "\n\n");
+
+  // 末尾の複数の空行を1つに削減
+  return reduced.replace(/(\n\s*){2,}$/, "\n");
 };
