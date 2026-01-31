@@ -1,13 +1,7 @@
 "use client";
 
-import { faGithub } from "@fortawesome/free-brands-svg-icons";
-import {
-  faBars,
-  faExternalLinkAlt,
-  faTimes,
-} from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import clsx from "clsx";
+import { ExternalLink, Github, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { getPathToHome } from "../(home)/getPath";
@@ -76,7 +70,7 @@ export function MobileMenu() {
               className="rounded-lg p-2 transition hover:bg-gray-100 dark:hover:bg-gray-800"
               aria-label="メニューを閉じる"
             >
-              <FontAwesomeIcon icon={faTimes} size="lg" />
+              <X size={20} />
             </button>
           </div>
 
@@ -100,9 +94,9 @@ export function MobileMenu() {
               href="https://github.com/kik4"
               className="flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition hover:bg-gray-100 dark:hover:bg-gray-800"
             >
-              <FontAwesomeIcon icon={faGithub} size="lg" />
+              <Github size={20} />
               <span>GitHub</span>
-              <FontAwesomeIcon icon={faExternalLinkAlt} />
+              <ExternalLink size={16} />
             </MyLink>
           </nav>
 
@@ -126,7 +120,7 @@ export function MobileMenu() {
         className="flex items-center justify-center rounded-lg p-2 text-foreground transition hover:bg-gray-100 md:hidden dark:hover:bg-gray-800"
         aria-label="メニューを開く"
       >
-        <FontAwesomeIcon icon={faBars} size="lg" />
+        <Menu size={20} />
       </button>
 
       {/* Portal でメニューを body 直下にレンダリング */}

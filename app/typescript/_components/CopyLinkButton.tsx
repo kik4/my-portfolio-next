@@ -1,7 +1,6 @@
 "use client";
 
-import { faLink } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Link } from "lucide-react";
 import { useState } from "react";
 
 export function CopyLinkButton() {
@@ -23,7 +22,7 @@ export function CopyLinkButton() {
       type="button"
       onClick={handleCopyLink}
     >
-      <FontAwesomeIcon className="mr-1" icon={faLink} />
+      <Link className="mr-1 inline-block" size={16} />
       {copied ? "コピーしました！" : "リンクをコピー"}
     </button>
   );

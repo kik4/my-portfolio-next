@@ -1,5 +1,4 @@
-import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { ExternalLink } from "lucide-react";
 import { MyLink } from "@/app/_components/MyLink";
 import { CodeEditor } from "../_components/CodeEditor";
 import type { AlgorithmContent } from "../_lib/types";
@@ -49,7 +48,7 @@ main(\`1 2 3 2 4 1 5 3 6\`.split("\\n"));`}
           opensNewTab
         >
           こちら
-          <FontAwesomeIcon icon={faExternalLinkAlt} size="sm" />
+          <ExternalLink className="inline-block" size={14} />
         </MyLink>
         を参照してください。この中から個人的にためになった・具体的に覚えておいた方がいい点をいくつか紹介します。
       </p>

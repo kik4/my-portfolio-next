@@ -1,14 +1,13 @@
 "use client";
 
 import {
-  faDownload,
-  faFileExport,
-  faTrash,
-  faUnderline,
-  faUpLong,
-  faUpload,
-} from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+  ArrowUp,
+  Download,
+  FileText,
+  Trash2,
+  Underline,
+  Upload,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { MyLink } from "../_components/MyLink";
@@ -225,7 +224,7 @@ export default function TagEditor() {
               onClick={resetToDefault}
               className="rounded border border-gray-300 bg-white px-4 py-2 text-gray-700 text-sm hover:bg-gray-50"
             >
-              <FontAwesomeIcon className="mr-2" icon={faTrash} />
+              <Trash2 className="mr-2 inline-block" size={16} />
               リセット
             </button>
             <button
@@ -234,7 +233,7 @@ export default function TagEditor() {
               className="rounded border border-green-500 bg-green-500 px-4 py-2 text-sm text-white hover:bg-green-600"
               title="現在のエディター状態をJSONファイルとして保存します"
             >
-              <FontAwesomeIcon className="mr-2" icon={faDownload} />
+              <Download className="mr-2 inline-block" size={16} />
               ファイルに保存
             </button>
             <button
@@ -259,7 +258,7 @@ export default function TagEditor() {
               className="rounded border border-blue-500 bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600"
               title="JSONファイルからエディター状態を読み込みます"
             >
-              <FontAwesomeIcon className="mr-2" icon={faUpload} />
+              <Upload className="mr-2 inline-block" size={16} />
               ファイルから読み込み
             </button>
             <button
@@ -313,7 +312,7 @@ export default function TagEditor() {
               className="rounded border border-orange-500 bg-orange-500 px-4 py-2 text-sm text-white hover:bg-orange-600"
               title="共通する差分タグを共通タグへ移動します"
             >
-              <FontAwesomeIcon className="mr-2" icon={faUpLong} />
+              <ArrowUp className="mr-2 inline-block" size={16} />
               共通する差分タグを共通タグへ移動
             </button>
             <button
@@ -338,7 +337,7 @@ export default function TagEditor() {
               className="rounded border border-yellow-500 bg-yellow-500 px-4 py-2 text-sm text-white hover:bg-yellow-600"
               title="差分エディターごとにタグファイルを出力します"
             >
-              <FontAwesomeIcon className="mr-2" icon={faFileExport} />
+              <FileText className="mr-2 inline-block" size={16} />
               タグファイルを出力
             </button>
             <button
@@ -354,7 +353,7 @@ export default function TagEditor() {
               className="rounded border border-b-emerald-500 bg-emerald-500 px-4 py-2 text-sm text-white hover:bg-emerald-600"
               title="全てのエディターのテキストをフォーマットします"
             >
-              <FontAwesomeIcon className="mr-2" icon={faUnderline} />
+              <Underline className="mr-2 inline-block" size={16} />
               テキストをフォーマット
             </button>
           </div>

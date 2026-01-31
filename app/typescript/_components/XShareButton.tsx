@@ -1,7 +1,6 @@
 "use client";
 
-import { faXTwitter } from "@fortawesome/free-brands-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Share2 } from "lucide-react";
 
 export function XShareButton() {
   const handleShare = () => {
@@ -17,10 +16,7 @@ export function XShareButton() {
       type="button"
       onClick={handleShare}
     >
-      <FontAwesomeIcon
-        className="mr-1 rounded bg-black p-0.5 text-white"
-        icon={faXTwitter}
-      />
+      <Share2 className="mr-1 inline-block rounded p-0.5" size={20} />
       Xでシェア
     </button>
   );

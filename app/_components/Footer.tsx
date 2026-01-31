@@ -1,5 +1,4 @@
-import { faGithub, faXTwitter } from "@fortawesome/free-brands-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { SiGithub, SiX } from "@icons-pack/react-simple-icons";
 import Image from "next/image";
 import icon from "../(home)/_img/icon_400x400.jpg";
 import { getPathToHome } from "../(home)/getPath";
@@ -53,8 +52,14 @@ export function Footer() {
             <h3 className="mb-4 font-bold text-xl">フォローする</h3>
             <div className="flex space-x-4">
               {[
-                { icon: faGithub, href: "https://github.com/kik4" },
-                { icon: faXTwitter, href: "https://x.com/_kik4_" },
+                {
+                  icon: <SiGithub className="fill-white" size={20} />,
+                  href: "https://github.com/kik4",
+                },
+                {
+                  icon: <SiX className="fill-white" size={16} />,
+                  href: "https://x.com/_kik4_",
+                },
                 { icon: "Q", href: "https://qiita.com/kik4" },
               ].map((social) => (
                 <MyLink
@@ -62,11 +67,7 @@ export function Footer() {
                   href={social.href}
                   className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-700 transition hover:bg-blue-600"
                 >
-                  {typeof social.icon === "string" ? (
-                    social.icon
-                  ) : (
-                    <FontAwesomeIcon icon={social.icon} />
-                  )}
+                  {social.icon}
                 </MyLink>
               ))}
             </div>

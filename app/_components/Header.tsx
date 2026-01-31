@@ -1,5 +1,4 @@
-import { faGithub } from "@fortawesome/free-brands-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { SiGithub } from "@icons-pack/react-simple-icons";
 import clsx from "clsx";
 import { getPathToHome } from "../(home)/getPath";
 import { getPathToTypeScript } from "../typescript/getPath";
@@ -39,7 +38,7 @@ export function Header({ isHome = false }: { isHome?: boolean }) {
             className="hidden gap-2 rounded-lg bg-gray-100 px-3 py-2 font-medium text-gray-700 transition hover:bg-gray-200 hover:text-black md:flex md:items-center dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:text-white"
             href="https://github.com/kik4"
           >
-            <FontAwesomeIcon icon={faGithub} size="lg" />
+            <SiGithub className="dark:fill-white" size={20} />
             <span>GitHub</span>
           </MyLink>
           <div className="hidden md:block">

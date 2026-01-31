@@ -1,7 +1,6 @@
 "use client";
 
-import { faCircleHalfStroke } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { SunMoon } from "lucide-react";
 import { useEffect, useLayoutEffect, useState } from "react";
 
 export const DarkToggleButton: React.FC = () => {
@@ -39,7 +38,7 @@ export const DarkToggleButton: React.FC = () => {
         setTheme((v) => (v === "dark" ? "light" : "dark"));
       }}
     >
-      <FontAwesomeIcon icon={faCircleHalfStroke} />
+      <SunMoon size={16} />
       <span className="hidden sm:inline">Light / Dark</span>
     </button>
   );

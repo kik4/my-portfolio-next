@@ -1,19 +1,18 @@
 import {
-  faGithub,
-  faNodeJs,
-  faNpm,
-  faReact,
-  faXTwitter,
-} from "@fortawesome/free-brands-svg-icons";
-import {
-  faCodeBranch,
-  faDatabase,
-  faExternalLinkAlt,
-  faLink,
-  faServer,
-} from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+  SiExpress,
+  SiGithub,
+  SiReact,
+  SiTypescript,
+  SiX,
+} from "@icons-pack/react-simple-icons";
 import { clsx } from "clsx";
+import {
+  Database,
+  ExternalLink,
+  Hexagon,
+  Link as LinkIcon,
+  Triangle,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { MyLink } from "../_components/MyLink";
@@ -290,7 +289,7 @@ export default function Home() {
                         href={project.link}
                         className="inline-flex items-center gap-1 rounded bg-gray-600 px-2 py-1 font-medium text-white text-xs transition hover:bg-gray-700"
                       >
-                        <FontAwesomeIcon icon={faGithub} size="sm" />
+                        <ExternalLink size={14} />
                         GitHub
                       </MyLink>
                     )}
@@ -337,7 +336,7 @@ export default function Home() {
                     ", ",
                   ),
                   link: getPathToTextTagEditor(),
-                  linkIcon: faLink,
+                  linkIcon: <LinkIcon size={16} />,
                 },
                 {
                   title: "ダイクストラ法ビジュアライザー",
@@ -354,7 +353,7 @@ export default function Home() {
                     "TailwindCSS",
                   ].join(", "),
                   link: getPathToDijkstra(),
-                  linkIcon: faLink,
+                  linkIcon: <LinkIcon size={16} />,
                 },
                 {
                   title: "ガキが舐めてると潰すぞメーカー",
@@ -370,7 +369,7 @@ export default function Home() {
                     "GitHub Pages",
                   ].join(", "),
                   link: "https://kik4.github.io/nametsubu/",
-                  linkIcon: faExternalLinkAlt,
+                  linkIcon: <ExternalLink size={16} />,
                 },
               ].map((project, index) => (
                 <AnimateOnScroll
@@ -436,10 +435,7 @@ export default function Home() {
                                 : "text-purple-500 dark:text-purple-400",
                             )}
                           >
-                            <FontAwesomeIcon
-                              icon={project.linkIcon}
-                              size="sm"
-                            />
+                            {project.linkIcon}
                           </span>
                         </div>
                       </div>
@@ -504,18 +500,34 @@ export default function Home() {
           <AnimateOnScroll animation="fadeIn" delay={0.3}>
             <div className="mt-12 flex flex-wrap justify-center gap-8">
               {[
-                { name: "TypeScript", icon: "TS", color: "bg-blue-600" },
-                { name: "React", icon: faReact, color: "bg-cyan-500" },
+                {
+                  name: "TypeScript",
+                  icon: <SiTypescript className="fill-white" size={32} />,
+                  color: "bg-[#3178c6]",
+                },
+                {
+                  name: "React",
+                  icon: <SiReact className="fill-white" size={32} />,
+                  color: "bg-cyan-500",
+                },
                 { name: "Next.js", icon: "N", color: "bg-black" },
-                { name: "Node.js", icon: faNodeJs, color: "bg-green-700" },
-                { name: "GitHub", icon: faGithub, color: "bg-gray-800" },
-                { name: "Express", icon: faServer, color: "bg-green-600" },
+                { name: "Node.js", icon: <Hexagon />, color: "bg-green-700" },
+                {
+                  name: "GitHub",
+                  icon: <SiGithub className="fill-white" size={32} />,
+                  color: "bg-gray-800",
+                },
+                {
+                  name: "Express",
+                  icon: <SiExpress className="fill-white" size={32} />,
+                  color: "bg-green-600",
+                },
                 {
                   name: "PostgreSQL",
-                  icon: faDatabase,
+                  icon: <Database />,
                   color: "bg-blue-800",
                 },
-                { name: "Vercel", icon: "▲", color: "bg-black" },
+                { name: "Vercel", icon: <Triangle />, color: "bg-black" },
               ].map((tech) => (
                 <div
                   key={tech.name}
@@ -527,7 +539,7 @@ export default function Home() {
                     {typeof tech.icon === "string" ? (
                       <span className="font-bold text-xl">{tech.icon}</span>
                     ) : (
-                      <FontAwesomeIcon icon={tech.icon} size="xl" />
+                      tech.icon
                     )}
                   </div>
                   <span className="font-medium text-gray-600 text-sm dark:text-gray-400">
@@ -548,7 +560,7 @@ export default function Home() {
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             {[
               {
-                icon: faCodeBranch,
+                icon: <ExternalLink size={20} />,
                 title: "React公式ドキュメント日本語訳",
                 description:
                   "React公式ドキュメントの日本語訳プロジェクトに協力。日本の開発者コミュニティへの貢献を行いました。",
@@ -557,7 +569,7 @@ export default function Home() {
                 type: "ドキュメント翻訳",
               },
               {
-                icon: faCodeBranch,
+                icon: <ExternalLink size={20} />,
                 title: "react-intersection-observer",
                 description:
                   "人気のReactライブラリのバグ修正PRを送信。Intersection Observer APIを使用したライブラリの安定性向上に貢献しました。",
@@ -566,7 +578,7 @@ export default function Home() {
                 type: "バグ修正",
               },
               {
-                icon: faNpm,
+                icon: <ExternalLink size={20} />,
                 title: "array-compressor",
                 description:
                   "配列の圧縮とセグメント化を効率的に行うnpmパッケージを開発・公開。データ処理の最適化に役立つユーティリティライブラリです。",
@@ -575,7 +587,7 @@ export default function Home() {
                 type: "ライブラリ公開",
               },
               {
-                icon: faCodeBranch,
+                icon: <ExternalLink size={20} />,
                 title: "simple-vercel-deploy",
                 description:
                   "Vercelへのデプロイを行うシンプルなGitHub Actionを開発・公開。自動デプロイでは足りない部分を補完し、CI/CDパイプラインの構築を効率化するツールです。",
@@ -592,7 +604,7 @@ export default function Home() {
               >
                 <div className="flex items-start gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                    <FontAwesomeIcon icon={item.icon} size="lg" />
+                    {item.icon}
                   </div>
                   <div className="flex-1">
                     <div className="mb-2 flex items-center justify-between">
@@ -608,7 +620,7 @@ export default function Home() {
                       href={item.link}
                       className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 font-medium text-sm text-white transition hover:bg-blue-700"
                     >
-                      <FontAwesomeIcon icon={faExternalLinkAlt} size="sm" />
+                      <ExternalLink size={14} />
                       {item.linkText}
                     </MyLink>
                   </div>
@@ -646,7 +658,7 @@ export default function Home() {
             <div className="mx-auto max-w-4xl rounded-2xl bg-gradient-to-r from-blue-50 to-blue-100 p-8 shadow-lg dark:from-blue-800/50 dark:to-blue-700/50">
               <div className="flex flex-col items-center gap-6 md:flex-row">
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-black text-white shadow-lg">
-                  <FontAwesomeIcon icon={faXTwitter} size="2x" />
+                  <SiX className="fill-white" size={24} />
                 </div>
                 <div className="flex-1 text-center md:text-left">
                   <h3 className="mb-3 font-bold text-2xl">Xで技術情報を発信</h3>
@@ -673,7 +685,7 @@ export default function Home() {
                     href="https://x.com/_kik4_"
                     className="inline-flex items-center gap-2 rounded-lg bg-black px-6 py-3 font-medium text-white transition hover:bg-gray-800"
                   >
-                    <FontAwesomeIcon icon={faXTwitter} />
+                    <ExternalLink size={16} />
                     Xプロフィールを見る
                   </MyLink>
                 </div>
@@ -711,7 +723,7 @@ export default function Home() {
                     href="https://qiita.com/kik4"
                     className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-3 font-medium text-white transition hover:bg-green-700"
                   >
-                    <FontAwesomeIcon icon={faExternalLinkAlt} />
+                    <ExternalLink size={16} />
                     Qiitaプロフィールを見る
                   </MyLink>
                 </div>
@@ -1061,7 +1073,7 @@ export default function Home() {
                   href="https://x.com/_kik4_"
                   className="flex h-12 w-12 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-600 shadow-sm transition hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:bg-gray-700"
                 >
-                  <FontAwesomeIcon icon={faXTwitter} size="lg" />
+                  <SiX className="dark:fill-white" size={18} />
                 </MyLink>
               </div>
               <p className="text-gray-600 dark:text-gray-400">

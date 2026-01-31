@@ -1,5 +1,4 @@
-import { faHome, faSearch } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Home, Search } from "lucide-react";
 import { MyLink } from "./_components/MyLink";
 import { getPathToHome } from "./(home)/getPath";
 
@@ -15,9 +14,9 @@ export default function NotFound() {
             </h1>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="rounded-full bg-blue-100 p-8 shadow-lg dark:bg-blue-900/30">
-                <FontAwesomeIcon
-                  icon={faSearch}
-                  className="text-5xl text-blue-600 dark:text-blue-400"
+                <Search
+                  className="text-blue-600 dark:text-blue-400"
+                  size={48}
                 />
               </div>
             </div>
@@ -37,7 +36,7 @@ export default function NotFound() {
               href={getPathToHome()}
               className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-8 py-3 font-medium text-white transition hover:bg-blue-700"
             >
-              <FontAwesomeIcon icon={faHome} />
+              <Home size={20} />
               ホームに戻る
             </MyLink>
           </div>
