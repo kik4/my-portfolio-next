@@ -1,7 +1,8 @@
 "use client";
 
+import { SiGithub } from "@icons-pack/react-simple-icons";
 import clsx from "clsx";
-import { ExternalLink, Github, Menu, X } from "lucide-react";
+import { ExternalLink, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { getPathToHome } from "../(home)/getPath";
@@ -94,7 +95,7 @@ export function MobileMenu() {
               href="https://github.com/kik4"
               className="flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition hover:bg-gray-100 dark:hover:bg-gray-800"
             >
-              <Github size={20} />
+              <SiGithub size={20} />
               <span>GitHub</span>
               <ExternalLink size={16} />
             </MyLink>
