@@ -86,6 +86,7 @@ export default function Home() {
                   height={320}
                   className="rounded-lg object-cover shadow-xl"
                   alt="kik4"
+                  loading="eager"
                 />
               </div>
             </AnimateOnScroll>
