@@ -82,14 +82,14 @@ export function MobileMenu() {
               className="rounded-lg px-4 py-3 font-medium transition hover:bg-gray-100 dark:hover:bg-gray-800"
               onClick={() => setIsOpen(false)}
             >
-              Home
+              ホーム
             </MyLink>
             <MyLink
               href={getPathToTypeScript()}
               className="rounded-lg px-4 py-3 font-medium transition hover:bg-gray-100 dark:hover:bg-gray-800"
               onClick={() => setIsOpen(false)}
             >
-              Algorithm
+              技術記事
             </MyLink>
             <MyLink
               href="https://github.com/kik4"
