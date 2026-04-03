@@ -205,7 +205,7 @@ export default function TagEditor() {
         <nav className="container mx-auto flex items-center justify-between px-6 py-3">
           <MyLink
             href={getPathToHome()}
-            className="text-gray-600 text-sm hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+            className="text-gray-600 text-sm hover:text-blue-600"
           >
             ← ホーム
           </MyLink>
