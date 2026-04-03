@@ -16,6 +16,7 @@ import {
 import type { Metadata } from "next";
 import Image from "next/image";
 import { MyLink } from "../_components/MyLink";
+import { getPathTo2d5DModeling } from "../2d5d-modeling/getPath";
 import { getPathToDijkstra } from "../dijkstra/getPath";
 import { getPathToTextTagEditor } from "../text-tag-editor/getPath";
 import { getPathToTypeScript } from "../typescript/getPath";
@@ -326,6 +327,17 @@ export default function Home() {
             </AnimateOnScroll>
             <div className="flex flex-col gap-4">
               {[
+                {
+                  title: "2.5Dモデリングツール",
+                  category: "技術実験" as const,
+                  period: "2025",
+                  description:
+                    "2Dと3Dを組み合わせたモデリングツール。2Dのスプライトを配置して理想の3Dキャラクターを構築。",
+                  image: icon,
+                  tech: ["React", "TypeScript"].join(", "),
+                  link: getPathTo2d5DModeling(),
+                  linkIcon: <LinkIcon size={16} />,
+                },
                 {
                   title: "テキストタグエディター",
                   category: "技術実験" as const,
