@@ -6,13 +6,11 @@ import { Suspense, useEffect, useRef } from "react";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { EyeBrowSprites } from "./EyeBrowSprites";
 import { HeadModel } from "./HeadModel";
-import type { AutoOffsetParams, BrowParams, EyeParams } from "./types";
+import type { Keyframe } from "./types";
 
 interface ViewportProps {
   modelUrl: string;
-  eyeParams: EyeParams;
-  browParams: BrowParams;
-  autoOffset: AutoOffsetParams;
+  keyframes: Keyframe[];
   fixedAngle: { h: number; v: number } | null;
   onAngleChange: (angle: { h: number; v: number }) => void;
 }
@@ -60,9 +58,7 @@ function CameraController({
 
 export function Viewport({
   modelUrl,
-  eyeParams,
-  browParams,
-  autoOffset,
+  keyframes,
   fixedAngle,
   onAngleChange,
 }: ViewportProps) {
@@ -78,9 +74,7 @@ export function Viewport({
         <Suspense fallback={<LoadingFallback />}>
           <HeadModel url={modelUrl}>
             <EyeBrowSprites
-              eyeParams={eyeParams}
-              browParams={browParams}
-              autoOffset={autoOffset}
+              keyframes={keyframes}
               onAngleChange={onAngleChange}
             />
           </HeadModel>

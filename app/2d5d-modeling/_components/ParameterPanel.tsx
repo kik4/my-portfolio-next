@@ -1,6 +1,18 @@
 "use client";
 
-import type { AutoOffsetParams, BrowParams, EyeParams } from "./types";
+import type { Keyframe, SpritePosition } from "./types";
+import { createKeyframeFromCurrent, interpolateKeyframes } from "./types";
+
+const H_ANGLE_PRESETS = [0, 15, 30, 45, 60, 75, 90, 120, 150, 180] as const;
+const V_ANGLE_PRESETS = [-90, -45, -15, 0, 15, 45, 90] as const;
+
+type PartKey = "leftEye" | "rightEye" | "leftBrow" | "rightBrow";
+const PART_LABELS: Record<PartKey, string> = {
+  leftEye: "左目",
+  rightEye: "右目",
+  leftBrow: "左眉",
+  rightBrow: "右眉",
+};
 
 interface SliderProps {
   label: string;
@@ -15,7 +27,7 @@ function Slider({ label, value, min, max, step, onChange }: SliderProps) {
   return (
     <div className="flex items-center gap-2">
       <label
-        className="w-20 shrink-0 text-gray-600 text-xs"
+        className="w-8 shrink-0 text-gray-600 text-xs"
         htmlFor={`range-${label}`}
       >
         {label}
@@ -30,44 +42,123 @@ function Slider({ label, value, min, max, step, onChange }: SliderProps) {
         onChange={(e) => onChange(parseFloat(e.target.value))}
         className="h-1.5 flex-1 accent-blue-500"
       />
-      <span className="w-12 text-right text-gray-500 text-xs tabular-nums">
-        {value.toFixed(2)}
+      <span className="w-14 text-right text-gray-500 text-xs tabular-nums">
+        {value.toFixed(3)}
       </span>
     </div>
   );
 }
 
-const H_ANGLE_PRESETS = [0, 15, 30, 45, 60, 75, 90, 120, 150, 180] as const;
-const V_ANGLE_PRESETS = [-90, -45, -15, 0, 15, 45, 90] as const;
+function PartEditor({
+  label,
+  position,
+  onChange,
+}: {
+  label: string;
+  position: SpritePosition;
+  onChange: (pos: SpritePosition) => void;
+}) {
+  return (
+    <div>
+      <h4 className="mb-1 font-semibold text-gray-600 text-xs">{label}</h4>
+      <div className="flex flex-col gap-1">
+        <Slider
+          label="X"
+          value={position.x}
+          min={-0.1}
+          max={0.1}
+          step={0.001}
+          onChange={(v) => onChange({ ...position, x: v })}
+        />
+        <Slider
+          label="Y"
+          value={position.y}
+          min={-0.1}
+          max={0.1}
+          step={0.001}
+          onChange={(v) => onChange({ ...position, y: v })}
+        />
+        <Slider
+          label="Z"
+          value={position.z}
+          min={-0.05}
+          max={0.15}
+          step={0.001}
+          onChange={(v) => onChange({ ...position, z: v })}
+        />
+        <Slider
+          label="大"
+          value={position.scale}
+          min={0.002}
+          max={0.05}
+          step={0.001}
+          onChange={(v) => onChange({ ...position, scale: v })}
+        />
+        <Slider
+          label="回"
+          value={position.rotation}
+          min={-30}
+          max={30}
+          step={1}
+          onChange={(v) => onChange({ ...position, rotation: v })}
+        />
+      </div>
+    </div>
+  );
+}
 
 interface ParameterPanelProps {
-  eyeParams: EyeParams;
-  browParams: BrowParams;
-  autoOffset: AutoOffsetParams;
+  keyframes: Keyframe[];
   cameraAngle: { h: number; v: number };
   fixedAngle: { h: number; v: number } | null;
-  onEyeChange: (params: EyeParams) => void;
-  onBrowChange: (params: BrowParams) => void;
-  onAutoOffsetChange: (params: AutoOffsetParams) => void;
+  selectedKeyframeIndex: number | null;
+  onKeyframesChange: (keyframes: Keyframe[]) => void;
   onFixedAngleChange: (angle: { h: number; v: number } | null) => void;
+  onSelectKeyframe: (index: number | null) => void;
 }
 
 export function ParameterPanel({
-  eyeParams,
-  browParams,
-  autoOffset,
+  keyframes,
   cameraAngle,
   fixedAngle,
-  onEyeChange,
-  onBrowChange,
-  onAutoOffsetChange,
+  selectedKeyframeIndex,
+  onKeyframesChange,
   onFixedAngleChange,
+  onSelectKeyframe,
 }: ParameterPanelProps) {
+  const selectedKeyframe =
+    selectedKeyframeIndex !== null ? keyframes[selectedKeyframeIndex] : null;
+
+  function updateSelectedKeyframe(updated: Keyframe) {
+    if (selectedKeyframeIndex === null) return;
+    const next = [...keyframes];
+    next[selectedKeyframeIndex] = updated;
+    onKeyframesChange(next);
+  }
+
+  function addKeyframeAtCurrentAngle() {
+    const angle = Math.round(fixedAngle?.h ?? cameraAngle.h);
+    const exists = keyframes.find((kf) => kf.angle === angle);
+    if (exists) return;
+    const current = interpolateKeyframes(keyframes, angle);
+    const kf = createKeyframeFromCurrent(angle, current);
+    const next = [...keyframes, kf].sort((a, b) => a.angle - b.angle);
+    onKeyframesChange(next);
+    onSelectKeyframe(next.findIndex((k) => k.angle === angle));
+  }
+
+  function removeSelectedKeyframe() {
+    if (selectedKeyframeIndex === null) return;
+    const next = keyframes.filter((_, i) => i !== selectedKeyframeIndex);
+    onKeyframesChange(next);
+    onSelectKeyframe(null);
+  }
+
   return (
-    <div className="flex w-72 flex-col gap-4 overflow-y-auto border-l bg-white p-4 text-sm">
-      {/* カメラ情報 */}
+    <div className="flex w-80 flex-col gap-3 overflow-y-auto border-l bg-white p-4 text-sm">
+      {/* カメラ角度 */}
       <div className="rounded-lg bg-gray-50 p-3">
-        <div className="mt-2">
+        <div>
           <div className="flex items-center justify-between">
             <div className="text-gray-500 text-xs">水平</div>
             <div className="font-bold text-gray-800 tabular-nums">
@@ -88,7 +179,7 @@ export function ParameterPanel({
             }
             className="h-1.5 w-full accent-blue-500"
           />
-          <div className="mt-1 flex justify-between text-gray-400 text-xs">
+          <div className="mt-1 flex flex-wrap gap-1 text-gray-400 text-xs">
             {H_ANGLE_PRESETS.map((a) => (
               <button
                 key={a}
@@ -127,7 +218,7 @@ export function ParameterPanel({
             }
             className="h-1.5 w-full accent-blue-500"
           />
-          <div className="mt-1 flex justify-between text-gray-400 text-xs">
+          <div className="mt-1 flex flex-wrap gap-1 text-gray-400 text-xs">
             {V_ANGLE_PRESETS.map((a) => (
               <button
                 key={a}
@@ -147,148 +238,68 @@ export function ParameterPanel({
         </div>
       </div>
 
-      {/* 自動オフセット */}
+      {/* キーフレーム一覧 */}
       <div className="rounded-lg bg-gray-50 p-3">
-        <label className="flex cursor-pointer items-center gap-2">
-          <input
-            type="checkbox"
-            checked={autoOffset.enabled}
-            onChange={(e) =>
-              onAutoOffsetChange({ ...autoOffset, enabled: e.target.checked })
-            }
-            className="accent-blue-500"
-          />
-          <span className="font-semibold text-gray-700 text-xs">
-            自動オフセット
-          </span>
-        </label>
-        {autoOffset.enabled && (
-          <div className="mt-2 flex flex-col gap-1.5">
-            <Slider
-              label="水平強度"
-              value={autoOffset.horizontalStrength}
-              min={0}
-              max={2}
-              step={0.05}
-              onChange={(v) =>
-                onAutoOffsetChange({ ...autoOffset, horizontalStrength: v })
-              }
-            />
-            <Slider
-              label="サイズ強度"
-              value={autoOffset.scaleStrength}
-              min={0}
-              max={2}
-              step={0.05}
-              onChange={(v) =>
-                onAutoOffsetChange({ ...autoOffset, scaleStrength: v })
-              }
-            />
-            <Slider
-              label="間隔強度"
-              value={autoOffset.spacingStrength}
-              min={0}
-              max={2}
-              step={0.05}
-              onChange={(v) =>
-                onAutoOffsetChange({ ...autoOffset, spacingStrength: v })
-              }
-            />
+        <div className="mb-2 flex items-center justify-between">
+          <div className="font-semibold text-gray-700 text-xs">
+            キーフレーム
           </div>
-        )}
-      </div>
-
-      {/* 目の配置 */}
-      <div>
-        <h3 className="mb-2 border-b pb-1 font-semibold text-gray-700 text-xs">
-          目の配置
-        </h3>
-        <div className="flex flex-col gap-1.5">
-          <Slider
-            label="水平位置"
-            value={eyeParams.horizontalOffset}
-            min={-0.03}
-            max={0.03}
-            step={0.001}
-            onChange={(v) => onEyeChange({ ...eyeParams, horizontalOffset: v })}
-          />
-          <Slider
-            label="垂直位置"
-            value={eyeParams.verticalOffset}
-            min={-0.02}
-            max={2}
-            step={0.001}
-            onChange={(v) => onEyeChange({ ...eyeParams, verticalOffset: v })}
-          />
-          <Slider
-            label="間隔"
-            value={eyeParams.spacing}
-            min={0.003}
-            max={0.04}
-            step={0.001}
-            onChange={(v) => onEyeChange({ ...eyeParams, spacing: v })}
-          />
-          <Slider
-            label="サイズ"
-            value={eyeParams.scale}
-            min={0.005}
-            max={0.05}
-            step={0.001}
-            onChange={(v) => onEyeChange({ ...eyeParams, scale: v })}
-          />
-          <Slider
-            label="回転"
-            value={eyeParams.rotation}
-            min={-30}
-            max={30}
-            step={1}
-            onChange={(v) => onEyeChange({ ...eyeParams, rotation: v })}
-          />
+          <button
+            type="button"
+            onClick={addKeyframeAtCurrentAngle}
+            className="rounded bg-blue-500 px-2 py-0.5 text-white text-xs hover:bg-blue-600"
+          >
+            + 追加
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {keyframes.map((kf, i) => (
+            <button
+              key={kf.angle}
+              type="button"
+              onClick={() => {
+                onSelectKeyframe(i);
+                onFixedAngleChange({ h: kf.angle, v: fixedAngle?.v ?? 0 });
+              }}
+              className={`rounded px-2 py-0.5 text-xs ${
+                selectedKeyframeIndex === i
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+              }`}
+            >
+              {kf.angle}°
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* 眉の配置 */}
-      <div>
-        <h3 className="mb-2 border-b pb-1 font-semibold text-gray-700 text-xs">
-          眉の配置
-        </h3>
-        <div className="flex flex-col gap-1.5">
-          <Slider
-            label="水平位置"
-            value={browParams.horizontalOffset}
-            min={-0.03}
-            max={0.03}
-            step={0.001}
-            onChange={(v) =>
-              onBrowChange({ ...browParams, horizontalOffset: v })
-            }
-          />
-          <Slider
-            label="垂直位置"
-            value={browParams.verticalOffset}
-            min={-0.02}
-            max={0.03}
-            step={0.001}
-            onChange={(v) => onBrowChange({ ...browParams, verticalOffset: v })}
-          />
-          <Slider
-            label="間隔"
-            value={browParams.spacing}
-            min={0.003}
-            max={0.04}
-            step={0.001}
-            onChange={(v) => onBrowChange({ ...browParams, spacing: v })}
-          />
-          <Slider
-            label="回転"
-            value={browParams.rotation}
-            min={-30}
-            max={30}
-            step={1}
-            onChange={(v) => onBrowChange({ ...browParams, rotation: v })}
-          />
+      {/* 選択中のキーフレーム編集 */}
+      {selectedKeyframe && (
+        <div className="flex flex-col gap-3 rounded-lg border p-3">
+          <div className="flex items-center justify-between">
+            <div className="font-semibold text-gray-700 text-xs">
+              {selectedKeyframe.angle}° の配置
+            </div>
+            <button
+              type="button"
+              onClick={removeSelectedKeyframe}
+              className="rounded px-2 py-0.5 text-red-500 text-xs hover:bg-red-50"
+            >
+              削除
+            </button>
+          </div>
+          {(Object.keys(PART_LABELS) as PartKey[]).map((part) => (
+            <PartEditor
+              key={part}
+              label={PART_LABELS[part]}
+              position={selectedKeyframe[part]}
+              onChange={(pos) =>
+                updateSelectedKeyframe({ ...selectedKeyframe, [part]: pos })
+              }
+            />
+          ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }

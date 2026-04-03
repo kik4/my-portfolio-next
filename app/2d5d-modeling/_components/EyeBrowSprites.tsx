@@ -3,35 +3,11 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
-import type { AutoOffsetParams, BrowParams, EyeParams } from "./types";
-import { FACE_BASE_Y, FACE_FRONT_Z } from "./types";
+import type { Keyframe, SpritePosition } from "./types";
+import { interpolateKeyframes } from "./types";
 
-/**
- * 自動オフセットを計算
- */
-function computeAutoOffset(
-  angleDeg: number,
-  autoOffset: AutoOffsetParams,
-  side: "left" | "right",
-) {
-  if (!autoOffset.enabled)
-    return { hOffset: 0, scaleOffset: 0, spacingOffset: 0 };
-
-  const t = Math.min(angleDeg / 90, 1);
-  const sideSign = side === "left" ? 1 : -1;
-  const hOffset = t * autoOffset.horizontalStrength * sideSign * 0.005;
-  const scaleOffset = -t * autoOffset.scaleStrength * 0.01;
-  const spacingOffset = -t * autoOffset.spacingStrength * 0.005;
-
-  return { hOffset, scaleOffset, spacingOffset };
-}
-
-interface EyeBrowSpritesProps {
-  eyeParams: EyeParams;
-  browParams: BrowParams;
-  autoOffset: AutoOffsetParams;
-  onAngleChange: (angle: { h: number; v: number }) => void;
-}
+/** 顔の基準位置（モデルローカル座標、顔前面） */
+const FACE_CENTER = new THREE.Vector3(0, 1.548, 0.075);
 
 function Billboard({ children }: { children: React.ReactNode }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -46,93 +22,69 @@ function Billboard({ children }: { children: React.ReactNode }) {
   return <group ref={groupRef}>{children}</group>;
 }
 
-function EyeSprite({
-  side,
-  eyeParams,
-  autoOffset,
-  angleDeg,
+/**
+ * カメラローカル座標からワールド座標に変換
+ * カメラの右方向・上方向・前方向をベースに、顔の基準位置からオフセット
+ */
+function cameraLocalToWorld(
+  pos: SpritePosition,
+  camera: THREE.Camera,
+): THREE.Vector3 {
+  const right = new THREE.Vector3();
+  const up = new THREE.Vector3();
+  const forward = new THREE.Vector3();
+
+  camera.getWorldDirection(forward);
+  right.crossVectors(forward, camera.up).normalize();
+  up.crossVectors(right, forward).normalize();
+
+  return FACE_CENTER.clone()
+    .add(right.multiplyScalar(pos.x))
+    .add(up.multiplyScalar(pos.y))
+    .add(forward.multiplyScalar(-pos.z)); // zは手前が正なので反転
+}
+
+function SpriteItem({
+  worldPos,
+  scale,
+  rotation,
+  color,
+  children,
 }: {
-  side: "left" | "right";
-  eyeParams: EyeParams;
-  autoOffset: AutoOffsetParams;
-  angleDeg: number;
+  worldPos: THREE.Vector3;
+  scale: number;
+  rotation: number;
+  color: string;
+  children?: React.ReactNode;
 }) {
-  const sideSign = side === "left" ? -1 : 1;
-
-  const auto = computeAutoOffset(angleDeg, autoOffset, side);
-
-  const x =
-    sideSign * (eyeParams.spacing + auto.spacingOffset) +
-    eyeParams.horizontalOffset +
-    auto.hOffset;
-  const y = FACE_BASE_Y + eyeParams.verticalOffset;
-  const z = FACE_FRONT_Z;
-  const scale = Math.max(eyeParams.scale + auto.scaleOffset, 0.002);
-  const rot = eyeParams.rotation * (Math.PI / 180) * sideSign;
+  const rot = (rotation * Math.PI) / 180;
+  const s = Math.max(scale, 0.002);
 
   return (
-    <group position={[x, y, z]}>
+    <group position={[worldPos.x, worldPos.y, worldPos.z]}>
       <Billboard>
-        <mesh rotation={[0, 0, rot]} scale={[scale, scale, 1]}>
+        <mesh rotation={[0, 0, rot]} scale={[s, s, 1]}>
           <planeGeometry args={[1, 1]} />
           <meshBasicMaterial
-            color="#2a2a5a"
+            color={color}
             side={THREE.DoubleSide}
             transparent
             opacity={0.9}
           />
-          {/* 瞳 */}
-          <mesh position={[0, -0.05, 0.001]}>
-            <circleGeometry args={[0.25, 32]} />
-            <meshBasicMaterial color="#4488cc" />
-          </mesh>
-          <mesh position={[0, -0.05, 0.002]}>
-            <circleGeometry args={[0.12, 32]} />
-            <meshBasicMaterial color="#111111" />
-          </mesh>
-          {/* ハイライト */}
-          <mesh position={[0.1, 0.05, 0.003]}>
-            <circleGeometry args={[0.08, 16]} />
-            <meshBasicMaterial color="#ffffff" />
-          </mesh>
+          {children}
         </mesh>
       </Billboard>
     </group>
   );
 }
 
-function BrowSprite({
-  side,
-  browParams,
-  angleDeg: _angleDeg,
-}: {
-  side: "left" | "right";
-  browParams: BrowParams;
-  angleDeg: number;
-}) {
-  const sideSign = side === "left" ? -1 : 1;
-
-  const x = sideSign * browParams.spacing + browParams.horizontalOffset;
-  const y = FACE_BASE_Y + browParams.verticalOffset;
-  const z = FACE_FRONT_Z;
-  const rot = browParams.rotation * (Math.PI / 180) * sideSign;
-
-  return (
-    <group position={[x, y, z]}>
-      <Billboard>
-        <mesh rotation={[0, 0, rot]} scale={[0.02, 0.003, 1]}>
-          <planeGeometry args={[1, 1]} />
-          <meshBasicMaterial color="#3a2a1a" side={THREE.DoubleSide} />
-        </mesh>
-      </Billboard>
-    </group>
-  );
+interface EyeBrowSpritesProps {
+  keyframes: Keyframe[];
+  onAngleChange: (angle: { h: number; v: number }) => void;
 }
 
 export function EyeBrowSprites({
-  eyeParams,
-  browParams,
-  autoOffset,
+  keyframes,
   onAngleChange,
 }: EyeBrowSpritesProps) {
   const { camera } = useThree();
@@ -151,25 +103,71 @@ export function EyeBrowSprites({
     }
   });
 
+  const current = interpolateKeyframes(keyframes, hRef.current);
+
+  const leftEyeWorld = cameraLocalToWorld(current.leftEye, camera);
+  const rightEyeWorld = cameraLocalToWorld(current.rightEye, camera);
+  const leftBrowWorld = cameraLocalToWorld(current.leftBrow, camera);
+  const rightBrowWorld = cameraLocalToWorld(current.rightBrow, camera);
+
   return (
     <group>
-      <EyeSprite
-        side="left"
-        eyeParams={eyeParams}
-        autoOffset={autoOffset}
-        angleDeg={hRef.current}
+      {/* 左目 */}
+      <SpriteItem
+        worldPos={leftEyeWorld}
+        scale={current.leftEye.scale}
+        rotation={current.leftEye.rotation}
+        color="#2a2a5a"
+      >
+        <mesh position={[0, -0.05, 0.001]}>
+          <circleGeometry args={[0.25, 32]} />
+          <meshBasicMaterial color="#4488cc" />
+        </mesh>
+        <mesh position={[0, -0.05, 0.002]}>
+          <circleGeometry args={[0.12, 32]} />
+          <meshBasicMaterial color="#111111" />
+        </mesh>
+        <mesh position={[0.1, 0.05, 0.003]}>
+          <circleGeometry args={[0.08, 16]} />
+          <meshBasicMaterial color="#ffffff" />
+        </mesh>
+      </SpriteItem>
+
+      {/* 右目 */}
+      <SpriteItem
+        worldPos={rightEyeWorld}
+        scale={current.rightEye.scale}
+        rotation={current.rightEye.rotation}
+        color="#2a2a5a"
+      >
+        <mesh position={[0, -0.05, 0.001]}>
+          <circleGeometry args={[0.25, 32]} />
+          <meshBasicMaterial color="#4488cc" />
+        </mesh>
+        <mesh position={[0, -0.05, 0.002]}>
+          <circleGeometry args={[0.12, 32]} />
+          <meshBasicMaterial color="#111111" />
+        </mesh>
+        <mesh position={[-0.1, 0.05, 0.003]}>
+          <circleGeometry args={[0.08, 16]} />
+          <meshBasicMaterial color="#ffffff" />
+        </mesh>
+      </SpriteItem>
+
+      {/* 左眉 */}
+      <SpriteItem
+        worldPos={leftBrowWorld}
+        scale={current.leftBrow.scale}
+        rotation={current.leftBrow.rotation}
+        color="#3a2a1a"
       />
-      <EyeSprite
-        side="right"
-        eyeParams={eyeParams}
-        autoOffset={autoOffset}
-        angleDeg={hRef.current}
-      />
-      <BrowSprite side="left" browParams={browParams} angleDeg={hRef.current} />
-      <BrowSprite
-        side="right"
-        browParams={browParams}
-        angleDeg={hRef.current}
+
+      {/* 右眉 */}
+      <SpriteItem
+        worldPos={rightBrowWorld}
+        scale={current.rightBrow.scale}
+        rotation={current.rightBrow.rotation}
+        color="#3a2a1a"
       />
     </group>
   );
