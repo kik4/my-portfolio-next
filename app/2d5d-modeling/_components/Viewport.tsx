@@ -111,13 +111,10 @@ export function Viewport({
         <ambientLight intensity={2.5} />
 
         <Suspense fallback={<LoadingFallback />}>
-          <HeadModel url={modelUrl}>
-            <EyeBrowSprites
-              keyframes={keyframes}
-              onAngleChange={onAngleChange}
-            />
-          </HeadModel>
+          <HeadModel url={modelUrl} />
         </Suspense>
+
+        <EyeBrowSprites keyframes={keyframes} onAngleChange={onAngleChange} />
 
         <CameraController
           fixedAngle={fixedAngle}

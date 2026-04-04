@@ -40,8 +40,8 @@ function Slider({ label, value, min, max, step, onChange }: SliderProps) {
         onChange={(e) => onChange(parseFloat(e.target.value))}
         className="h-1.5 flex-1 accent-blue-500"
       />
-      <span className="w-14 text-right text-gray-500 text-xs tabular-nums">
-        {value.toFixed(3)}
+      <span className="w-16 text-right text-gray-500 text-xs tabular-nums">
+        {value.toFixed(4)}
       </span>
     </div>
   );
@@ -65,7 +65,7 @@ function PartEditor({
           value={position.x}
           min={-0.2}
           max={0.2}
-          step={0.001}
+          step={0.0001}
           onChange={(v) => onChange({ ...position, x: v })}
         />
         <Slider
@@ -73,7 +73,7 @@ function PartEditor({
           value={position.y}
           min={-0.2}
           max={0.2}
-          step={0.001}
+          step={0.0001}
           onChange={(v) => onChange({ ...position, y: v })}
         />
         <Slider
@@ -81,7 +81,7 @@ function PartEditor({
           value={position.scale}
           min={0.002}
           max={0.05}
-          step={0.001}
+          step={0.0001}
           onChange={(v) => onChange({ ...position, scale: v })}
         />
         <Slider
@@ -89,7 +89,7 @@ function PartEditor({
           value={position.scaleX}
           min={0.1}
           max={2}
-          step={0.01}
+          step={0.001}
           onChange={(v) => onChange({ ...position, scaleX: v })}
         />
         <Slider
@@ -97,7 +97,7 @@ function PartEditor({
           value={position.rotation}
           min={-30}
           max={30}
-          step={1}
+          step={0.1}
           onChange={(v) => onChange({ ...position, rotation: v })}
         />
         <Slider
@@ -105,7 +105,7 @@ function PartEditor({
           value={position.depthOffset}
           min={-1}
           max={1}
-          step={0.01}
+          step={0.001}
           onChange={(v) => onChange({ ...position, depthOffset: v })}
         />
       </div>
