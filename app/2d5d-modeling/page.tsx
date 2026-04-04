@@ -2,7 +2,7 @@
 
 import { MyLink } from "../_components/MyLink";
 import { getPathToHome } from "../(home)/getPath";
-import { EyePlacementTool } from "./_components/EyePlacementTool";
+import { ModelingTool } from "./_components/ModelingTool";
 
 export default function ModelingPage() {
   return (
@@ -15,11 +15,13 @@ export default function ModelingPage() {
           >
             ← ホーム
           </MyLink>
-          <h1 className="font-bold text-gray-800 text-lg">目配置検証ツール</h1>
+          <h1 className="font-bold text-gray-800 text-lg">
+            断面モデリングツール
+          </h1>
           <div className="w-16" />
         </nav>
       </header>
-      <EyePlacementTool modelUrl="/models/base2.glb" />
+      <ModelingTool />
     </div>
   );
 }
