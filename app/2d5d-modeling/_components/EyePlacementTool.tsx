@@ -13,6 +13,7 @@ function migrateSpritePosition(pos: Record<string, unknown>): SpritePosition {
     x: (pos.x as number) ?? 0,
     y: (pos.y as number) ?? 0,
     scale: (pos.scale as number) ?? 0.015,
+    scaleX: (pos.scaleX as number) ?? 1,
     rotation: (pos.rotation as number) ?? 0,
     depthOffset: (pos.depthOffset as number) ?? 0,
   };
@@ -56,6 +57,7 @@ export function EyePlacementTool({ modelUrl }: EyePlacementToolProps) {
     number | null
   >(0);
   const [fov, setFov] = useState(45);
+  const [autoRotate, setAutoRotate] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -82,6 +84,7 @@ export function EyePlacementTool({ modelUrl }: EyePlacementToolProps) {
         keyframes={keyframes}
         fixedAngle={fixedAngle}
         fov={fov}
+        autoRotate={autoRotate}
         onAngleChange={handleAngleChange}
       />
       <ParameterPanel
@@ -89,10 +92,12 @@ export function EyePlacementTool({ modelUrl }: EyePlacementToolProps) {
         cameraAngle={cameraAngle}
         fixedAngle={fixedAngle}
         fov={fov}
+        autoRotate={autoRotate}
         selectedKeyframeIndex={selectedKeyframeIndex}
         onKeyframesChange={setKeyframes}
         onFixedAngleChange={setFixedAngle}
         onFovChange={setFov}
+        onAutoRotateChange={setAutoRotate}
         onSelectKeyframe={setSelectedKeyframeIndex}
       />
     </div>

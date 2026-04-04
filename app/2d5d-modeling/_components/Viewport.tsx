@@ -1,7 +1,7 @@
 "use client";
 
 import { OrbitControls } from "@react-three/drei";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Suspense, useEffect, useRef } from "react";
 import * as THREE from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -14,6 +14,7 @@ interface ViewportProps {
   keyframes: Keyframe[];
   fixedAngle: { h: number; v: number } | null;
   fov: number;
+  autoRotate: boolean;
   onAngleChange: (angle: { h: number; v: number }) => void;
 }
 
@@ -29,12 +30,16 @@ function LoadingFallback() {
 function CameraController({
   fixedAngle,
   fov,
+  autoRotate,
 }: {
   fixedAngle: { h: number; v: number } | null;
   fov: number;
+  autoRotate: boolean;
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<OrbitControlsImpl>(null);
+  const autoAngleRef = useRef(0);
+  const autoDirectionRef = useRef(1); // 1=正方向, -1=逆方向
 
   useEffect(() => {
     if (fixedAngle === null || !controlsRef.current) return;
@@ -56,6 +61,27 @@ function CameraController({
     }
   }, [fov, camera]);
 
+  useFrame((_, delta) => {
+    if (!autoRotate || !controlsRef.current) return;
+    const speed = 30; // 度/秒
+    autoAngleRef.current += speed * delta * autoDirectionRef.current;
+    if (autoAngleRef.current >= 180) {
+      autoAngleRef.current = 180;
+      autoDirectionRef.current = -1;
+    } else if (autoAngleRef.current <= 0) {
+      autoAngleRef.current = 0;
+      autoDirectionRef.current = 1;
+    }
+    const distance = camera.position.length();
+    const hRad = (autoAngleRef.current * Math.PI) / 180;
+    camera.position.set(
+      Math.sin(hRad) * distance,
+      camera.position.y,
+      Math.cos(hRad) * distance,
+    );
+    controlsRef.current.update();
+  });
+
   return (
     <OrbitControls
       ref={controlsRef}
@@ -72,6 +98,7 @@ export function Viewport({
   keyframes,
   fixedAngle,
   fov,
+  autoRotate,
   onAngleChange,
 }: ViewportProps) {
   return (
@@ -92,7 +119,11 @@ export function Viewport({
           </HeadModel>
         </Suspense>
 
-        <CameraController fixedAngle={fixedAngle} fov={fov} />
+        <CameraController
+          fixedAngle={fixedAngle}
+          fov={fov}
+          autoRotate={autoRotate}
+        />
       </Canvas>
     </div>
   );

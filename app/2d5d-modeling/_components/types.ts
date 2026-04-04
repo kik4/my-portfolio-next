@@ -7,6 +7,7 @@ export interface SpritePosition {
   x: number;
   y: number;
   scale: number;
+  scaleX: number; // 横スケール倍率（1.0=等倍、0.5=横半分）
   rotation: number; // 度
   depthOffset: number; // 深度バイアス（大きいほど手前に描画）
 }
@@ -22,6 +23,7 @@ const DEFAULT_LEFT_EYE: SpritePosition = {
   x: -0.03,
   y: 0.015,
   scale: 0.015,
+  scaleX: 1,
   rotation: 0,
   depthOffset: 0,
 };
@@ -30,6 +32,7 @@ const DEFAULT_RIGHT_EYE: SpritePosition = {
   x: 0.03,
   y: 0.015,
   scale: 0.015,
+  scaleX: 1,
   rotation: 0,
   depthOffset: 0,
 };
@@ -64,6 +67,7 @@ export function lerpSpritePosition(
     x: a.x + (b.x - a.x) * t,
     y: a.y + (b.y - a.y) * t,
     scale: a.scale + (b.scale - a.scale) * t,
+    scaleX: a.scaleX + (b.scaleX - a.scaleX) * t,
     rotation: a.rotation + (b.rotation - a.rotation) * t,
     depthOffset: a.depthOffset + (b.depthOffset - a.depthOffset) * t,
   };

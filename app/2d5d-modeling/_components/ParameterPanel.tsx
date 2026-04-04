@@ -85,6 +85,14 @@ function PartEditor({
           onChange={(v) => onChange({ ...position, scale: v })}
         />
         <Slider
+          label="横"
+          value={position.scaleX}
+          min={0.1}
+          max={2}
+          step={0.01}
+          onChange={(v) => onChange({ ...position, scaleX: v })}
+        />
+        <Slider
           label="回"
           value={position.rotation}
           min={-30}
@@ -110,10 +118,12 @@ interface ParameterPanelProps {
   cameraAngle: { h: number; v: number };
   fixedAngle: { h: number; v: number } | null;
   fov: number;
+  autoRotate: boolean;
   selectedKeyframeIndex: number | null;
   onKeyframesChange: (keyframes: Keyframe[]) => void;
   onFixedAngleChange: (angle: { h: number; v: number } | null) => void;
   onFovChange: (fov: number) => void;
+  onAutoRotateChange: (autoRotate: boolean) => void;
   onSelectKeyframe: (index: number | null) => void;
 }
 
@@ -122,10 +132,12 @@ export function ParameterPanel({
   cameraAngle,
   fixedAngle,
   fov,
+  autoRotate,
   selectedKeyframeIndex,
   onKeyframesChange,
   onFixedAngleChange,
   onFovChange,
+  onAutoRotateChange,
   onSelectKeyframe,
 }: ParameterPanelProps) {
   const selectedKeyframe =
@@ -253,6 +265,15 @@ export function ParameterPanel({
             className="h-1.5 w-full accent-blue-500"
           />
         </div>
+        <label className="mt-2 flex cursor-pointer items-center gap-2">
+          <input
+            type="checkbox"
+            checked={autoRotate}
+            onChange={(e) => onAutoRotateChange(e.target.checked)}
+            className="accent-blue-500"
+          />
+          <span className="text-gray-600 text-xs">自動回転（0°↔180°）</span>
+        </label>
       </div>
 
       {/* キーフレーム一覧 */}

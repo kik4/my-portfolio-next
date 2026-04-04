@@ -41,7 +41,6 @@ function cameraLocalToWorld(
   right.crossVectors(forward, camera.up).normalize();
   up.crossVectors(right, forward).normalize();
 
-  // カメラから顔中心までの距離でオフセット量とスケールを補正
   const dist = camera.position.distanceTo(FACE_CENTER);
 
   const worldPos = FACE_CENTER.clone()
@@ -87,13 +86,14 @@ function EyeSprite({
   const { worldPos, distScale } = cameraLocalToWorld(pos, camera);
   const rot = (pos.rotation * Math.PI) / 180;
   const s = Math.max(pos.scale * distScale, 0.002);
+  const sx = s * (pos.scaleX ?? 1);
   const offsetFactor = -(pos.depthOffset ?? 0) * 10000000;
   const highlightX = mirror ? -0.1 : 0.1;
 
   return (
     <group position={worldPos.toArray()}>
       <Billboard>
-        <mesh rotation={[0, 0, rot]} scale={[s, s, 1]}>
+        <mesh rotation={[0, 0, rot]} scale={[sx, s, 1]}>
           <planeGeometry args={[1, 1]} />
           <OffsetMaterial
             color="#2a2a5a"
