@@ -6,12 +6,10 @@ import { createKeyframeFromCurrent, interpolateKeyframes } from "./types";
 const H_ANGLE_PRESETS = [0, 15, 30, 45, 60, 75, 90, 120, 150, 180] as const;
 const V_ANGLE_PRESETS = [-90, -45, -15, 0, 15, 45, 90] as const;
 
-type PartKey = "leftEye" | "rightEye" | "leftBrow" | "rightBrow";
+type PartKey = "leftEye" | "rightEye";
 const PART_LABELS: Record<PartKey, string> = {
   leftEye: "左目",
   rightEye: "右目",
-  leftBrow: "左眉",
-  rightBrow: "右眉",
 };
 
 interface SliderProps {
@@ -65,26 +63,18 @@ function PartEditor({
         <Slider
           label="X"
           value={position.x}
-          min={-0.1}
-          max={0.1}
+          min={-0.2}
+          max={0.2}
           step={0.001}
           onChange={(v) => onChange({ ...position, x: v })}
         />
         <Slider
           label="Y"
           value={position.y}
-          min={-0.1}
-          max={0.1}
+          min={-0.2}
+          max={0.2}
           step={0.001}
           onChange={(v) => onChange({ ...position, y: v })}
-        />
-        <Slider
-          label="Z"
-          value={position.z}
-          min={-0.05}
-          max={0.15}
-          step={0.001}
-          onChange={(v) => onChange({ ...position, z: v })}
         />
         <Slider
           label="大"
@@ -102,6 +92,14 @@ function PartEditor({
           step={1}
           onChange={(v) => onChange({ ...position, rotation: v })}
         />
+        <Slider
+          label="深"
+          value={position.depthOffset}
+          min={-1}
+          max={1}
+          step={0.01}
+          onChange={(v) => onChange({ ...position, depthOffset: v })}
+        />
       </div>
     </div>
   );
@@ -111,9 +109,11 @@ interface ParameterPanelProps {
   keyframes: Keyframe[];
   cameraAngle: { h: number; v: number };
   fixedAngle: { h: number; v: number } | null;
+  fov: number;
   selectedKeyframeIndex: number | null;
   onKeyframesChange: (keyframes: Keyframe[]) => void;
   onFixedAngleChange: (angle: { h: number; v: number } | null) => void;
+  onFovChange: (fov: number) => void;
   onSelectKeyframe: (index: number | null) => void;
 }
 
@@ -121,9 +121,11 @@ export function ParameterPanel({
   keyframes,
   cameraAngle,
   fixedAngle,
+  fov,
   selectedKeyframeIndex,
   onKeyframesChange,
   onFixedAngleChange,
+  onFovChange,
   onSelectKeyframe,
 }: ParameterPanelProps) {
   const selectedKeyframe =
@@ -179,7 +181,7 @@ export function ParameterPanel({
             }
             className="h-1.5 w-full accent-blue-500"
           />
-          <div className="mt-1 flex flex-wrap gap-1 text-gray-400 text-xs">
+          <div className="mt-1 flex justify-around text-gray-400 text-xs">
             {H_ANGLE_PRESETS.map((a) => (
               <button
                 key={a}
@@ -218,7 +220,7 @@ export function ParameterPanel({
             }
             className="h-1.5 w-full accent-blue-500"
           />
-          <div className="mt-1 flex flex-wrap gap-1 text-gray-400 text-xs">
+          <div className="mt-1 flex justify-around text-gray-400 text-xs">
             {V_ANGLE_PRESETS.map((a) => (
               <button
                 key={a}
@@ -236,6 +238,21 @@ export function ParameterPanel({
             ))}
           </div>
         </div>
+        <div className="mt-2">
+          <div className="flex items-center justify-between">
+            <div className="text-gray-500 text-xs">FOV</div>
+            <div className="font-bold text-gray-800 tabular-nums">{fov}°</div>
+          </div>
+          <input
+            type="range"
+            min={20}
+            max={60}
+            step={1}
+            value={fov}
+            onChange={(e) => onFovChange(parseFloat(e.target.value))}
+            className="h-1.5 w-full accent-blue-500"
+          />
+        </div>
       </div>
 
       {/* キーフレーム一覧 */}
@@ -244,13 +261,60 @@ export function ParameterPanel({
           <div className="font-semibold text-gray-700 text-xs">
             キーフレーム
           </div>
-          <button
-            type="button"
-            onClick={addKeyframeAtCurrentAngle}
-            className="rounded bg-blue-500 px-2 py-0.5 text-white text-xs hover:bg-blue-600"
-          >
-            + 追加
-          </button>
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                const input = document.createElement("input");
+                input.type = "file";
+                input.accept = ".json";
+                input.onchange = (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    try {
+                      const data = JSON.parse(reader.result as string);
+                      if (Array.isArray(data)) {
+                        onKeyframesChange(data);
+                        onSelectKeyframe(null);
+                      }
+                    } catch {
+                      // ignore
+                    }
+                  };
+                  reader.readAsText(file);
+                };
+                input.click();
+              }}
+              className="rounded bg-gray-500 px-2 py-0.5 text-white text-xs hover:bg-gray-600"
+            >
+              読込
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const json = JSON.stringify(keyframes, null, 2);
+                const blob = new Blob([json], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "keyframes.json";
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="rounded bg-gray-500 px-2 py-0.5 text-white text-xs hover:bg-gray-600"
+            >
+              DL
+            </button>
+            <button
+              type="button"
+              onClick={addKeyframeAtCurrentAngle}
+              className="rounded bg-blue-500 px-2 py-0.5 text-white text-xs hover:bg-blue-600"
+            >
+              + 追加
+            </button>
+          </div>
         </div>
         <div className="flex flex-wrap gap-1">
           {keyframes.map((kf, i) => (

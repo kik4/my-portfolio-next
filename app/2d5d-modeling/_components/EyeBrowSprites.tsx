@@ -9,6 +9,9 @@ import { interpolateKeyframes } from "./types";
 /** 顔の基準位置（モデルローカル座標、顔前面） */
 const FACE_CENTER = new THREE.Vector3(0, 1.548, 0.075);
 
+/** 顔表面からの固定浮き量 */
+const FACE_Z_OFFSET = 0.005;
+
 function Billboard({ children }: { children: React.ReactNode }) {
   const groupRef = useRef<THREE.Group>(null);
   const { camera } = useThree();
@@ -23,13 +26,13 @@ function Billboard({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * カメラローカル座標からワールド座標に変換
- * カメラの右方向・上方向・前方向をベースに、顔の基準位置からオフセット
+ * カメラの右方向・上方向ベクトルでオフセットし、
+ * 前方向に固定の浮き量を加えてワールド座標を得る
  */
 function cameraLocalToWorld(
   pos: SpritePosition,
   camera: THREE.Camera,
-): THREE.Vector3 {
+): { worldPos: THREE.Vector3; distScale: number } {
   const right = new THREE.Vector3();
   const up = new THREE.Vector3();
   const forward = new THREE.Vector3();
@@ -38,40 +41,77 @@ function cameraLocalToWorld(
   right.crossVectors(forward, camera.up).normalize();
   up.crossVectors(right, forward).normalize();
 
-  return FACE_CENTER.clone()
-    .add(right.multiplyScalar(pos.x))
-    .add(up.multiplyScalar(pos.y))
-    .add(forward.multiplyScalar(-pos.z)); // zは手前が正なので反転
+  // カメラから顔中心までの距離でオフセット量とスケールを補正
+  const dist = camera.position.distanceTo(FACE_CENTER);
+
+  const worldPos = FACE_CENTER.clone()
+    .add(right.clone().multiplyScalar(pos.x * dist))
+    .add(up.clone().multiplyScalar(pos.y * dist))
+    .add(forward.clone().multiplyScalar(-FACE_Z_OFFSET));
+
+  return { worldPos, distScale: dist };
 }
 
-function SpriteItem({
-  worldPos,
-  scale,
-  rotation,
+function OffsetMaterial({
   color,
-  children,
+  offsetFactor,
+  opacity = 1,
 }: {
-  worldPos: THREE.Vector3;
-  scale: number;
-  rotation: number;
   color: string;
-  children?: React.ReactNode;
+  offsetFactor: number;
+  opacity?: number;
 }) {
-  const rot = (rotation * Math.PI) / 180;
-  const s = Math.max(scale, 0.002);
+  return (
+    <meshBasicMaterial
+      color={color}
+      side={THREE.DoubleSide}
+      transparent
+      opacity={opacity}
+      depthTest
+      polygonOffset
+      polygonOffsetFactor={offsetFactor}
+      polygonOffsetUnits={offsetFactor}
+    />
+  );
+}
+
+function EyeSprite({
+  pos,
+  camera,
+  mirror,
+}: {
+  pos: SpritePosition;
+  camera: THREE.Camera;
+  mirror?: boolean;
+}) {
+  const { worldPos, distScale } = cameraLocalToWorld(pos, camera);
+  const rot = (pos.rotation * Math.PI) / 180;
+  const s = Math.max(pos.scale * distScale, 0.002);
+  const offsetFactor = -(pos.depthOffset ?? 0) * 10000000;
+  const highlightX = mirror ? -0.1 : 0.1;
 
   return (
-    <group position={[worldPos.x, worldPos.y, worldPos.z]}>
+    <group position={worldPos.toArray()}>
       <Billboard>
         <mesh rotation={[0, 0, rot]} scale={[s, s, 1]}>
           <planeGeometry args={[1, 1]} />
-          <meshBasicMaterial
-            color={color}
-            side={THREE.DoubleSide}
-            transparent
+          <OffsetMaterial
+            color="#2a2a5a"
+            offsetFactor={offsetFactor}
             opacity={0.9}
           />
-          {children}
+          <mesh position={[0, -0.05, 0.001]}>
+            <circleGeometry args={[0.25, 32]} />
+            <OffsetMaterial color="#4488cc" offsetFactor={offsetFactor} />
+          </mesh>
+          <mesh position={[0, -0.05, 0.002]}>
+            <circleGeometry args={[0.12, 32]} />
+            <OffsetMaterial color="#111111" offsetFactor={offsetFactor} />
+          </mesh>
+          <mesh position={[highlightX, 0.05, 0.003]}>
+            <circleGeometry args={[0.08, 16]} />
+            <OffsetMaterial color="#ffffff" offsetFactor={offsetFactor} />
+          </mesh>
         </mesh>
       </Billboard>
     </group>
@@ -105,70 +145,10 @@ export function EyeBrowSprites({
 
   const current = interpolateKeyframes(keyframes, hRef.current);
 
-  const leftEyeWorld = cameraLocalToWorld(current.leftEye, camera);
-  const rightEyeWorld = cameraLocalToWorld(current.rightEye, camera);
-  const leftBrowWorld = cameraLocalToWorld(current.leftBrow, camera);
-  const rightBrowWorld = cameraLocalToWorld(current.rightBrow, camera);
-
   return (
     <group>
-      {/* 左目 */}
-      <SpriteItem
-        worldPos={leftEyeWorld}
-        scale={current.leftEye.scale}
-        rotation={current.leftEye.rotation}
-        color="#2a2a5a"
-      >
-        <mesh position={[0, -0.05, 0.001]}>
-          <circleGeometry args={[0.25, 32]} />
-          <meshBasicMaterial color="#4488cc" />
-        </mesh>
-        <mesh position={[0, -0.05, 0.002]}>
-          <circleGeometry args={[0.12, 32]} />
-          <meshBasicMaterial color="#111111" />
-        </mesh>
-        <mesh position={[0.1, 0.05, 0.003]}>
-          <circleGeometry args={[0.08, 16]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
-      </SpriteItem>
-
-      {/* 右目 */}
-      <SpriteItem
-        worldPos={rightEyeWorld}
-        scale={current.rightEye.scale}
-        rotation={current.rightEye.rotation}
-        color="#2a2a5a"
-      >
-        <mesh position={[0, -0.05, 0.001]}>
-          <circleGeometry args={[0.25, 32]} />
-          <meshBasicMaterial color="#4488cc" />
-        </mesh>
-        <mesh position={[0, -0.05, 0.002]}>
-          <circleGeometry args={[0.12, 32]} />
-          <meshBasicMaterial color="#111111" />
-        </mesh>
-        <mesh position={[-0.1, 0.05, 0.003]}>
-          <circleGeometry args={[0.08, 16]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
-      </SpriteItem>
-
-      {/* 左眉 */}
-      <SpriteItem
-        worldPos={leftBrowWorld}
-        scale={current.leftBrow.scale}
-        rotation={current.leftBrow.rotation}
-        color="#3a2a1a"
-      />
-
-      {/* 右眉 */}
-      <SpriteItem
-        worldPos={rightBrowWorld}
-        scale={current.rightBrow.scale}
-        rotation={current.rightBrow.rotation}
-        color="#3a2a1a"
-      />
+      <EyeSprite pos={current.leftEye} camera={camera} />
+      <EyeSprite pos={current.rightEye} camera={camera} mirror />
     </group>
   );
 }

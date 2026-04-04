@@ -2,17 +2,32 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ParameterPanel } from "./ParameterPanel";
-import type { Keyframe } from "./types";
+import type { Keyframe, SpritePosition } from "./types";
 import { DEFAULT_KEYFRAMES } from "./types";
 import { Viewport } from "./Viewport";
 
 const STORAGE_KEY = "2d5d-eye-placement-params";
 
+function migrateSpritePosition(pos: Record<string, unknown>): SpritePosition {
+  return {
+    x: (pos.x as number) ?? 0,
+    y: (pos.y as number) ?? 0,
+    scale: (pos.scale as number) ?? 0.015,
+    rotation: (pos.rotation as number) ?? 0,
+    depthOffset: (pos.depthOffset as number) ?? 0,
+  };
+}
+
 function loadKeyframes(): Keyframe[] | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as Keyframe[];
+    const parsed = JSON.parse(raw) as Record<string, unknown>[];
+    return parsed.map((kf) => ({
+      angle: (kf.angle as number) ?? 0,
+      leftEye: migrateSpritePosition(kf.leftEye as Record<string, unknown>),
+      rightEye: migrateSpritePosition(kf.rightEye as Record<string, unknown>),
+    }));
   } catch {
     return null;
   }
@@ -40,6 +55,7 @@ export function EyePlacementTool({ modelUrl }: EyePlacementToolProps) {
   const [selectedKeyframeIndex, setSelectedKeyframeIndex] = useState<
     number | null
   >(0);
+  const [fov, setFov] = useState(45);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -65,15 +81,18 @@ export function EyePlacementTool({ modelUrl }: EyePlacementToolProps) {
         modelUrl={modelUrl}
         keyframes={keyframes}
         fixedAngle={fixedAngle}
+        fov={fov}
         onAngleChange={handleAngleChange}
       />
       <ParameterPanel
         keyframes={keyframes}
         cameraAngle={cameraAngle}
         fixedAngle={fixedAngle}
+        fov={fov}
         selectedKeyframeIndex={selectedKeyframeIndex}
         onKeyframesChange={setKeyframes}
         onFixedAngleChange={setFixedAngle}
+        onFovChange={setFov}
         onSelectKeyframe={setSelectedKeyframeIndex}
       />
     </div>
