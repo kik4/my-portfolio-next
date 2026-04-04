@@ -6,11 +6,8 @@ import * as THREE from "three";
 import type { Keyframe, SpritePosition } from "./types";
 import { interpolateKeyframes } from "./types";
 
-/** 顔の基準位置（ワールド座標、HeadModelのセンタリング後） */
-const FACE_CENTER = new THREE.Vector3(0, 0, 0);
-
-/** 顔前面までの浮き量（原点から顔表面までの距離 + 少し手前） */
-const FACE_Z_OFFSET = 0.115;
+/** モデルの顔の基準位置（ワールド座標、センタリング後の顔前面） */
+const FACE_ORIGIN = new THREE.Vector3(0, 0.005, 0.109);
 
 /** 元データとのスケール互換係数 */
 const SCALE_COMPAT = 4.5;
@@ -29,14 +26,14 @@ function Billboard({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * カメラの右方向・上方向ベクトルでオフセットし、
- * 前方向に固定の浮き量を加えてワールド座標を得る。
- * 全ての距離基準をカメラ→原点にし、回転でサイズが変わらないようにする。
+ * FACE_ORIGINを基準に、カメラのright/upベクトルでオフセットする。
+ * スケール基準はカメラ→FACE_ORIGIN距離（パン・ズームで正しく追従）。
+ * パース補正でカメラ→スプライト実距離を使い、回転でのサイズ変化を打ち消す。
  */
-function cameraLocalToWorld(
+function spriteWorldPos(
   pos: SpritePosition,
   camera: THREE.Camera,
-): { worldPos: THREE.Vector3; distScale: number } {
+): { worldPos: THREE.Vector3; scaleBase: number } {
   const right = new THREE.Vector3();
   const up = new THREE.Vector3();
   const forward = new THREE.Vector3();
@@ -46,15 +43,18 @@ function cameraLocalToWorld(
   right.crossVectors(forward, worldUp).normalize();
   up.crossVectors(right, forward).normalize();
 
-  // カメラ→原点の距離に互換係数を掛けたものを全ての基準にする
-  const dist = camera.position.length() * SCALE_COMPAT;
+  // オフセット量はFACE_ORIGINまでの距離で計算（位置の正確さのため）
+  const distToFace = camera.position.distanceTo(FACE_ORIGIN);
 
-  const worldPos = FACE_CENTER.clone()
-    .add(right.clone().multiplyScalar(pos.x * dist))
-    .add(up.clone().multiplyScalar(pos.y * dist))
-    .add(forward.clone().multiplyScalar(-FACE_Z_OFFSET));
+  const worldPos = FACE_ORIGIN.clone()
+    .add(right.clone().multiplyScalar(pos.x * distToFace))
+    .add(up.clone().multiplyScalar(pos.y * distToFace))
+    .add(forward.clone().multiplyScalar(-0.005));
 
-  return { worldPos, distScale: dist };
+  // スケール基準: カメラ→スプライト実距離（パースで自然にズームに追従し、回転でも正しい）
+  const distToSprite = camera.position.distanceTo(worldPos);
+
+  return { worldPos, scaleBase: distToSprite };
 }
 
 function OffsetMaterial({
@@ -89,14 +89,9 @@ function EyeSprite({
   camera: THREE.Camera;
   mirror?: boolean;
 }) {
-  const { worldPos, distScale } = cameraLocalToWorld(pos, camera);
+  const { worldPos, scaleBase } = spriteWorldPos(pos, camera);
   const rot = (pos.rotation * Math.PI) / 180;
-  // パース補正: スプライトの実距離/原点距離で回転による見た目の変化を打ち消す
-  // distScaleにはズーム情報が含まれるのでズームには追従する
-  const distToOrigin = camera.position.length();
-  const distToSprite = camera.position.distanceTo(worldPos);
-  const perspRatio = distToSprite / distToOrigin;
-  const s = Math.max(pos.scale * distScale * perspRatio, 0.002);
+  const s = Math.max(pos.scale * scaleBase * SCALE_COMPAT, 0.002);
   const sx = s * (pos.scaleX ?? 1);
   const offsetFactor = -(pos.depthOffset ?? 0) * 10000000;
   const highlightX = mirror ? -0.1 : 0.1;

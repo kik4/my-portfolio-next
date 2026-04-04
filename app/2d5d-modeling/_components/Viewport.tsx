@@ -88,39 +88,52 @@ function CameraController({
       target={[0, 0, 0]}
       minDistance={0.1}
       maxDistance={4}
-      enablePan={false}
+      enablePan
+      mouseButtons={{
+        LEFT: THREE.MOUSE.ROTATE,
+        MIDDLE: THREE.MOUSE.PAN,
+        RIGHT: THREE.MOUSE.ROTATE,
+      }}
     />
   );
 }
 
-export function Viewport({
+function SceneContent({
   modelUrl,
   keyframes,
   fixedAngle,
   fov,
   autoRotate,
   onAngleChange,
-}: ViewportProps) {
+}: Omit<ViewportProps, never>) {
+  return (
+    <>
+      <color attach="background" args={["#d0d0d0"]} />
+      <ambientLight intensity={2.5} />
+
+      <Suspense fallback={<LoadingFallback />}>
+        <HeadModel url={modelUrl} />
+      </Suspense>
+
+      <EyeBrowSprites keyframes={keyframes} onAngleChange={onAngleChange} />
+
+      <CameraController
+        fixedAngle={fixedAngle}
+        fov={fov}
+        autoRotate={autoRotate}
+      />
+    </>
+  );
+}
+
+export function Viewport(props: ViewportProps) {
   return (
     <div className="flex-1 bg-gray-300">
       <Canvas
         camera={{ position: [0, 0, 0.35], fov: 45 }}
         gl={{ antialias: true }}
       >
-        <color attach="background" args={["#d0d0d0"]} />
-        <ambientLight intensity={2.5} />
-
-        <Suspense fallback={<LoadingFallback />}>
-          <HeadModel url={modelUrl} />
-        </Suspense>
-
-        <EyeBrowSprites keyframes={keyframes} onAngleChange={onAngleChange} />
-
-        <CameraController
-          fixedAngle={fixedAngle}
-          fov={fov}
-          autoRotate={autoRotate}
-        />
+        <SceneContent {...props} />
       </Canvas>
     </div>
   );
