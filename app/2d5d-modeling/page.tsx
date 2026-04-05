@@ -16,7 +16,7 @@ export default function ModelingPage() {
             ← ホーム
           </MyLink>
           <h1 className="font-bold text-gray-800 text-lg">
-            断面モデリングツール
+            ベジェ顔モデリングツール
           </h1>
           <div className="w-16" />
         </nav>
