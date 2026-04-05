@@ -255,6 +255,53 @@ export function ModelingTool() {
             <div className="flex gap-1">
               <button
                 type="button"
+                onClick={() => {
+                  const input = document.createElement("input");
+                  input.type = "file";
+                  input.accept = "application/json,.json";
+                  input.onchange = (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      try {
+                        const data = JSON.parse(reader.result as string);
+                        if (Array.isArray(data) && data.length > 0) {
+                          setKeyframes(data);
+                          setSelectedKfIndex(0);
+                        }
+                      } catch {
+                        // ignore
+                      }
+                    };
+                    reader.readAsText(file);
+                  };
+                  input.click();
+                }}
+                className="rounded bg-gray-500 px-2 py-0.5 text-white text-xs hover:bg-gray-600"
+              >
+                読込
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const json = JSON.stringify(keyframes, null, 2);
+                  const blob = new Blob([json], {
+                    type: "application/json",
+                  });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "keyframes.json";
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="rounded bg-gray-500 px-2 py-0.5 text-white text-xs hover:bg-gray-600"
+              >
+                DL
+              </button>
+              <button
+                type="button"
                 onClick={handleAddKeyframe}
                 className="rounded bg-blue-500 px-2 py-0.5 text-white text-xs hover:bg-blue-600"
               >

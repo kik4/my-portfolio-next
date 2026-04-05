@@ -21,9 +21,9 @@ function HeadModel({ url }: HeadModelProps) {
         child.material = new THREE.MeshBasicMaterial({
           map: oldMat.map,
           color: oldMat.color,
-          transparent: true,
-          opacity: 0.8,
-          side: oldMat.side,
+          transparent: false,
+          opacity: 1,
+          side: THREE.FrontSide,
           alphaTest: oldMat.alphaTest,
         });
         child.geometry.computeBoundingBox();
