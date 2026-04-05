@@ -86,135 +86,235 @@ export function lerpKeyframe(a: Keyframe, b: Keyframe, t: number): Keyframe {
   };
 }
 
-/**
- * 1次元線形補間: キーフレーム群をangleV軸で補間
- * 入力: 同じangle値のキーフレームのみ、または近い値として扱う
- */
-function interpolate1D(items: Keyframe[], targetV: number): Keyframe | null {
-  if (items.length === 0) return null;
-  if (items.length === 1) return items[0];
-  const sorted = [...items].sort((a, b) => a.angleV - b.angleV);
-  if (targetV <= sorted[0].angleV) return sorted[0];
-  if (targetV >= sorted[sorted.length - 1].angleV)
-    return sorted[sorted.length - 1];
-  for (let i = 0; i < sorted.length - 1; i++) {
-    const a = sorted[i];
-    const b = sorted[i + 1];
-    if (targetV === a.angleV) return a;
-    if (targetV === b.angleV) return b;
-    if (targetV > a.angleV && targetV < b.angleV) {
-      const t = (targetV - a.angleV) / (b.angleV - a.angleV);
-      return lerpKeyframe(a, b, t);
-    }
+/** 重み付きで複数キーフレームをブレンド（weightsは正規化済み前提） */
+function blendKeyframesWithWeights(
+  items: Keyframe[],
+  weights: number[],
+): Keyframe {
+  // strokeNextは最大重みのキーフレームから継承
+  let maxIdx = 0;
+  for (let i = 1; i < weights.length; i++) {
+    if (weights[i] > weights[maxIdx]) maxIdx = i;
   }
-  return sorted[0];
+  const base = items[maxIdx];
+
+  const newParts: Part[] = base.parts.map((basePart) => {
+    // 全キーフレームから対応するパーツを集める（idで一致）
+    const matched = items.map((kf) => {
+      const p = kf.parts.find((pp) => pp.id === basePart.id);
+      if (!p || p.anchors.length !== basePart.anchors.length) return null;
+      return p;
+    });
+
+    // strokeNextsは最大重みのキーフレームから
+    const strokeParts = matched[maxIdx];
+    const strokeNexts = strokeParts
+      ? strokeParts.anchors.map((a) => a.strokeNext)
+      : basePart.anchors.map((a) => a.strokeNext);
+
+    const newAnchors = basePart.anchors.map((_, ai) => {
+      let x = 0;
+      let y = 0;
+      let hinX = 0;
+      let hinY = 0;
+      let houtX = 0;
+      let houtY = 0;
+      for (let ki = 0; ki < items.length; ki++) {
+        const p = matched[ki];
+        if (!p) continue;
+        const w = weights[ki];
+        const a = p.anchors[ai];
+        x += a.position.x * w;
+        y += a.position.y * w;
+        hinX += a.handleIn.x * w;
+        hinY += a.handleIn.y * w;
+        houtX += a.handleOut.x * w;
+        houtY += a.handleOut.y * w;
+      }
+      return {
+        position: { x, y },
+        handleIn: { x: hinX, y: hinY },
+        handleOut: { x: houtX, y: houtY },
+        strokeNext: strokeNexts[ai],
+      };
+    });
+
+    let zBlend = 0;
+    for (let ki = 0; ki < items.length; ki++) {
+      const p = matched[ki];
+      if (!p) continue;
+      zBlend += p.z * weights[ki];
+    }
+
+    return { ...basePart, anchors: newAnchors, z: zBlend };
+  });
+
+  let angleBlend = 0;
+  let angleVBlend = 0;
+  for (let i = 0; i < items.length; i++) {
+    angleBlend += items[i].angle * weights[i];
+    angleVBlend += items[i].angleV * weights[i];
+  }
+
+  return { angle: angleBlend, angleV: angleVBlend, parts: newParts };
 }
 
 /**
- * v=0 平面内での補間: h軸で隣接する列を見つけ、各列内でv補間してからh補間する
- * 極キーフレーム (|v|=90, h=0) は除外する
+ * 連立方程式 A x = b を解く（ガウス消去法）
+ * A は n×n、b は長さ n（結果を上書き）
  */
-function interpolateFlat(
+function solveLinearSystem(A: number[][], b: number[]): number[] | null {
+  const n = A.length;
+  // ピボット選択付きガウス消去法
+  const M: number[][] = A.map((row, i) => [...row, b[i]]);
+  for (let i = 0; i < n; i++) {
+    let maxRow = i;
+    let maxVal = Math.abs(M[i][i]);
+    for (let k = i + 1; k < n; k++) {
+      if (Math.abs(M[k][i]) > maxVal) {
+        maxVal = Math.abs(M[k][i]);
+        maxRow = k;
+      }
+    }
+    if (maxVal < 1e-12) return null;
+    if (maxRow !== i) {
+      [M[i], M[maxRow]] = [M[maxRow], M[i]];
+    }
+    for (let k = i + 1; k < n; k++) {
+      const factor = M[k][i] / M[i][i];
+      for (let j = i; j <= n; j++) {
+        M[k][j] -= factor * M[i][j];
+      }
+    }
+  }
+  const x = new Array(n).fill(0);
+  for (let i = n - 1; i >= 0; i--) {
+    let s = M[i][n];
+    for (let j = i + 1; j < n; j++) s -= M[i][j] * x[j];
+    x[i] = s / M[i][i];
+  }
+  return x;
+}
+
+/**
+ * RBF補間用のキャッシュ。キーフレーム配列が変わるたびに再計算される。
+ * weights[i][j] は i 番目のキーフレーム点での基底の j 番目の係数。
+ */
+interface RBFCache {
+  points: Keyframe[];
+  weights: number[][]; // N × N
+  epsilon: number;
+}
+
+let rbfCache: RBFCache | null = null;
+
+function gaussian(r: number, epsilon: number): number {
+  const er = epsilon * r;
+  return Math.exp(-(er * er));
+}
+
+function buildRBFCache(points: Keyframe[]): RBFCache | null {
+  const n = points.length;
+  if (n === 0) return null;
+
+  // epsilonを平均点間距離の逆数で自動設定
+  let sumDist = 0;
+  let count = 0;
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const dh = points[i].angle - points[j].angle;
+      const dv = points[i].angleV - points[j].angleV;
+      sumDist += Math.sqrt(dh * dh + dv * dv);
+      count++;
+    }
+  }
+  const avgDist = count > 0 ? sumDist / count : 1;
+  const epsilon = 1 / avgDist;
+
+  // 行列 Φ_ij = φ(|x_i - x_j|) を構築
+  const phi: number[][] = [];
+  for (let i = 0; i < n; i++) {
+    const row: number[] = [];
+    for (let j = 0; j < n; j++) {
+      const dh = points[i].angle - points[j].angle;
+      const dv = points[i].angleV - points[j].angleV;
+      const r = Math.sqrt(dh * dh + dv * dv);
+      row.push(gaussian(r, epsilon));
+    }
+    phi.push(row);
+  }
+
+  // 各 i について Φ w_i = e_i を解く
+  const weights: number[][] = [];
+  for (let i = 0; i < n; i++) {
+    const e = new Array(n).fill(0);
+    e[i] = 1;
+    const w = solveLinearSystem(
+      phi.map((row) => [...row]),
+      e,
+    );
+    if (!w) return null;
+    weights.push(w);
+  }
+
+  return { points, weights, epsilon };
+}
+
+function getRBFCache(points: Keyframe[]): RBFCache | null {
+  if (rbfCache && rbfCache.points === points) return rbfCache;
+  rbfCache = buildRBFCache(points);
+  return rbfCache;
+}
+
+/**
+ * flat補間（極除外）: RBF補間
+ * 各キーフレームに関して、その点で1・他の点で0となる連続的な重みを計算し、
+ * 全キーフレームの重み付き平均で補間する。
+ */
+export function interpolateFlat(
   keyframes: Keyframe[],
   angle: number,
   angleV: number,
 ): Keyframe | null {
-  // 極キーフレームを除外
-  const flat = keyframes.filter((k) => Math.abs(k.angleV) !== 90);
+  const flat = keyframes;
   if (flat.length === 0) return null;
   if (flat.length === 1) return flat[0];
 
-  const uniqueHs = Array.from(new Set(flat.map((k) => k.angle))).sort(
-    (a, b) => a - b,
-  );
+  const cache = getRBFCache(flat);
+  if (!cache) return flat[0];
 
-  let hLow: number;
-  let hHigh: number;
-  if (angle <= uniqueHs[0]) {
-    hLow = uniqueHs[0];
-    hHigh = uniqueHs[0];
-  } else if (angle >= uniqueHs[uniqueHs.length - 1]) {
-    hLow = uniqueHs[uniqueHs.length - 1];
-    hHigh = uniqueHs[uniqueHs.length - 1];
-  } else {
-    hLow = uniqueHs[0];
-    hHigh = uniqueHs[uniqueHs.length - 1];
-    for (let i = 0; i < uniqueHs.length - 1; i++) {
-      if (angle >= uniqueHs[i] && angle <= uniqueHs[i + 1]) {
-        hLow = uniqueHs[i];
-        hHigh = uniqueHs[i + 1];
-        break;
-      }
+  const { points, weights, epsilon } = cache;
+  const n = points.length;
+
+  // 補間点 x での各キーフレームの重み u_i(x)
+  // u_i(x) = Σ_j weights[i][j] * φ(|x - x_j|)
+  const phiX = new Array(n);
+  for (let j = 0; j < n; j++) {
+    const dh = angle - points[j].angle;
+    const dv = angleV - points[j].angleV;
+    const r = Math.sqrt(dh * dh + dv * dv);
+    phiX[j] = gaussian(r, epsilon);
+  }
+
+  const u = new Array(n).fill(0);
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      u[i] += weights[i][j] * phiX[j];
     }
   }
 
-  const lowCol = flat.filter((k) => k.angle === hLow);
-  const highCol = flat.filter((k) => k.angle === hHigh);
-  const lowKf = interpolate1D(lowCol, angleV);
-  const highKf = interpolate1D(highCol, angleV);
-  if (!lowKf) return highKf;
-  if (!highKf) return lowKf;
-  if (hLow === hHigh) return lowKf;
+  // 重みの和で正規化（RBFは和が1にならないため）
+  let sum = 0;
+  for (let i = 0; i < n; i++) sum += u[i];
+  if (Math.abs(sum) < 1e-9) return points[0];
+  for (let i = 0; i < n; i++) u[i] /= sum;
 
-  const t = (angle - hLow) / (hHigh - hLow);
-  return lerpKeyframe(lowKf, highKf, t);
+  return blendKeyframesWithWeights(points, u);
 }
-
-/** 画面中心を基準にパーツ全体を回転させる */
-function rotatePart(
-  part: Part,
-  rotationDeg: number,
-  cx: number,
-  cy: number,
-): Part {
-  if (rotationDeg === 0) return part;
-  const rad = (rotationDeg * Math.PI) / 180;
-  const cos = Math.cos(rad);
-  const sin = Math.sin(rad);
-  const rotPoint = (p: Point2D): Point2D => {
-    const dx = p.x - cx;
-    const dy = p.y - cy;
-    return {
-      x: cx + dx * cos - dy * sin,
-      y: cy + dx * sin + dy * cos,
-    };
-  };
-  const rotVec = (p: Point2D): Point2D => ({
-    x: p.x * cos - p.y * sin,
-    y: p.x * sin + p.y * cos,
-  });
-  return {
-    ...part,
-    anchors: part.anchors.map((a) => ({
-      ...a,
-      position: rotPoint(a.position),
-      handleIn: rotVec(a.handleIn),
-      handleOut: rotVec(a.handleOut),
-    })),
-  };
-}
-
-function rotateKeyframe(
-  kf: Keyframe,
-  rotationDeg: number,
-  cx: number,
-  cy: number,
-): Keyframe {
-  if (rotationDeg === 0) return kf;
-  return {
-    ...kf,
-    parts: kf.parts.map((p) => rotatePart(p, rotationDeg, cx, cy)),
-  };
-}
-
-/** 回転中心（画面中心） */
-const ROTATION_CENTER_X = 200;
-const ROTATION_CENTER_Y = 200;
 
 /**
  * 2D角度(h, v)から補間されたキーフレームを返す。
- * v=0 平面の補間と、極 (|v|=90, h=0) のキーフレームをブレンドする。
- * 極キーフレームはangleだけ回転させてから補間する。
+ * 極(|v|=90)も通常のキーフレームとして扱い、RBF補間で統一的にブレンドする。
  */
 export function interpolateKeyframes(
   keyframes: Keyframe[],
@@ -224,48 +324,10 @@ export function interpolateKeyframes(
   if (keyframes.length === 0) return null;
   if (keyframes.length === 1) return keyframes[0];
 
-  // 完全一致（極 |v|=90 は h=0 のみ）
   const exact = keyframes.find((k) => k.angle === angle && k.angleV === angleV);
-  if (exact) {
-    // 極キーフレームはangleだけ回転（v=-90では回転方向を反転）
-    if (Math.abs(exact.angleV) === 90) {
-      const rotSign = exact.angleV > 0 ? 1 : -1;
-      return rotateKeyframe(
-        exact,
-        angle * rotSign,
-        ROTATION_CENTER_X,
-        ROTATION_CENTER_Y,
-      );
-    }
-    return exact;
-  }
+  if (exact) return exact;
 
-  // v=0平面側の補間結果
-  const flatKf = interpolateFlat(keyframes, angle, angleV);
-
-  // 極キーフレーム (h=0, v=90 または v=-90) を取得
-  const poleSign = angleV >= 0 ? 1 : -1;
-  const poleBase = keyframes.find(
-    (k) => k.angle === 0 && k.angleV === 90 * poleSign,
-  );
-
-  if (!poleBase) {
-    return flatKf;
-  }
-  // v比率に応じて回転量を決定（v=±90で完全にangle回転、v=0で回転なし）
-  // v=-90側では回転方向を反転
-  const t = Math.min(Math.abs(angleV) / 90, 1);
-  const poleRotated = rotateKeyframe(
-    poleBase,
-    angle * t * poleSign,
-    ROTATION_CENTER_X,
-    ROTATION_CENTER_Y,
-  );
-
-  if (!flatKf) return poleRotated;
-
-  // flatと極形状を比率でブレンド
-  return lerpKeyframe(flatKf, poleRotated, t);
+  return interpolateFlat(keyframes, angle, angleV);
 }
 
 /** パーツをSVGのd属性文字列に変換 */

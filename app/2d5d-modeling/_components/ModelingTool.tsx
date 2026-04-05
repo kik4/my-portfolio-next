@@ -88,11 +88,14 @@ export function ModelingTool() {
 
   const selectedKf = keyframes[selectedKfIndex];
   const selectedPart = selectedKf?.parts.find((p) => p.id === selectedPartId);
-  const interpolated = interpolateKeyframes(
-    keyframes,
-    currentAngle,
-    currentAngleV,
-  );
+  // 現在角度が選択中キーフレームの角度と一致するなら、キーフレーム原形を直接表示
+  // （補間をバイパスして、ユーザーが編集中の値と表示を一致させる）
+  const interpolated =
+    selectedKf &&
+    selectedKf.angle === Math.round(currentAngle) &&
+    selectedKf.angleV === Math.round(currentAngleV)
+      ? selectedKf
+      : interpolateKeyframes(keyframes, currentAngle, currentAngleV);
 
   const handlePartChange = useCallback(
     (updated: Part) => {
