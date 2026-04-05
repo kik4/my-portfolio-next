@@ -2,6 +2,7 @@
 
 import polygonClipping from "polygon-clipping";
 import { useMemo } from "react";
+import { HeadModel3D } from "./HeadModel3D";
 import type { Keyframe, Part } from "./types";
 import { partToPolygon, partToStrokePath, partToSvgPath } from "./types";
 
@@ -77,9 +78,15 @@ function OverlayPart({ part }: { part: Part }) {
 
 interface PreviewProps {
   keyframe: Keyframe | null;
+  referenceAngle: number;
+  referenceOpacity: number; // 0〜1
 }
 
-export function Preview({ keyframe }: PreviewProps) {
+export function Preview({
+  keyframe,
+  referenceAngle,
+  referenceOpacity,
+}: PreviewProps) {
   const { silhouettePath, backParts, frontParts, silhouetteStyle } =
     useMemo(() => {
       if (!keyframe) {
@@ -117,30 +124,45 @@ export function Preview({ keyframe }: PreviewProps) {
 
   return (
     <div className="flex flex-1 items-center justify-center bg-gray-100">
-      <svg
-        viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
-        className="max-h-full max-w-full"
+      <div
+        className="relative"
         style={{ width: "min(100%, 600px)", aspectRatio: "1 / 1" }}
       >
-        <title>Preview</title>
-        <rect width={VIEWBOX_SIZE} height={VIEWBOX_SIZE} fill="#d0d0d0" />
-        {/* シルエットより奥のパーツ */}
-        {backParts.map((part) => (
-          <OverlayPart key={part.id} part={part} />
-        ))}
-        {/* シルエット（ユニオン） */}
-        <path
-          d={silhouettePath}
-          fill={fillColor}
-          stroke={strokeColor}
-          strokeWidth={strokeWidth}
-          strokeLinejoin="round"
-        />
-        {/* シルエットより手前のパーツ */}
-        {frontParts.map((part) => (
-          <OverlayPart key={part.id} part={part} />
-        ))}
-      </svg>
+        {/* 2D顔描画（下レイヤー） */}
+        <svg
+          viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
+          className="absolute inset-0 h-full w-full"
+          style={{ background: "#d0d0d0" }}
+        >
+          <title>Preview</title>
+          <rect width={VIEWBOX_SIZE} height={VIEWBOX_SIZE} fill="#d0d0d0" />
+          {/* シルエットより奥のパーツ */}
+          {backParts.map((part) => (
+            <OverlayPart key={part.id} part={part} />
+          ))}
+          {/* シルエット（ユニオン） */}
+          <path
+            d={silhouettePath}
+            fill={fillColor}
+            stroke={strokeColor}
+            strokeWidth={strokeWidth}
+            strokeLinejoin="round"
+          />
+          {/* シルエットより手前のパーツ */}
+          {frontParts.map((part) => (
+            <OverlayPart key={part.id} part={part} />
+          ))}
+        </svg>
+        {/* 3D参考モデル（上レイヤー） */}
+        {referenceOpacity > 0 && (
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ opacity: referenceOpacity }}
+          >
+            <HeadModel3D angle={referenceAngle} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

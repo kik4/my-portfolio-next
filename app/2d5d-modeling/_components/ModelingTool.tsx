@@ -62,6 +62,7 @@ export function ModelingTool() {
   const [selectedKfIndex, setSelectedKfIndex] = useState(0);
   const [selectedPartId, setSelectedPartId] = useState<string>("face-outline");
   const [currentAngle, setCurrentAngle] = useState(0);
+  const [referenceOpacity, setReferenceOpacity] = useState(0);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -135,12 +136,49 @@ export function ModelingTool() {
     setSelectedKfIndex(Math.min(selectedKfIndex, next.length - 1));
   }, [keyframes, selectedKfIndex]);
 
+  const handleChangeKeyframeAngle = useCallback(
+    (newAngle: number) => {
+      if (!selectedKf) return;
+      if (
+        keyframes.some((k, i) => k.angle === newAngle && i !== selectedKfIndex)
+      )
+        return;
+      const updated = keyframes.map((kf, i) =>
+        i === selectedKfIndex ? { ...kf, angle: newAngle } : kf,
+      );
+      // ソートして選択インデックスを追従
+      const sorted = [...updated].sort((a, b) => a.angle - b.angle);
+      setKeyframes(sorted);
+      setSelectedKfIndex(sorted.findIndex((k) => k.angle === newAngle));
+    },
+    [keyframes, selectedKf, selectedKfIndex],
+  );
+
   return (
     <div className="flex flex-1 overflow-hidden">
       {/* 左: プレビュー + 角度スライダー */}
       <div className="flex flex-1 flex-col">
-        <Preview keyframe={interpolated} />
-        <div className="border-t bg-white p-3">
+        <Preview
+          keyframe={interpolated}
+          referenceAngle={currentAngle}
+          referenceOpacity={referenceOpacity}
+        />
+        <div className="flex flex-col gap-2 border-t bg-white p-3">
+          <div className="flex items-center gap-3">
+            <span className="w-16 shrink-0 text-gray-600 text-xs">3D参考</span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={referenceOpacity}
+              onChange={(e) => setReferenceOpacity(parseFloat(e.target.value))}
+              className="h-1.5 flex-1 accent-blue-500"
+            />
+            <span className="w-10 text-right text-gray-500 text-xs tabular-nums">
+              {Math.round(referenceOpacity * 100)}%
+            </span>
+          </div>
           <div className="mb-1 flex items-center justify-between">
             <span className="text-gray-600 text-xs">カメラ角度</span>
             <span className="font-bold text-gray-800 text-sm tabular-nums">
@@ -208,6 +246,27 @@ export function ModelingTool() {
 
         {selectedKf && (
           <div className="rounded-lg bg-gray-50 p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <label
+                htmlFor="kf-angle-input"
+                className="font-semibold text-gray-700 text-xs"
+              >
+                キーフレーム角度
+              </label>
+              <input
+                id="kf-angle-input"
+                type="number"
+                min={0}
+                max={90}
+                step={1}
+                value={selectedKf.angle}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value, 10);
+                  if (!Number.isNaN(v)) handleChangeKeyframeAngle(v);
+                }}
+                className="w-16 rounded border px-2 py-0.5 text-right text-xs"
+              />
+            </div>
             <div className="mb-2 font-semibold text-gray-700 text-xs">
               パーツ
             </div>
