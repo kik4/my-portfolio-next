@@ -58,25 +58,41 @@ function HeadModel({ url }: HeadModelProps) {
   );
 }
 
-function CameraRig({ angle, distance }: { angle: number; distance: number }) {
+function CameraRig({
+  angle,
+  angleV,
+  distance,
+}: {
+  angle: number;
+  angleV: number;
+  distance: number;
+}) {
   const { camera } = useThree();
   useEffect(() => {
-    const rad = (angle * Math.PI) / 180;
-    camera.position.set(Math.sin(rad) * distance, 0, Math.cos(rad) * distance);
+    const hRad = (angle * Math.PI) / 180;
+    const vRad = (angleV * Math.PI) / 180;
+    camera.position.set(
+      Math.sin(hRad) * Math.cos(vRad) * distance,
+      Math.sin(vRad) * distance,
+      Math.cos(hRad) * Math.cos(vRad) * distance,
+    );
     camera.lookAt(0, 0, 0);
-  }, [angle, distance, camera]);
+  }, [angle, angleV, distance, camera]);
   return null;
 }
 
 interface HeadModel3DProps {
   /** 水平角度（度）。0=正面、90=真横 */
   angle: number;
+  /** 垂直角度（度）。0=水平、+=下から、-=上から */
+  angleV: number;
   modelUrl?: string;
 }
 
 /** 指定角度から見た頭モデルを平行投影でレンダリングして参考形状を提供する */
 export function HeadModel3D({
   angle,
+  angleV,
   modelUrl = "/models/base2.glb",
 }: HeadModel3DProps) {
   const distance = 1;
@@ -102,7 +118,7 @@ export function HeadModel3D({
       <Suspense fallback={null}>
         <HeadModel url={modelUrl} />
       </Suspense>
-      <CameraRig angle={angle} distance={distance} />
+      <CameraRig angle={angle} angleV={angleV} distance={distance} />
     </Canvas>
   );
 }

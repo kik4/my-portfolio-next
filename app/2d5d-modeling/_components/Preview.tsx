@@ -79,12 +79,14 @@ function OverlayPart({ part }: { part: Part }) {
 interface PreviewProps {
   keyframe: Keyframe | null;
   referenceAngle: number;
+  referenceAngleV: number;
   referenceOpacity: number; // 0〜1
 }
 
 export function Preview({
   keyframe,
   referenceAngle,
+  referenceAngleV,
   referenceOpacity,
 }: PreviewProps) {
   const { silhouettePath, backParts, frontParts, silhouetteStyle } =
@@ -159,7 +161,7 @@ export function Preview({
             className="pointer-events-none absolute inset-0"
             style={{ opacity: referenceOpacity }}
           >
-            <HeadModel3D angle={referenceAngle} />
+            <HeadModel3D angle={referenceAngle} angleV={referenceAngleV} />
           </div>
         )}
       </div>

@@ -22,23 +22,30 @@ function loadKeyframes(): Keyframe[] | null {
     const parsed = JSON.parse(raw) as Keyframe[];
     // 既存データに目パーツがなければ追加、未定義フィールドを補完
     const eyeIds = new Set(["left-eye", "right-eye"]);
-    return parsed.map((kf) => {
-      const parts = kf.parts.map((p) => {
-        const mergeToSilhouette = p.mergeToSilhouette ?? !eyeIds.has(p.id);
-        // drawAsOverlay: 目は常にオーバーレイ、鼻もオーバーレイとして描画、顔の輪郭はしない
-        const drawAsOverlay =
-          p.drawAsOverlay ?? (p.id === "nose" ? true : !mergeToSilhouette);
-        const z = p.z ?? (mergeToSilhouette && !drawAsOverlay ? 0 : 1);
-        return { ...p, mergeToSilhouette, drawAsOverlay, z };
-      });
-      const hasLeft = parts.some((p) => p.id === "left-eye");
-      const hasRight = parts.some((p) => p.id === "right-eye");
-      // 既存の nose-bridge を nose に統合するため削除
-      const filteredParts = parts.filter((p) => p.id !== "nose-bridge");
-      if (!hasLeft) filteredParts.push(createDefaultLeftEye());
-      if (!hasRight) filteredParts.push(createDefaultRightEye());
-      return { ...kf, parts: filteredParts };
-    });
+    return parsed
+      .map((kf) => {
+        const parts = kf.parts.map((p) => {
+          const mergeToSilhouette = p.mergeToSilhouette ?? !eyeIds.has(p.id);
+          // drawAsOverlay: 目は常にオーバーレイ、鼻もオーバーレイとして描画、顔の輪郭はしない
+          const drawAsOverlay =
+            p.drawAsOverlay ?? (p.id === "nose" ? true : !mergeToSilhouette);
+          const z = p.z ?? (mergeToSilhouette && !drawAsOverlay ? 0 : 1);
+          return { ...p, mergeToSilhouette, drawAsOverlay, z };
+        });
+        const hasLeft = parts.some((p) => p.id === "left-eye");
+        const hasRight = parts.some((p) => p.id === "right-eye");
+        // 既存の nose-bridge を nose に統合するため削除
+        const filteredParts = parts.filter((p) => p.id !== "nose-bridge");
+        if (!hasLeft) filteredParts.push(createDefaultLeftEye());
+        if (!hasRight) filteredParts.push(createDefaultRightEye());
+        return { ...kf, angleV: kf.angleV ?? 0, parts: filteredParts };
+      })
+      .concat(
+        // 0/90, 0/-90 が無ければ追加
+        ...[90, -90]
+          .filter((v) => !parsed.some((k) => k.angle === 0 && k.angleV === v))
+          .map((v) => createDefaultKeyframe(0, v)),
+      );
   } catch {
     return null;
   }
@@ -53,8 +60,10 @@ function saveKeyframes(keyframes: Keyframe[]) {
 }
 
 const DEFAULT_KEYFRAMES: Keyframe[] = [
-  createDefaultKeyframe(0),
-  createDefaultKeyframe(90),
+  createDefaultKeyframe(0, 0),
+  createDefaultKeyframe(90, 0),
+  createDefaultKeyframe(0, 90),
+  createDefaultKeyframe(0, -90),
 ];
 
 export function ModelingTool() {
@@ -62,6 +71,7 @@ export function ModelingTool() {
   const [selectedKfIndex, setSelectedKfIndex] = useState(0);
   const [selectedPartId, setSelectedPartId] = useState<string>("face-outline");
   const [currentAngle, setCurrentAngle] = useState(0);
+  const [currentAngleV, setCurrentAngleV] = useState(0);
   const [referenceOpacity, setReferenceOpacity] = useState(0);
   const [loaded, setLoaded] = useState(false);
 
@@ -78,7 +88,11 @@ export function ModelingTool() {
 
   const selectedKf = keyframes[selectedKfIndex];
   const selectedPart = selectedKf?.parts.find((p) => p.id === selectedPartId);
-  const interpolated = interpolateKeyframes(keyframes, currentAngle);
+  const interpolated = interpolateKeyframes(
+    keyframes,
+    currentAngle,
+    currentAngleV,
+  );
 
   const handlePartChange = useCallback(
     (updated: Part) => {
@@ -117,17 +131,23 @@ export function ModelingTool() {
   }, [selectedPart, handlePartChange]);
 
   const handleAddKeyframe = useCallback(() => {
-    // 現在の角度にキーフレームを追加（既存のパーツ構造を継承）
+    // 現在の(h,v)角度にキーフレームを追加（既存のパーツ構造を継承）
     const angle = Math.round(currentAngle);
-    if (keyframes.some((k) => k.angle === angle)) return;
-    // 一番近い既存キーフレームからパーツをコピー
-    const base = interpolateKeyframes(keyframes, angle);
+    const angleV = Math.round(currentAngleV);
+    // |v|=90 では h=0 のみ許可
+    if (Math.abs(angleV) === 90 && angle !== 0) return;
+    if (keyframes.some((k) => k.angle === angle && k.angleV === angleV)) return;
+    const base = interpolateKeyframes(keyframes, angle, angleV);
     if (!base) return;
-    const newKf: Keyframe = { angle, parts: base.parts };
-    const next = [...keyframes, newKf].sort((a, b) => a.angle - b.angle);
+    const newKf: Keyframe = { angle, angleV, parts: base.parts };
+    const next = [...keyframes, newKf].sort(
+      (a, b) => a.angle - b.angle || a.angleV - b.angleV,
+    );
     setKeyframes(next);
-    setSelectedKfIndex(next.findIndex((k) => k.angle === angle));
-  }, [keyframes, currentAngle]);
+    setSelectedKfIndex(
+      next.findIndex((k) => k.angle === angle && k.angleV === angleV),
+    );
+  }, [keyframes, currentAngle, currentAngleV]);
 
   const handleRemoveKeyframe = useCallback(() => {
     if (keyframes.length <= 1) return;
@@ -137,19 +157,31 @@ export function ModelingTool() {
   }, [keyframes, selectedKfIndex]);
 
   const handleChangeKeyframeAngle = useCallback(
-    (newAngle: number) => {
+    (newAngle: number, newAngleV: number) => {
       if (!selectedKf) return;
+      // |v|=90 では h=0 のみ許可
+      if (Math.abs(newAngleV) === 90 && newAngle !== 0) return;
       if (
-        keyframes.some((k, i) => k.angle === newAngle && i !== selectedKfIndex)
+        keyframes.some(
+          (k, i) =>
+            k.angle === newAngle &&
+            k.angleV === newAngleV &&
+            i !== selectedKfIndex,
+        )
       )
         return;
       const updated = keyframes.map((kf, i) =>
-        i === selectedKfIndex ? { ...kf, angle: newAngle } : kf,
+        i === selectedKfIndex
+          ? { ...kf, angle: newAngle, angleV: newAngleV }
+          : kf,
       );
-      // ソートして選択インデックスを追従
-      const sorted = [...updated].sort((a, b) => a.angle - b.angle);
+      const sorted = [...updated].sort(
+        (a, b) => a.angle - b.angle || a.angleV - b.angleV,
+      );
       setKeyframes(sorted);
-      setSelectedKfIndex(sorted.findIndex((k) => k.angle === newAngle));
+      setSelectedKfIndex(
+        sorted.findIndex((k) => k.angle === newAngle && k.angleV === newAngleV),
+      );
     },
     [keyframes, selectedKf, selectedKfIndex],
   );
@@ -161,6 +193,7 @@ export function ModelingTool() {
         <Preview
           keyframe={interpolated}
           referenceAngle={currentAngle}
+          referenceAngleV={currentAngleV}
           referenceOpacity={referenceOpacity}
         />
         <div className="flex flex-col gap-2 border-t bg-white p-3">
@@ -179,21 +212,36 @@ export function ModelingTool() {
               {Math.round(referenceOpacity * 100)}%
             </span>
           </div>
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-gray-600 text-xs">カメラ角度</span>
-            <span className="font-bold text-gray-800 text-sm tabular-nums">
+          <div className="flex items-center gap-3">
+            <span className="w-16 shrink-0 text-gray-600 text-xs">水平</span>
+            <input
+              type="range"
+              min={0}
+              max={90}
+              step={1}
+              value={currentAngle}
+              onChange={(e) => setCurrentAngle(parseFloat(e.target.value))}
+              className="h-1.5 flex-1 accent-blue-500"
+            />
+            <span className="w-10 text-right font-bold text-gray-800 text-xs tabular-nums">
               {currentAngle.toFixed(0)}°
             </span>
           </div>
-          <input
-            type="range"
-            min={0}
-            max={90}
-            step={1}
-            value={currentAngle}
-            onChange={(e) => setCurrentAngle(parseFloat(e.target.value))}
-            className="h-1.5 w-full accent-blue-500"
-          />
+          <div className="flex items-center gap-3">
+            <span className="w-16 shrink-0 text-gray-600 text-xs">垂直</span>
+            <input
+              type="range"
+              min={-90}
+              max={90}
+              step={1}
+              value={currentAngleV}
+              onChange={(e) => setCurrentAngleV(parseFloat(e.target.value))}
+              className="h-1.5 flex-1 accent-blue-500"
+            />
+            <span className="w-10 text-right font-bold text-gray-800 text-xs tabular-nums">
+              {currentAngleV.toFixed(0)}°
+            </span>
+          </div>
         </div>
       </div>
 
@@ -226,19 +274,20 @@ export function ModelingTool() {
           <div className="flex flex-wrap gap-1">
             {keyframes.map((kf, i) => (
               <button
-                key={kf.angle}
+                key={`${kf.angle}-${kf.angleV}`}
                 type="button"
                 onClick={() => {
                   setSelectedKfIndex(i);
                   setCurrentAngle(kf.angle);
+                  setCurrentAngleV(kf.angleV);
                 }}
-                className={`rounded px-2 py-0.5 text-xs ${
+                className={`rounded px-2 py-0.5 text-xs tabular-nums ${
                   selectedKfIndex === i
                     ? "bg-blue-500 text-white"
                     : "bg-gray-200 text-gray-600 hover:bg-gray-300"
                 }`}
               >
-                {kf.angle}°
+                {kf.angle}° / {kf.angleV}°
               </button>
             ))}
           </div>
@@ -247,25 +296,51 @@ export function ModelingTool() {
         {selectedKf && (
           <div className="rounded-lg bg-gray-50 p-3">
             <div className="mb-2 flex items-center justify-between gap-2">
-              <label
-                htmlFor="kf-angle-input"
-                className="font-semibold text-gray-700 text-xs"
-              >
+              <span className="font-semibold text-gray-700 text-xs">
                 キーフレーム角度
-              </label>
-              <input
-                id="kf-angle-input"
-                type="number"
-                min={0}
-                max={90}
-                step={1}
-                value={selectedKf.angle}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value, 10);
-                  if (!Number.isNaN(v)) handleChangeKeyframeAngle(v);
-                }}
-                className="w-16 rounded border px-2 py-0.5 text-right text-xs"
-              />
+              </span>
+              <div className="flex items-center gap-1">
+                <label
+                  htmlFor="kf-angle-input-h"
+                  className="text-gray-500 text-xs"
+                >
+                  水平
+                </label>
+                <input
+                  id="kf-angle-input-h"
+                  type="number"
+                  min={0}
+                  max={90}
+                  step={1}
+                  value={selectedKf.angle}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    if (!Number.isNaN(v))
+                      handleChangeKeyframeAngle(v, selectedKf.angleV);
+                  }}
+                  className="w-14 rounded border px-2 py-0.5 text-right text-xs"
+                />
+                <label
+                  htmlFor="kf-angle-input-v"
+                  className="ml-1 text-gray-500 text-xs"
+                >
+                  垂直
+                </label>
+                <input
+                  id="kf-angle-input-v"
+                  type="number"
+                  min={-90}
+                  max={90}
+                  step={1}
+                  value={selectedKf.angleV}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    if (!Number.isNaN(v))
+                      handleChangeKeyframeAngle(selectedKf.angle, v);
+                  }}
+                  className="w-14 rounded border px-2 py-0.5 text-right text-xs"
+                />
+              </div>
             </div>
             <div className="mb-2 font-semibold text-gray-700 text-xs">
               パーツ
@@ -293,7 +368,7 @@ export function ModelingTool() {
           <div>
             <div className="mb-2 flex items-center justify-between">
               <div className="font-semibold text-gray-700 text-xs">
-                {selectedKf.angle}° - {selectedPart.name}
+                {selectedKf.angle}°/{selectedKf.angleV}° - {selectedPart.name}
               </div>
               <button
                 type="button"

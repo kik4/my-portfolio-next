@@ -36,7 +36,8 @@ export interface Part {
 
 /** ある角度でのパーツ群のスナップショット（キーフレーム） */
 export interface Keyframe {
-  angle: number; // カメラ水平角度
+  angle: number; // カメラ水平角度 (0=正面, 90=真横)
+  angleV: number; // カメラ垂直角度 (0=水平, +=下から見上げる, -=上から見下ろす)
   parts: Part[];
 }
 
@@ -78,33 +79,193 @@ export function lerpKeyframe(a: Keyframe, b: Keyframe, t: number): Keyframe {
     if (!pb || pb.anchors.length !== pa.anchors.length) return pa;
     return lerpPart(pa, pb, t);
   });
-  return { angle: lerp(a.angle, b.angle, t), parts };
+  return {
+    angle: lerp(a.angle, b.angle, t),
+    angleV: lerp(a.angleV, b.angleV, t),
+    parts,
+  };
 }
 
-/** 角度から補間されたキーフレームを返す */
-export function interpolateKeyframes(
-  keyframes: Keyframe[],
-  angle: number,
-): Keyframe | null {
-  if (keyframes.length === 0) return null;
-  if (keyframes.length === 1) return keyframes[0];
-
-  const sorted = [...keyframes].sort((a, b) => a.angle - b.angle);
-  if (angle <= sorted[0].angle) return sorted[0];
-  if (angle >= sorted[sorted.length - 1].angle)
+/**
+ * 1次元線形補間: キーフレーム群をangleV軸で補間
+ * 入力: 同じangle値のキーフレームのみ、または近い値として扱う
+ */
+function interpolate1D(items: Keyframe[], targetV: number): Keyframe | null {
+  if (items.length === 0) return null;
+  if (items.length === 1) return items[0];
+  const sorted = [...items].sort((a, b) => a.angleV - b.angleV);
+  if (targetV <= sorted[0].angleV) return sorted[0];
+  if (targetV >= sorted[sorted.length - 1].angleV)
     return sorted[sorted.length - 1];
-
   for (let i = 0; i < sorted.length - 1; i++) {
     const a = sorted[i];
     const b = sorted[i + 1];
-    if (angle === a.angle) return a;
-    if (angle === b.angle) return b;
-    if (angle > a.angle && angle < b.angle) {
-      const t = (angle - a.angle) / (b.angle - a.angle);
+    if (targetV === a.angleV) return a;
+    if (targetV === b.angleV) return b;
+    if (targetV > a.angleV && targetV < b.angleV) {
+      const t = (targetV - a.angleV) / (b.angleV - a.angleV);
       return lerpKeyframe(a, b, t);
     }
   }
   return sorted[0];
+}
+
+/**
+ * v=0 平面内での補間: h軸で隣接する列を見つけ、各列内でv補間してからh補間する
+ * 極キーフレーム (|v|=90, h=0) は除外する
+ */
+function interpolateFlat(
+  keyframes: Keyframe[],
+  angle: number,
+  angleV: number,
+): Keyframe | null {
+  // 極キーフレームを除外
+  const flat = keyframes.filter((k) => Math.abs(k.angleV) !== 90);
+  if (flat.length === 0) return null;
+  if (flat.length === 1) return flat[0];
+
+  const uniqueHs = Array.from(new Set(flat.map((k) => k.angle))).sort(
+    (a, b) => a - b,
+  );
+
+  let hLow: number;
+  let hHigh: number;
+  if (angle <= uniqueHs[0]) {
+    hLow = uniqueHs[0];
+    hHigh = uniqueHs[0];
+  } else if (angle >= uniqueHs[uniqueHs.length - 1]) {
+    hLow = uniqueHs[uniqueHs.length - 1];
+    hHigh = uniqueHs[uniqueHs.length - 1];
+  } else {
+    hLow = uniqueHs[0];
+    hHigh = uniqueHs[uniqueHs.length - 1];
+    for (let i = 0; i < uniqueHs.length - 1; i++) {
+      if (angle >= uniqueHs[i] && angle <= uniqueHs[i + 1]) {
+        hLow = uniqueHs[i];
+        hHigh = uniqueHs[i + 1];
+        break;
+      }
+    }
+  }
+
+  const lowCol = flat.filter((k) => k.angle === hLow);
+  const highCol = flat.filter((k) => k.angle === hHigh);
+  const lowKf = interpolate1D(lowCol, angleV);
+  const highKf = interpolate1D(highCol, angleV);
+  if (!lowKf) return highKf;
+  if (!highKf) return lowKf;
+  if (hLow === hHigh) return lowKf;
+
+  const t = (angle - hLow) / (hHigh - hLow);
+  return lerpKeyframe(lowKf, highKf, t);
+}
+
+/** 画面中心を基準にパーツ全体を回転させる */
+function rotatePart(
+  part: Part,
+  rotationDeg: number,
+  cx: number,
+  cy: number,
+): Part {
+  if (rotationDeg === 0) return part;
+  const rad = (rotationDeg * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const rotPoint = (p: Point2D): Point2D => {
+    const dx = p.x - cx;
+    const dy = p.y - cy;
+    return {
+      x: cx + dx * cos - dy * sin,
+      y: cy + dx * sin + dy * cos,
+    };
+  };
+  const rotVec = (p: Point2D): Point2D => ({
+    x: p.x * cos - p.y * sin,
+    y: p.x * sin + p.y * cos,
+  });
+  return {
+    ...part,
+    anchors: part.anchors.map((a) => ({
+      ...a,
+      position: rotPoint(a.position),
+      handleIn: rotVec(a.handleIn),
+      handleOut: rotVec(a.handleOut),
+    })),
+  };
+}
+
+function rotateKeyframe(
+  kf: Keyframe,
+  rotationDeg: number,
+  cx: number,
+  cy: number,
+): Keyframe {
+  if (rotationDeg === 0) return kf;
+  return {
+    ...kf,
+    parts: kf.parts.map((p) => rotatePart(p, rotationDeg, cx, cy)),
+  };
+}
+
+/** 回転中心（画面中心） */
+const ROTATION_CENTER_X = 200;
+const ROTATION_CENTER_Y = 200;
+
+/**
+ * 2D角度(h, v)から補間されたキーフレームを返す。
+ * v=0 平面の補間と、極 (|v|=90, h=0) のキーフレームをブレンドする。
+ * 極キーフレームはangleだけ回転させてから補間する。
+ */
+export function interpolateKeyframes(
+  keyframes: Keyframe[],
+  angle: number,
+  angleV = 0,
+): Keyframe | null {
+  if (keyframes.length === 0) return null;
+  if (keyframes.length === 1) return keyframes[0];
+
+  // 完全一致（極 |v|=90 は h=0 のみ）
+  const exact = keyframes.find((k) => k.angle === angle && k.angleV === angleV);
+  if (exact) {
+    // 極キーフレームはangleだけ回転（v=-90では回転方向を反転）
+    if (Math.abs(exact.angleV) === 90) {
+      const rotSign = exact.angleV > 0 ? 1 : -1;
+      return rotateKeyframe(
+        exact,
+        angle * rotSign,
+        ROTATION_CENTER_X,
+        ROTATION_CENTER_Y,
+      );
+    }
+    return exact;
+  }
+
+  // v=0平面側の補間結果
+  const flatKf = interpolateFlat(keyframes, angle, angleV);
+
+  // 極キーフレーム (h=0, v=90 または v=-90) を取得
+  const poleSign = angleV >= 0 ? 1 : -1;
+  const poleBase = keyframes.find(
+    (k) => k.angle === 0 && k.angleV === 90 * poleSign,
+  );
+
+  if (!poleBase) {
+    return flatKf;
+  }
+  // v比率に応じて回転量を決定（v=±90で完全にangle回転、v=0で回転なし）
+  // v=-90側では回転方向を反転
+  const t = Math.min(Math.abs(angleV) / 90, 1);
+  const poleRotated = rotateKeyframe(
+    poleBase,
+    angle * t * poleSign,
+    ROTATION_CENTER_X,
+    ROTATION_CENTER_Y,
+  );
+
+  if (!flatKf) return poleRotated;
+
+  // flatと極形状を比率でブレンド
+  return lerpKeyframe(flatKf, poleRotated, t);
 }
 
 /** パーツをSVGのd属性文字列に変換 */
@@ -277,9 +438,10 @@ export function createDefaultRightEye(): Part {
 }
 
 /** デフォルトのキーフレームを作成 */
-export function createDefaultKeyframe(angle: number): Keyframe {
+export function createDefaultKeyframe(angle: number, angleV = 0): Keyframe {
   return {
     angle,
+    angleV,
     parts: [
       createDefaultFaceOutline(),
       createDefaultNose(),
