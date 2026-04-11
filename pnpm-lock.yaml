@@ -32,6 +32,9 @@ importers:
       delaunator:
         specifier: ^5.1.0
         version: 5.1.0
+      earcut:
+        specifier: ^3.0.2
+        version: 3.0.2
       framer-motion:
         specifier: ^12.38.0
         version: 12.38.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -72,6 +75,9 @@ importers:
       '@types/babel__standalone':
         specifier: ^7.1.9
         version: 7.1.9
+      '@types/earcut':
+        specifier: ^3.0.0
+        version: 3.0.0
       '@types/node':
         specifier: ^24.12.2
         version: 24.12.2
@@ -597,6 +603,9 @@ packages:
   '@types/draco3d@1.4.10':
     resolution: {integrity: sha512-AX22jp8Y7wwaBgAixaSvkoG4M/+PlAcm3Qs4OW8yT9DM4xUpWKeFhLueTAyZF39pviAdcDdeJoACapiAceqNcw==}
 
+  '@types/earcut@3.0.0':
+    resolution: {integrity: sha512-k/9fOUGO39yd2sCjrbAJvGDEQvRwRnQIZlBz43roGwUZo5SHAmyVvSFyaVVZkicRVCaDXPKlbxrUcBuJoSWunQ==}
+
   '@types/node@24.12.2':
     resolution: {integrity: sha512-A1sre26ke7HDIuY/M23nd9gfB+nrmhtYyMINbjI1zHJxYteKR6qSMX56FsmjMcDb3SMcjJg5BiRRgOCC/yBD0g==}
 
@@ -752,6 +761,9 @@ packages:
 
   draco3d@1.5.7:
     resolution: {integrity: sha512-m6WCKt/erDXcw+70IJXnG7M3awwQPAsZvJGX5zY7beBqpELw6RDGkYVU0W43AFxye4pDZ5i2Lbyc/NNGqwjUVQ==}
+
+  earcut@3.0.2:
+    resolution: {integrity: sha512-X7hshQbLyMJ/3RPhyObLARM2sNxxmRALLKx1+NVFFnQ9gKzmCrxm9+uLIAdBcvc8FNLpctqlQ2V6AE92Ol9UDQ==}
 
   emoji-regex@10.6.0:
     resolution: {integrity: sha512-toUI84YS5YmxW219erniWD0CIVOo46xGKColeNQRgOzDorgBi1v4D71/OFzgD9GO2UGKIv1C3Sp8DAn0+j5w7A==}
@@ -1651,6 +1663,8 @@ snapshots:
 
   '@types/draco3d@1.4.10': {}
 
+  '@types/earcut@3.0.0': {}
+
   '@types/node@24.12.2':
     dependencies:
       undici-types: 7.16.0
@@ -1771,6 +1785,8 @@ snapshots:
       '@types/trusted-types': 2.0.7
 
   draco3d@1.5.7: {}
+
+  earcut@3.0.2: {}
 
   emoji-regex@10.6.0: {}
 
