@@ -24,8 +24,15 @@ export interface StrokeLine {
   z: number;
 }
 
+export interface TransparentFill {
+  geometry: THREE.BufferGeometry;
+  color: [number, number, number];
+  alpha: number;
+}
+
 export interface FaceGeometryResult {
   fillGeometry: THREE.BufferGeometry;
+  transparentFills: TransparentFill[];
   strokes: StrokeLine[];
   selectedOutlineStroke: { points: Point2D[]; z: number } | null;
 }
@@ -40,6 +47,7 @@ export function buildFaceGeometry(
   const indices: number[] = [];
   let vertexOffset = 0;
   const strokes: StrokeLine[] = [];
+  const transparentFills: TransparentFill[] = [];
   let selectedOutlineStroke: { points: Point2D[]; z: number } | null = null;
   const { blendShapeWeights, featureGroups, outlineFillColor, outlineStroke } =
     model;
@@ -131,16 +139,33 @@ export function buildFaceGeometry(
     const fillEnabled =
       polygon.group === "outline" ? true : polygon.fillEnabled;
     if (fillEnabled) {
-      const tris = triangulate(subdivided);
-      const [r, g, b] = fillColor;
-      for (const [x, y] of subdivided) {
-        positions.push(x, y, z);
-        colors.push(r * alpha, g * alpha, b * alpha);
+      if (alpha < 1) {
+        // Transparent fill: separate geometry for individual opacity
+        const tris = triangulate(subdivided);
+        const [r, g, b] = fillColor;
+        const tfPos = new Float32Array(subdivided.length * 3);
+        for (let i = 0; i < subdivided.length; i++) {
+          tfPos[i * 3] = subdivided[i][0];
+          tfPos[i * 3 + 1] = subdivided[i][1];
+          tfPos[i * 3 + 2] = z;
+        }
+        const tfGeo = new THREE.BufferGeometry();
+        tfGeo.setAttribute("position", new THREE.BufferAttribute(tfPos, 3));
+        tfGeo.setIndex(tris);
+        tfGeo.computeBoundingSphere();
+        transparentFills.push({ geometry: tfGeo, color: [r, g, b], alpha });
+      } else {
+        const tris = triangulate(subdivided);
+        const [r, g, b] = fillColor;
+        for (const [x, y] of subdivided) {
+          positions.push(x, y, z);
+          colors.push(r, g, b);
+        }
+        for (const idx of tris) {
+          indices.push(idx + vertexOffset);
+        }
+        vertexOffset += subdivided.length;
       }
-      for (const idx of tris) {
-        indices.push(idx + vertexOffset);
-      }
-      vertexOffset += subdivided.length;
     }
 
     if (polygon.group === "outline") {
@@ -236,5 +261,5 @@ export function buildFaceGeometry(
   fillGeometry.setIndex(indices);
   fillGeometry.computeBoundingSphere();
 
-  return { fillGeometry, strokes, selectedOutlineStroke };
+  return { fillGeometry, transparentFills, strokes, selectedOutlineStroke };
 }

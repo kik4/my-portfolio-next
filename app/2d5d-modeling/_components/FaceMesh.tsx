@@ -18,10 +18,11 @@ interface FaceMeshProps {
 
 export function FaceMesh({ model, angle, selectedPolygonId }: FaceMeshProps) {
   const { size } = useThree();
-  const { fillGeometry, strokes, selectedOutlineStroke } = useMemo(
-    () => buildFaceGeometry(model, angle, selectedPolygonId),
-    [model, angle, selectedPolygonId],
-  );
+  const { fillGeometry, transparentFills, strokes, selectedOutlineStroke } =
+    useMemo(
+      () => buildFaceGeometry(model, angle, selectedPolygonId),
+      [model, angle, selectedPolygonId],
+    );
 
   const fillMaterial = useMemo(
     () =>
@@ -80,9 +81,32 @@ export function FaceMesh({ model, angle, selectedPolygonId }: FaceMeshProps) {
     return new Line2(geo, mat);
   }, [selectedOutlineStroke, size.width, size.height]);
 
+  const transparentMeshes = useMemo(
+    () =>
+      transparentFills.map((tf) => {
+        const mat = new THREE.MeshBasicMaterial({
+          color: new THREE.Color(tf.color[0], tf.color[1], tf.color[2]),
+          transparent: true,
+          opacity: tf.alpha,
+          side: THREE.DoubleSide,
+          toneMapped: false,
+          depthWrite: false,
+        });
+        return { geometry: tf.geometry, material: mat };
+      }),
+    [transparentFills],
+  );
+
   return (
     <Billboard>
       <mesh geometry={fillGeometry} material={fillMaterial} />
+      {transparentMeshes.map((tm) => (
+        <mesh
+          key={`tf-${tm.geometry.id}`}
+          geometry={tm.geometry}
+          material={tm.material}
+        />
+      ))}
       {strokeData.map((s) => (
         <primitive key={`stroke-${s.line.id}`} object={s.line} />
       ))}
