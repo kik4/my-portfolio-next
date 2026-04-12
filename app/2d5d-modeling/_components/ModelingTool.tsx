@@ -6,6 +6,7 @@ import { composeMat2, decomposeMat2 } from "../_lib/mat2utils";
 import type {
   FaceModel,
   FeatureGroup,
+  FeatureGroupKeyframe,
   FeatureKeyframe,
   FeaturePolygon,
   OutlineKeyframe,
@@ -15,6 +16,7 @@ import type {
   YawPitch,
 } from "../_lib/types";
 import { MAT2_IDENTITY } from "../_lib/types";
+import { GroupGizmo } from "./GroupGizmo";
 import { PointEditor } from "./PointEditor";
 import { PolygonTree } from "./PolygonTree";
 import { ReferenceScene } from "./ReferenceScene";
@@ -389,6 +391,52 @@ export function ModelingTool() {
       )
       .map((p) => ({ points: p.basePoints, fillColor: p.fillColor }));
   }, [polygons, selectedPolygonIndex, selectedPolygon]);
+
+  const rightPaneRef = useRef<HTMLDivElement>(null);
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  useEffect(() => {
+    const el = rightPaneRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setCanvasSize({
+          width: entry.contentRect.width,
+          height: entry.contentRect.height,
+        });
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const ANGLE_THRESHOLD = 5;
+  const handleGizmoUpdateKf = useCallback(
+    (kf: FeatureGroupKeyframe) => {
+      if (selectedGroupIndex === null) return;
+      setFeatureGroups((prev) =>
+        prev.map((g, i) => {
+          if (i !== selectedGroupIndex) return g;
+          // Find existing KF close to current angle
+          const existingIdx = g.yawPitchKeyframes.findIndex((k) => {
+            const dy = k.angle.yaw - angle.yaw;
+            const dp = k.angle.pitch - angle.pitch;
+            return Math.sqrt(dy * dy + dp * dp) < ANGLE_THRESHOLD;
+          });
+          if (existingIdx >= 0) {
+            return {
+              ...g,
+              yawPitchKeyframes: g.yawPitchKeyframes.map((k, j) =>
+                j === existingIdx ? kf : k,
+              ),
+            };
+          }
+          // Create new KF
+          return { ...g, yawPitchKeyframes: [...g.yawPitchKeyframes, kf] };
+        }),
+      );
+    },
+    [selectedGroupIndex, angle],
+  );
 
   const model: FaceModel = { polygons, featureGroups, blendShapeWeights };
 
@@ -1300,7 +1348,7 @@ export function ModelingTool() {
       </div>
 
       {/* ===== RIGHT PANE: 3D Preview ===== */}
-      <div className="relative h-full min-w-0 flex-1">
+      <div ref={rightPaneRef} className="relative h-full min-w-0 flex-1">
         <div className="pointer-events-none absolute inset-0">
           <ReferenceScene
             yaw={angle.yaw}
@@ -1321,6 +1369,19 @@ export function ModelingTool() {
             onZoomChange={handleZoomChange}
           />
         </div>
+        {selectedGroup && canvasSize.width > 0 && (
+          <div className="pointer-events-none absolute inset-0">
+            <GroupGizmo
+              group={selectedGroup}
+              polygons={polygons}
+              angle={angle}
+              zoom={zoom}
+              canvasWidth={canvasSize.width}
+              canvasHeight={canvasSize.height}
+              onUpdateKeyframe={handleGizmoUpdateKf}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
