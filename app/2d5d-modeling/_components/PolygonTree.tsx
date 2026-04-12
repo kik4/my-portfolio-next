@@ -132,7 +132,7 @@ export function PolygonTree({
             className="mr-1 inline-block h-2.5 w-2.5 rounded-sm border"
             style={{ backgroundColor: rgbaToHex(polygon.fillColor) }}
           />
-          {polygon.id}
+          {polygon.name}
           <span className="ml-1 text-gray-400 text-xs">
             {polygon.group === "outline" ? "輪郭" : "特徴"} L
             {polygon.layerIndex}
@@ -203,7 +203,7 @@ export function PolygonTree({
                     : "hover:bg-gray-100"
                 }`}
               >
-                📁 {g.id}
+                📁 {g.name}
               </button>
               <button
                 type="button"

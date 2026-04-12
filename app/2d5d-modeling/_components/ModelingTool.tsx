@@ -31,9 +31,15 @@ function createEllipsePoints(rx: number, ry: number, n: number): Point2D[] {
   return points;
 }
 
-function createOutlinePolygon(id: string, layerIndex: number): OutlinePolygon {
+let nextId = 1;
+function genId(prefix: string) {
+  return `${prefix}_${nextId++}`;
+}
+
+function createOutlinePolygon(layerIndex: number): OutlinePolygon {
   return {
-    id,
+    id: genId("outline"),
+    name: "新しい輪郭",
     group: "outline",
     basePoints: createEllipsePoints(0.3, 0.4, 16),
     layerIndex,
@@ -43,9 +49,10 @@ function createOutlinePolygon(id: string, layerIndex: number): OutlinePolygon {
   };
 }
 
-function createFeaturePolygon(id: string, layerIndex: number): FeaturePolygon {
+function createFeaturePolygon(layerIndex: number): FeaturePolygon {
   return {
-    id,
+    id: genId("feature"),
+    name: "新しい特徴",
     group: "feature",
     basePoints: createEllipsePoints(0.05, 0.03, 8),
     layerIndex,
@@ -83,7 +90,7 @@ function rgbaToHex(c: [number, number, number, number]): string {
 
 export function ModelingTool() {
   const [polygons, setPolygons] = useState<Polygon[]>(() => [
-    createOutlinePolygon("faceOutline", 0),
+    createOutlinePolygon(0),
   ]);
   const [selectedPolygonIndex, setSelectedPolygonIndex] = useState(0);
   const [editMode, setEditMode] = useState<EditMode>({ type: "base" });
@@ -327,7 +334,6 @@ export function ModelingTool() {
 
   const addPolygon = useCallback(
     (group: "outline" | "feature") => {
-      const id = `${group}_${Date.now()}`;
       const maxLayer = polygons.reduce(
         (max, p) => Math.max(max, p.layerIndex),
         -1,
@@ -335,8 +341,8 @@ export function ModelingTool() {
       setPolygons((prev) => [
         ...prev,
         group === "outline"
-          ? createOutlinePolygon(id, maxLayer + 1)
-          : createFeaturePolygon(id, maxLayer + 1),
+          ? createOutlinePolygon(maxLayer + 1)
+          : createFeaturePolygon(maxLayer + 1),
       ]);
       setSelectedPolygonIndex(polygons.length);
       setEditMode({ type: "base" });
@@ -485,12 +491,11 @@ export function ModelingTool() {
             }}
             onAddPolygon={addPolygon}
             onAddGroup={() => {
-              const id = prompt("グループ ID");
-              if (!id) return;
               setFeatureGroups((prev) => [
                 ...prev,
                 {
-                  id,
+                  id: genId("group"),
+                  name: "新しいグループ",
                   yawPitchKeyframes: [],
                   visibility: {
                     yawRange: [-180, 180] as [number, number],
@@ -659,7 +664,24 @@ export function ModelingTool() {
         {selectedGroup ? (
           /* Group editing */
           <div className="space-y-2 px-3 py-2">
-            <div className="font-semibold">グループ: {selectedGroup.id}</div>
+            <div className="font-semibold">グループ: {selectedGroup.name}</div>
+            <label className="flex items-center gap-2">
+              <span className="w-14 shrink-0">名前</span>
+              <input
+                type="text"
+                value={selectedGroup.name}
+                onChange={(e) => {
+                  const idx = selectedGroupIndex;
+                  if (idx === null) return;
+                  setFeatureGroups((prev) =>
+                    prev.map((g, i) =>
+                      i === idx ? { ...g, name: e.target.value } : g,
+                    ),
+                  );
+                }}
+                className="flex-1 rounded border px-1"
+              />
+            </label>
             <label className="flex items-center gap-2">
               <span className="w-20 shrink-0">基本レイヤー</span>
               <input
@@ -1067,16 +1089,19 @@ export function ModelingTool() {
             {/* Properties */}
             <div className="space-y-2 border-b px-3 py-2">
               <div className="font-semibold">
-                {selectedPolygon.id} (
+                {selectedPolygon.name} (
                 {selectedPolygon.group === "outline" ? "輪郭" : "特徴"})
               </div>
               <label className="flex items-center gap-2">
-                <span className="w-14 shrink-0">ID</span>
+                <span className="w-14 shrink-0">名前</span>
                 <input
                   type="text"
-                  value={selectedPolygon.id}
+                  value={selectedPolygon.name}
                   onChange={(e) =>
-                    updateSelectedPolygon((p) => ({ ...p, id: e.target.value }))
+                    updateSelectedPolygon((p) => ({
+                      ...p,
+                      name: e.target.value,
+                    }))
                   }
                   className="flex-1 rounded border px-1"
                 />

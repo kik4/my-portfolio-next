@@ -28,6 +28,7 @@ export interface OutlineKeyframe {
 
 export interface OutlinePolygon {
   id: string;
+  name: string;
   group: "outline";
   basePoints: Point2D[];
   layerIndex: number;
@@ -46,6 +47,7 @@ export interface FeatureKeyframe {
 
 export interface FeaturePolygon {
   id: string;
+  name: string;
   group: "feature";
   basePoints: Point2D[];
   layerIndex: number;
@@ -65,6 +67,7 @@ export interface FeatureGroupKeyframe {
 
 export interface FeatureGroup {
   id: string;
+  name: string;
   yawPitchKeyframes: FeatureGroupKeyframe[];
   visibility: {
     yawRange: [number, number];
