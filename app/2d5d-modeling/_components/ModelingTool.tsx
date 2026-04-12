@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { downloadJson, exportFaceModel, importFaceModel } from "../_lib/jsonIO";
 import type {
   FaceModel,
@@ -110,6 +110,32 @@ export function ModelingTool() {
   }, []);
   const handleZoomChange = useCallback((newZoom: number) => {
     setZoom(newZoom);
+  }, []);
+
+  useEffect(() => {
+    const presets: Record<string, YawPitch> = {
+      "1": { yaw: 0, pitch: 0 },
+      "2": { yaw: 90, pitch: 0 },
+      "3": { yaw: -90, pitch: 0 },
+      "4": { yaw: 0, pitch: 90 },
+      "5": { yaw: 0, pitch: -90 },
+      "6": { yaw: 180, pitch: 0 },
+    };
+    const handler = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLSelectElement ||
+        e.target instanceof HTMLTextAreaElement
+      )
+        return;
+      const preset = presets[e.key];
+      if (preset) {
+        angleSourceRef.current = "slider";
+        setAngle(preset);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, []);
 
   const selectedPolygon = polygons[selectedPolygonIndex];
