@@ -39,6 +39,28 @@ type DragState =
       startPoints: Point2D[];
     };
 
+/** Distance from point (px,py) to line segment (ax,ay)-(bx,by) in SVG coords */
+function distToSegment(
+  px: number,
+  py: number,
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+): { dist: number; t: number } {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) {
+    const d = Math.hypot(px - ax, py - ay);
+    return { dist: d, t: 0 };
+  }
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+  const projX = ax + t * dx;
+  const projY = ay + t * dy;
+  return { dist: Math.hypot(px - projX, py - projY), t };
+}
+
 export function PointEditor({
   points,
   fillColor,
@@ -391,10 +413,43 @@ export function PointEditor({
         </>
       )}
 
+      {/* Edge hit areas for inserting points */}
+      {points.length >= 2 &&
+        points.map((p, i) => {
+          const next = points[(i + 1) % points.length];
+          const [sx1, sy1] = toScreen(p);
+          const [sx2, sy2] = toScreen(next);
+          return (
+            <line
+              key={`edge-${p[0]},${p[1]}-${next[0]},${next[1]}`}
+              x1={sx1}
+              y1={sy1}
+              x2={sx2}
+              y2={sy2}
+              stroke="transparent"
+              strokeWidth={12}
+              className="cursor-copy"
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                const [sx, sy] = getSvgPos(e);
+                const [ax, ay] = toScreen(p);
+                const [bx, by] = toScreen(next);
+                const { t } = distToSegment(sx, sy, ax, ay, bx, by);
+                const wx = p[0] + t * (next[0] - p[0]);
+                const wy = p[1] + t * (next[1] - p[1]);
+                const newPoints = [...points];
+                newPoints.splice(i + 1, 0, [wx, wy]);
+                onChange(newPoints);
+              }}
+            />
+          );
+        })}
+
       {/* Point handles */}
       {points.map((p, i) => {
         const [sx, sy] = toScreen(p);
         return (
+          // biome-ignore lint/a11y/useSemanticElements: SVG circle used as interactive handle
           <circle
             key={`${p[0]},${p[1]}`}
             cx={sx}
@@ -406,10 +461,19 @@ export function PointEditor({
             stroke="white"
             strokeWidth={2}
             className="cursor-grab"
+            role="button"
+            tabIndex={-1}
             onPointerDown={(e) => {
               e.stopPropagation();
               e.currentTarget.setPointerCapture(e.pointerId);
               setDrag({ type: "point", index: i });
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (points.length <= 3) return;
+              const newPoints = points.filter((_, j) => j !== i);
+              onChange(newPoints);
             }}
           />
         );
