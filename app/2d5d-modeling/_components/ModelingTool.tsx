@@ -15,6 +15,7 @@ import type {
 } from "../_lib/types";
 import { MAT2_IDENTITY } from "../_lib/types";
 import { PointEditor } from "./PointEditor";
+import { PolygonTree } from "./PolygonTree";
 import { ReferenceScene } from "./ReferenceScene";
 import { Scene } from "./Scene";
 
@@ -344,99 +345,47 @@ export function ModelingTool() {
     <div className="flex min-h-0 flex-1">
       {/* ===== LEFT PANE: Data Management ===== */}
       <div className="flex w-56 shrink-0 flex-col overflow-y-auto border-r bg-white text-sm">
-        {/* Polygons */}
-        <div className="space-y-1 border-b px-3 py-2">
-          <div className="font-semibold">ポリゴン</div>
-          {polygons.map((p, i) => (
-            <div key={p.id} className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedPolygonIndex(i);
-                  setSelectedGroupIndex(null);
-                  setEditMode({ type: "base" });
-                }}
-                className={`flex-1 truncate rounded px-2 py-0.5 text-left ${selectedPolygonIndex === i && selectedGroupIndex === null ? "bg-blue-100 font-semibold text-blue-800" : "hover:bg-gray-100"}`}
-              >
-                <span
-                  className="mr-1 inline-block h-3 w-3 rounded-sm border"
-                  style={{ backgroundColor: rgbaToHex(p.fillColor) }}
-                />
-                {p.id}
-                <span className="ml-1 text-gray-500 text-xs">
-                  {p.group === "outline" ? "輪郭" : "特徴"} L{p.layerIndex}
-                </span>
-              </button>
-              {polygons.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => deletePolygon(i)}
-                  className="rounded px-1 text-red-500 hover:bg-red-50"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          ))}
-          <div className="flex gap-1">
-            <button
-              type="button"
-              onClick={() => addPolygon("outline")}
-              className="flex-1 rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
-            >
-              + 輪郭
-            </button>
-            <button
-              type="button"
-              onClick={() => addPolygon("feature")}
-              className="flex-1 rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
-            >
-              + 特徴
-            </button>
-          </div>
-        </div>
-
-        {/* Groups */}
-        <div className="space-y-1 border-b px-3 py-2">
-          <div className="font-semibold">グループ</div>
-          {featureGroups.map((g, i) => (
-            <div key={g.id} className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedGroupIndex(selectedGroupIndex === i ? null : i);
-                }}
-                className={`flex-1 truncate rounded px-2 py-0.5 text-left ${selectedGroupIndex === i ? "bg-purple-100 font-semibold text-purple-800" : "hover:bg-gray-100"}`}
-              >
-                {g.id}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setFeatureGroups((prev) => prev.filter((_, j) => j !== i));
-                  setPolygons((prev) =>
-                    prev.map((p) =>
-                      p.group === "feature" && p.groupId === g.id
-                        ? { ...p, groupId: undefined }
-                        : p,
-                    ),
-                  );
-                  if (selectedGroupIndex === i) setSelectedGroupIndex(null);
-                  else if (
-                    selectedGroupIndex !== null &&
-                    selectedGroupIndex > i
-                  )
-                    setSelectedGroupIndex(selectedGroupIndex - 1);
-                }}
-                className="rounded px-1 text-red-500 hover:bg-red-50"
-              >
-                ×
-              </button>
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => {
+        {/* Polygon & Group tree */}
+        <div className="border-b px-3 py-2">
+          <PolygonTree
+            polygons={polygons}
+            featureGroups={featureGroups}
+            selectedPolygonIndex={selectedPolygonIndex}
+            selectedGroupIndex={selectedGroupIndex}
+            onSelectPolygon={(i) => {
+              setSelectedPolygonIndex(i);
+              setSelectedGroupIndex(null);
+              setEditMode({ type: "base" });
+            }}
+            onSelectGroup={setSelectedGroupIndex}
+            onDeletePolygon={deletePolygon}
+            onDeleteGroup={(i) => {
+              const g = featureGroups[i];
+              setFeatureGroups((prev) => prev.filter((_, j) => j !== i));
+              if (g) {
+                setPolygons((prev) =>
+                  prev.map((p) =>
+                    p.group === "feature" && p.groupId === g.id
+                      ? { ...p, groupId: undefined }
+                      : p,
+                  ),
+                );
+              }
+              if (selectedGroupIndex === i) setSelectedGroupIndex(null);
+              else if (selectedGroupIndex !== null && selectedGroupIndex > i)
+                setSelectedGroupIndex(selectedGroupIndex - 1);
+            }}
+            onAssignGroup={(polygonIndex, groupId) => {
+              setPolygons((prev) =>
+                prev.map((p, i) =>
+                  i === polygonIndex && p.group === "feature"
+                    ? { ...p, groupId }
+                    : p,
+                ),
+              );
+            }}
+            onAddPolygon={addPolygon}
+            onAddGroup={() => {
               const id = prompt("グループ ID");
               if (!id) return;
               setFeatureGroups((prev) => [
@@ -453,10 +402,7 @@ export function ModelingTool() {
               ]);
               setSelectedGroupIndex(featureGroups.length);
             }}
-            className="w-full rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
-          >
-            + グループ追加
-          </button>
+          />
         </div>
 
         {/* Blend shape weights */}
