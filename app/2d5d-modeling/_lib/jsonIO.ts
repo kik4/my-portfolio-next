@@ -14,6 +14,7 @@ export function importFaceModel(json: string): FaceModel {
     polygons: data.polygons,
     featureGroups: data.featureGroups ?? [],
     blendShapeWeights: data.blendShapeWeights ?? {},
+    outlineFillColor: data.outlineFillColor ?? [0.99, 0.88, 0.78, 1],
     outlineStroke: data.outlineStroke ?? null,
   };
 }

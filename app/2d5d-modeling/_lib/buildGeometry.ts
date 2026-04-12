@@ -38,7 +38,8 @@ export function buildFaceGeometry(
   const indices: number[] = [];
   let vertexOffset = 0;
   const strokes: StrokeLine[] = [];
-  const { blendShapeWeights, featureGroups, outlineStroke } = model;
+  const { blendShapeWeights, featureGroups, outlineFillColor, outlineStroke } =
+    model;
 
   // Pre-compute group transforms, visibility, layerIndex
   const groupTransforms = new Map<
@@ -122,9 +123,13 @@ export function buildFaceGeometry(
     const z = effectiveLayerIndex * LAYER_Z_STEP;
 
     // Fill
-    if (polygon.fillEnabled) {
+    const fillColor =
+      polygon.group === "outline" ? outlineFillColor : polygon.fillColor;
+    const fillEnabled =
+      polygon.group === "outline" ? true : polygon.fillEnabled;
+    if (fillEnabled) {
       const tris = triangulate(subdivided);
-      const [r, g, b] = polygon.fillColor;
+      const [r, g, b] = fillColor;
       for (const [x, y] of subdivided) {
         positions.push(x, y, z);
         colors.push(r * alpha, g * alpha, b * alpha);

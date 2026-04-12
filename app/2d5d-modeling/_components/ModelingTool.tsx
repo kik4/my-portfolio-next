@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { downloadJson, exportFaceModel, importFaceModel } from "../_lib/jsonIO";
 import { composeMat2, decomposeMat2 } from "../_lib/mat2utils";
 import type {
+  ColorRGBA,
   FaceModel,
   FeatureGroup,
   FeatureGroupKeyframe,
@@ -43,8 +44,6 @@ function createOutlinePolygon(layerIndex: number): OutlinePolygon {
     group: "outline",
     basePoints: createEllipsePoints(0.3, 0.4, 16),
     layerIndex,
-    fillColor: [0.99, 0.88, 0.78, 1],
-    fillEnabled: true,
     yawPitchKeyframes: [],
     blendShapes: [],
   };
@@ -118,6 +117,9 @@ export function ModelingTool() {
   const [blendShapeWeights, setBlendShapeWeights] = useState<
     Record<string, number>
   >({});
+  const [outlineFillColor, setOutlineFillColor] = useState<ColorRGBA>([
+    0.99, 0.88, 0.78, 1,
+  ]);
   const [outlineStroke, setOutlineStroke] = useState<OutlineStroke | null>(
     null,
   );
@@ -131,6 +133,7 @@ export function ModelingTool() {
       setPolygons(saved.polygons);
       setFeatureGroups(saved.featureGroups);
       setBlendShapeWeights(saved.blendShapeWeights);
+      setOutlineFillColor(saved.outlineFillColor);
       setOutlineStroke(saved.outlineStroke);
       setSelectedPolygonIndex(0);
       setEditMode({ type: "base" });
@@ -430,8 +433,11 @@ export function ModelingTool() {
           p.group === "feature" &&
           p.groupId === selectedPolygon.groupId,
       )
-      .map((p) => ({ points: p.basePoints, fillColor: p.fillColor }));
-  }, [polygons, selectedPolygonIndex, selectedPolygon]);
+      .map((p) => ({
+        points: p.basePoints,
+        fillColor: p.group === "feature" ? p.fillColor : outlineFillColor,
+      }));
+  }, [polygons, selectedPolygonIndex, selectedPolygon, outlineFillColor]);
 
   const rightPaneRef = useRef<HTMLDivElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
@@ -480,8 +486,20 @@ export function ModelingTool() {
   );
 
   const model: FaceModel = useMemo(
-    () => ({ polygons, featureGroups, blendShapeWeights, outlineStroke }),
-    [polygons, featureGroups, blendShapeWeights, outlineStroke],
+    () => ({
+      polygons,
+      featureGroups,
+      blendShapeWeights,
+      outlineFillColor,
+      outlineStroke,
+    }),
+    [
+      polygons,
+      featureGroups,
+      blendShapeWeights,
+      outlineFillColor,
+      outlineStroke,
+    ],
   );
 
   useEffect(() => {
@@ -501,6 +519,7 @@ export function ModelingTool() {
           <PolygonTree
             polygons={polygons}
             featureGroups={featureGroups}
+            outlineFillColor={outlineFillColor}
             selectedPolygonIndex={selectedPolygonIndex}
             selectedGroupIndex={selectedGroupIndex}
             onSelectPolygon={(i) => {
@@ -631,6 +650,14 @@ export function ModelingTool() {
               type="color"
               value={editorBgColor}
               onChange={(e) => setEditorBgColor(e.target.value)}
+            />
+          </label>
+          <label className="flex items-center gap-1">
+            <span className="w-12 shrink-0 text-xs">顔色</span>
+            <input
+              type="color"
+              value={rgbaToHex(outlineFillColor)}
+              onChange={(e) => setOutlineFillColor(hexToRgba(e.target.value))}
             />
           </label>
           <label className="flex items-center gap-1">
@@ -1213,32 +1240,36 @@ export function ModelingTool() {
                   className="w-16 rounded border px-1"
                 />
               </label>
-              <label className="flex items-center gap-2">
-                <span className="w-14 shrink-0">色</span>
-                <input
-                  type="color"
-                  value={rgbaToHex(selectedPolygon.fillColor)}
-                  onChange={(e) =>
-                    updateSelectedPolygon((p) => ({
-                      ...p,
-                      fillColor: hexToRgba(e.target.value),
-                    }))
-                  }
-                />
-              </label>
-              <label className="flex items-center gap-2">
-                <span className="w-14 shrink-0">塗り</span>
-                <input
-                  type="checkbox"
-                  checked={selectedPolygon.fillEnabled}
-                  onChange={(e) =>
-                    updateSelectedPolygon((p) => ({
-                      ...p,
-                      fillEnabled: e.target.checked,
-                    }))
-                  }
-                />
-              </label>
+              {selectedPolygon.group === "feature" && (
+                <>
+                  <label className="flex items-center gap-2">
+                    <span className="w-14 shrink-0">色</span>
+                    <input
+                      type="color"
+                      value={rgbaToHex(selectedPolygon.fillColor)}
+                      onChange={(e) =>
+                        updateSelectedPolygon((p) => ({
+                          ...p,
+                          fillColor: hexToRgba(e.target.value),
+                        }))
+                      }
+                    />
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <span className="w-14 shrink-0">塗り</span>
+                    <input
+                      type="checkbox"
+                      checked={selectedPolygon.fillEnabled}
+                      onChange={(e) =>
+                        updateSelectedPolygon((p) => ({
+                          ...p,
+                          fillEnabled: e.target.checked,
+                        }))
+                      }
+                    />
+                  </label>
+                </>
+              )}
               {selectedPolygon.group === "feature" && (
                 <label className="flex items-center gap-2">
                   <span className="w-14 shrink-0">線色</span>
@@ -1331,8 +1362,16 @@ export function ModelingTool() {
             <div className="min-h-0 flex-1">
               <PointEditor
                 points={editorPoints}
-                fillColor={selectedPolygon.fillColor}
-                fillEnabled={selectedPolygon.fillEnabled}
+                fillColor={
+                  selectedPolygon.group === "outline"
+                    ? outlineFillColor
+                    : selectedPolygon.fillColor
+                }
+                fillEnabled={
+                  selectedPolygon.group === "outline"
+                    ? true
+                    : selectedPolygon.fillEnabled
+                }
                 strokeColor={
                   selectedPolygon.group === "outline"
                     ? (outlineStroke?.color ?? null)

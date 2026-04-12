@@ -32,8 +32,6 @@ export interface OutlinePolygon {
   group: "outline";
   basePoints: Point2D[];
   layerIndex: number;
-  fillColor: ColorRGBA;
-  fillEnabled: boolean;
   yawPitchKeyframes: OutlineKeyframe[];
   blendShapes: OutlineBlendShape[];
 }
@@ -95,6 +93,7 @@ export interface FaceModel {
   polygons: Polygon[];
   featureGroups: FeatureGroup[];
   blendShapeWeights: Record<string, number>;
+  outlineFillColor: ColorRGBA;
   outlineStroke: OutlineStroke | null;
 }
 

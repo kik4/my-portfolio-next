@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { FeatureGroup, Polygon } from "../_lib/types";
+import type { ColorRGBA, FeatureGroup, Polygon } from "../_lib/types";
 
 interface PolygonTreeProps {
   polygons: Polygon[];
   featureGroups: FeatureGroup[];
+  outlineFillColor: ColorRGBA;
   selectedPolygonIndex: number;
   selectedGroupIndex: number | null;
   onSelectPolygon: (index: number) => void;
@@ -33,6 +34,7 @@ function rgbaToHex(c: [number, number, number, number]): string {
 export function PolygonTree({
   polygons,
   featureGroups,
+  outlineFillColor,
   selectedPolygonIndex,
   selectedGroupIndex,
   onSelectPolygon,
@@ -130,7 +132,13 @@ export function PolygonTree({
         >
           <span
             className="mr-1 inline-block h-2.5 w-2.5 rounded-sm border"
-            style={{ backgroundColor: rgbaToHex(polygon.fillColor) }}
+            style={{
+              backgroundColor: rgbaToHex(
+                polygon.group === "feature"
+                  ? polygon.fillColor
+                  : outlineFillColor,
+              ),
+            }}
           />
           {polygon.name}
           <span className="ml-1 text-gray-400 text-xs">
