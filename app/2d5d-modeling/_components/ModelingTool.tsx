@@ -1193,8 +1193,8 @@ export function ModelingTool() {
                   <span className="w-14 shrink-0">線幅</span>
                   <input
                     type="number"
-                    step={0.001}
-                    min={0.001}
+                    step={1}
+                    min={1}
                     value={selectedPolygon.strokeWidth}
                     onChange={(e) =>
                       updateSelectedPolygon((p) => ({
@@ -1244,6 +1244,7 @@ export function ModelingTool() {
                 fillColor={selectedPolygon.fillColor}
                 fillEnabled={selectedPolygon.fillEnabled}
                 strokeColor={selectedPolygon.strokeColor}
+                strokeWidth={selectedPolygon.strokeWidth}
                 backgroundPolygons={siblingPolygons}
                 backgroundColor={editorBgColor}
                 onChange={handleEditorChange}

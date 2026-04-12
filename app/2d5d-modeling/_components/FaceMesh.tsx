@@ -1,8 +1,12 @@
 "use client";
 
 import { Billboard } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
+import { Line2 } from "three/examples/jsm/lines/Line2.js";
+import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
+import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { buildFaceGeometry } from "../_lib/buildGeometry";
 import type { FaceModel, YawPitch } from "../_lib/types";
 
@@ -13,6 +17,7 @@ interface FaceMeshProps {
 }
 
 export function FaceMesh({ model, angle, opacity }: FaceMeshProps) {
+  const { size } = useThree();
   const { fillGeometry, strokes } = useMemo(
     () => buildFaceGeometry(model, angle),
     [model, angle],
@@ -37,38 +42,37 @@ export function FaceMesh({ model, angle, opacity }: FaceMeshProps) {
 
   const strokeData = useMemo(() => {
     return strokes.map((stroke) => {
-      const geo = new THREE.BufferGeometry();
       const pts = stroke.points;
-      const positions = new Float32Array(pts.length * 3);
-      for (let i = 0; i < pts.length; i++) {
-        positions[i * 3] = pts[i][0];
-        positions[i * 3 + 1] = pts[i][1];
-        positions[i * 3 + 2] = stroke.z;
+      // Line2 requires closed loop: append first point
+      const posArr: number[] = [];
+      for (let i = 0; i <= pts.length; i++) {
+        const p = pts[i % pts.length];
+        posArr.push(p[0], p[1], stroke.z);
       }
-      geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
 
-      const mat = new THREE.LineBasicMaterial({
+      const geo = new LineGeometry();
+      geo.setPositions(posArr);
+
+      const mat = new LineMaterial({
         color: new THREE.Color(
           stroke.color[0],
           stroke.color[1],
           stroke.color[2],
-        ),
+        ).getHex(),
         linewidth: stroke.width,
         toneMapped: false,
+        resolution: new THREE.Vector2(size.width, size.height),
       });
 
-      return { geometry: geo, material: mat };
+      return { line: new Line2(geo, mat) };
     });
-  }, [strokes]);
+  }, [strokes, size.width, size.height]);
 
   return (
     <Billboard>
       <mesh geometry={fillGeometry} material={fillMaterial} />
       {strokeData.map((s) => (
-        <primitive
-          key={`stroke-${s.geometry.id}`}
-          object={new THREE.LineLoop(s.geometry, s.material)}
-        />
+        <primitive key={`stroke-${s.line.id}`} object={s.line} />
       ))}
     </Billboard>
   );

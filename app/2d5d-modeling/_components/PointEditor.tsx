@@ -14,6 +14,7 @@ interface PointEditorProps {
   fillColor: ColorRGBA;
   fillEnabled?: boolean;
   strokeColor?: ColorRGBA | null;
+  strokeWidth?: number;
   backgroundPolygons?: BackgroundPolygon[];
   backgroundColor?: string;
   onChange: (points: Point2D[]) => void;
@@ -67,6 +68,7 @@ export function PointEditor({
   backgroundPolygons = [],
   fillEnabled = true,
   strokeColor = null,
+  strokeWidth = 2,
   backgroundColor = "#ffffff",
   onChange,
   viewSize: initialViewSize = 0.5,
@@ -294,7 +296,7 @@ export function PointEditor({
         d={pathD}
         fill={fillEnabled ? rgbaToCss(fillColor) : "transparent"}
         stroke={strokeColor ? rgbaToCss(strokeColor) : "none"}
-        strokeWidth={strokeColor ? 2 : 0}
+        strokeWidth={strokeColor ? strokeWidth : 0}
         className="cursor-move"
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
