@@ -44,6 +44,9 @@ function createOutlinePolygon(layerIndex: number): OutlinePolygon {
     basePoints: createEllipsePoints(0.3, 0.4, 16),
     layerIndex,
     fillColor: [0.99, 0.88, 0.78, 1],
+    fillEnabled: true,
+    strokeColor: null,
+    strokeWidth: 2,
     yawPitchKeyframes: [],
     blendShapes: [],
   };
@@ -57,6 +60,9 @@ function createFeaturePolygon(layerIndex: number): FeaturePolygon {
     basePoints: createEllipsePoints(0.05, 0.03, 8),
     layerIndex,
     fillColor: [0.2, 0.2, 0.2, 1],
+    fillEnabled: true,
+    strokeColor: null,
+    strokeWidth: 2,
     baseAlpha: 1,
     yawPitchKeyframes: [],
     blendShapes: [],
@@ -1142,6 +1148,64 @@ export function ModelingTool() {
                   }
                 />
               </label>
+              <label className="flex items-center gap-2">
+                <span className="w-14 shrink-0">塗り</span>
+                <input
+                  type="checkbox"
+                  checked={selectedPolygon.fillEnabled}
+                  onChange={(e) =>
+                    updateSelectedPolygon((p) => ({
+                      ...p,
+                      fillEnabled: e.target.checked,
+                    }))
+                  }
+                />
+              </label>
+              <label className="flex items-center gap-2">
+                <span className="w-14 shrink-0">線色</span>
+                <input
+                  type="checkbox"
+                  checked={selectedPolygon.strokeColor !== null}
+                  onChange={(e) =>
+                    updateSelectedPolygon((p) => ({
+                      ...p,
+                      strokeColor: e.target.checked
+                        ? ([0, 0, 0, 1] as [number, number, number, number])
+                        : null,
+                    }))
+                  }
+                />
+                {selectedPolygon.strokeColor && (
+                  <input
+                    type="color"
+                    value={rgbaToHex(selectedPolygon.strokeColor)}
+                    onChange={(e) =>
+                      updateSelectedPolygon((p) => ({
+                        ...p,
+                        strokeColor: hexToRgba(e.target.value),
+                      }))
+                    }
+                  />
+                )}
+              </label>
+              {selectedPolygon.strokeColor && (
+                <label className="flex items-center gap-2">
+                  <span className="w-14 shrink-0">線幅</span>
+                  <input
+                    type="number"
+                    step={0.001}
+                    min={0.001}
+                    value={selectedPolygon.strokeWidth}
+                    onChange={(e) =>
+                      updateSelectedPolygon((p) => ({
+                        ...p,
+                        strokeWidth: Number(e.target.value),
+                      }))
+                    }
+                    className="w-20 rounded border px-1"
+                  />
+                </label>
+              )}
               {selectedPolygon.group === "feature" && (
                 <label className="flex items-center gap-2">
                   <span className="w-14 shrink-0">基本α</span>
@@ -1178,6 +1242,8 @@ export function ModelingTool() {
               <PointEditor
                 points={editorPoints}
                 fillColor={selectedPolygon.fillColor}
+                fillEnabled={selectedPolygon.fillEnabled}
+                strokeColor={selectedPolygon.strokeColor}
                 backgroundPolygons={siblingPolygons}
                 backgroundColor={editorBgColor}
                 onChange={handleEditorChange}

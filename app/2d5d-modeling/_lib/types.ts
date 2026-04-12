@@ -33,6 +33,9 @@ export interface OutlinePolygon {
   basePoints: Point2D[];
   layerIndex: number;
   fillColor: ColorRGBA;
+  fillEnabled: boolean;
+  strokeColor: ColorRGBA | null;
+  strokeWidth: number;
   yawPitchKeyframes: OutlineKeyframe[];
   blendShapes: OutlineBlendShape[];
 }
@@ -52,6 +55,9 @@ export interface FeaturePolygon {
   basePoints: Point2D[];
   layerIndex: number;
   fillColor: ColorRGBA;
+  fillEnabled: boolean;
+  strokeColor: ColorRGBA | null;
+  strokeWidth: number;
   baseAlpha: number;
   yawPitchKeyframes: FeatureKeyframe[];
   blendShapes: FeatureBlendShape[];

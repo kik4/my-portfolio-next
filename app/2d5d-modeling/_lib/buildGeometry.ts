@@ -9,20 +9,34 @@ import {
 import { interpolateFeature } from "./interpolateFeature";
 import { interpolateOutlinePoints } from "./interpolateOutline";
 import { triangulate } from "./triangulate";
-import type { FaceModel, YawPitch } from "./types";
+import type { ColorRGBA, FaceModel, Point2D, YawPitch } from "./types";
 import { MAT2_IDENTITY } from "./types";
 
 const SUBDIVISION_SEGMENTS = 8;
 const LAYER_Z_STEP = 0.001;
+const STROKE_Z_OFFSET = 0.0005; // slightly in front of fill
+
+export interface StrokeLine {
+  points: Point2D[];
+  color: ColorRGBA;
+  width: number;
+  z: number;
+}
+
+export interface FaceGeometryResult {
+  fillGeometry: THREE.BufferGeometry;
+  strokes: StrokeLine[];
+}
 
 export function buildFaceGeometry(
   model: FaceModel,
   angle: YawPitch,
-): THREE.BufferGeometry {
+): FaceGeometryResult {
   const positions: number[] = [];
   const colors: number[] = [];
   const indices: number[] = [];
   let vertexOffset = 0;
+  const strokes: StrokeLine[] = [];
   const { blendShapeWeights, featureGroups } = model;
 
   // Pre-compute group transforms, visibility, layerIndex
@@ -67,7 +81,6 @@ export function buildFaceGeometry(
     if (polygon.group === "outline") {
       points = interpolateOutlinePoints(polygon, angle, blendShapeWeights);
     } else if (polygon.group === "feature") {
-      // Check group visibility
       if (polygon.groupId) {
         const gt = groupTransforms.get(polygon.groupId);
         if (gt && !gt.visible) continue;
@@ -77,7 +90,6 @@ export function buildFaceGeometry(
       let localPos = result.position;
       let localMat = result.matrix;
 
-      // Compose with group transform
       if (polygon.groupId) {
         const gt = groupTransforms.get(polygon.groupId);
         if (gt?.visible) {
@@ -89,12 +101,10 @@ export function buildFaceGeometry(
           );
           localPos = composed.position;
           localMat = composed.matrix;
-          // Add polygon layerIndex as offset to group layerIndex
           effectiveLayerIndex = gt.layerIndex + polygon.layerIndex;
         }
       }
 
-      // Apply final transform to blended points
       points = result.blendedPoints.map(([x, y]) => [
         localMat[0] * x + localMat[1] * y + localPos[0],
         localMat[2] * x + localMat[3] * y + localPos[1],
@@ -105,28 +115,49 @@ export function buildFaceGeometry(
     if (alpha <= 0) continue;
 
     const subdivided = subdivideClosed(points, SUBDIVISION_SEGMENTS);
-    const tris = triangulate(subdivided);
-
     const z = effectiveLayerIndex * LAYER_Z_STEP;
-    const [r, g, b] = polygon.fillColor;
 
-    for (const [x, y] of subdivided) {
-      positions.push(x, y, z);
-      colors.push(r * alpha, g * alpha, b * alpha);
+    // Fill
+    if (polygon.fillEnabled) {
+      const tris = triangulate(subdivided);
+      const [r, g, b] = polygon.fillColor;
+      for (const [x, y] of subdivided) {
+        positions.push(x, y, z);
+        colors.push(r * alpha, g * alpha, b * alpha);
+      }
+      for (const idx of tris) {
+        indices.push(idx + vertexOffset);
+      }
+      vertexOffset += subdivided.length;
     }
-    for (const idx of tris) {
-      indices.push(idx + vertexOffset);
+
+    // Stroke
+    if (polygon.strokeColor) {
+      strokes.push({
+        points: subdivided,
+        color: [
+          polygon.strokeColor[0] * alpha,
+          polygon.strokeColor[1] * alpha,
+          polygon.strokeColor[2] * alpha,
+          polygon.strokeColor[3],
+        ],
+        width: polygon.strokeWidth,
+        z: z + STROKE_Z_OFFSET,
+      });
     }
-    vertexOffset += subdivided.length;
   }
 
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute(
+  const fillGeometry = new THREE.BufferGeometry();
+  fillGeometry.setAttribute(
     "position",
     new THREE.Float32BufferAttribute(positions, 3),
   );
-  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-  geometry.setIndex(indices);
-  geometry.computeBoundingSphere();
-  return geometry;
+  fillGeometry.setAttribute(
+    "color",
+    new THREE.Float32BufferAttribute(colors, 3),
+  );
+  fillGeometry.setIndex(indices);
+  fillGeometry.computeBoundingSphere();
+
+  return { fillGeometry, strokes };
 }

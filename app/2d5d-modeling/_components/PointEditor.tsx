@@ -12,6 +12,8 @@ interface BackgroundPolygon {
 interface PointEditorProps {
   points: Point2D[];
   fillColor: ColorRGBA;
+  fillEnabled?: boolean;
+  strokeColor?: ColorRGBA | null;
   backgroundPolygons?: BackgroundPolygon[];
   backgroundColor?: string;
   onChange: (points: Point2D[]) => void;
@@ -41,6 +43,8 @@ export function PointEditor({
   points,
   fillColor,
   backgroundPolygons = [],
+  fillEnabled = true,
+  strokeColor = null,
   backgroundColor = "#ffffff",
   onChange,
   viewSize: initialViewSize = 0.5,
@@ -76,11 +80,14 @@ export function PointEditor({
   );
 
   const getSvgPos = useCallback((e: React.PointerEvent): [number, number] => {
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect) return [0, 0];
+    const svg = svgRef.current;
+    if (!svg) return [0, 0];
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return [0, 0];
+    const inv = ctm.inverse();
     return [
-      ((e.clientX - rect.left) / rect.width) * CANVAS_PX,
-      ((e.clientY - rect.top) / rect.height) * CANVAS_PX,
+      e.clientX * inv.a + e.clientY * inv.c + inv.e,
+      e.clientX * inv.b + e.clientY * inv.d + inv.f,
     ];
   }, []);
 
@@ -263,9 +270,9 @@ export function PointEditor({
       })}
       <path
         d={pathD}
-        fill={rgbaToCss(fillColor)}
-        stroke="#b45309"
-        strokeWidth={1.5}
+        fill={fillEnabled ? rgbaToCss(fillColor) : "transparent"}
+        stroke={strokeColor ? rgbaToCss(strokeColor) : "none"}
+        strokeWidth={strokeColor ? 2 : 0}
         className="cursor-move"
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
