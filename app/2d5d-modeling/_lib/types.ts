@@ -34,8 +34,6 @@ export interface OutlinePolygon {
   layerIndex: number;
   fillColor: ColorRGBA;
   fillEnabled: boolean;
-  strokeColor: ColorRGBA | null;
-  strokeWidth: number;
   yawPitchKeyframes: OutlineKeyframe[];
   blendShapes: OutlineBlendShape[];
 }
@@ -88,10 +86,16 @@ export interface FeatureGroup {
 
 export type Polygon = OutlinePolygon | FeaturePolygon;
 
+export interface OutlineStroke {
+  color: ColorRGBA;
+  width: number;
+}
+
 export interface FaceModel {
   polygons: Polygon[];
   featureGroups: FeatureGroup[];
   blendShapeWeights: Record<string, number>;
+  outlineStroke: OutlineStroke | null;
 }
 
 // Identity matrix for Mat2
