@@ -107,7 +107,9 @@ export function ModelingTool() {
   const [polygons, setPolygons] = useState<Polygon[]>(() => [
     createOutlinePolygon(0),
   ]);
-  const [selectedPolygonIndex, setSelectedPolygonIndex] = useState(0);
+  const [selectedPolygonIndex, setSelectedPolygonIndex] = useState<
+    number | null
+  >(null);
   const [editMode, setEditMode] = useState<EditMode>({ type: "base" });
 
   const [featureGroups, setFeatureGroups] = useState<FeatureGroup[]>([]);
@@ -135,7 +137,7 @@ export function ModelingTool() {
       setBlendShapeWeights(saved.blendShapeWeights);
       setOutlineFillColor(saved.outlineFillColor);
       setOutlineStroke(saved.outlineStroke);
-      setSelectedPolygonIndex(0);
+      setSelectedPolygonIndex(null);
       setEditMode({ type: "base" });
     }
   }, []);
@@ -186,10 +188,12 @@ export function ModelingTool() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  const selectedPolygon = polygons[selectedPolygonIndex];
+  const selectedPolygon =
+    selectedPolygonIndex !== null ? polygons[selectedPolygonIndex] : null;
 
   const updateSelectedPolygon = useCallback(
     (updater: (p: Polygon) => Polygon) => {
+      if (selectedPolygonIndex === null) return;
       setPolygons((prev) =>
         prev.map((p, i) => (i === selectedPolygonIndex ? updater(p) : p)),
       );
@@ -393,9 +397,9 @@ export function ModelingTool() {
       if (polygons.length <= 1) return;
       setPolygons((prev) => prev.filter((_, i) => i !== index));
       if (selectedPolygonIndex === index) {
-        setSelectedPolygonIndex(Math.max(0, index - 1));
+        setSelectedPolygonIndex(index > 0 ? index - 1 : null);
         setEditMode({ type: "base" });
-      } else if (selectedPolygonIndex > index)
+      } else if (selectedPolygonIndex !== null && selectedPolygonIndex > index)
         setSelectedPolygonIndex(selectedPolygonIndex - 1);
     },
     [polygons.length, selectedPolygonIndex],
@@ -522,6 +526,11 @@ export function ModelingTool() {
             outlineFillColor={outlineFillColor}
             selectedPolygonIndex={selectedPolygonIndex}
             selectedGroupIndex={selectedGroupIndex}
+            onSelectRoot={() => {
+              setSelectedPolygonIndex(null);
+              setSelectedGroupIndex(null);
+              setEditMode({ type: "base" });
+            }}
             onSelectPolygon={(i) => {
               setSelectedPolygonIndex(i);
               setSelectedGroupIndex(null);
@@ -763,7 +772,9 @@ export function ModelingTool() {
                     setPolygons(imported.polygons);
                     setFeatureGroups(imported.featureGroups);
                     setBlendShapeWeights(imported.blendShapeWeights);
-                    setSelectedPolygonIndex(0);
+                    setOutlineFillColor(imported.outlineFillColor);
+                    setOutlineStroke(imported.outlineStroke);
+                    setSelectedPolygonIndex(null);
                     setSelectedGroupIndex(null);
                     setEditMode({ type: "base" });
                   } catch (err) {

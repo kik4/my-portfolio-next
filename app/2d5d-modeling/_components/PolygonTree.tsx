@@ -7,8 +7,9 @@ interface PolygonTreeProps {
   polygons: Polygon[];
   featureGroups: FeatureGroup[];
   outlineFillColor: ColorRGBA;
-  selectedPolygonIndex: number;
+  selectedPolygonIndex: number | null;
   selectedGroupIndex: number | null;
+  onSelectRoot: () => void;
   onSelectPolygon: (index: number) => void;
   onSelectGroup: (index: number | null) => void;
   onDeletePolygon: (index: number) => void;
@@ -37,6 +38,7 @@ export function PolygonTree({
   outlineFillColor,
   selectedPolygonIndex,
   selectedGroupIndex,
+  onSelectRoot,
   onSelectPolygon,
   onSelectGroup,
   onDeletePolygon,
@@ -159,8 +161,23 @@ export function PolygonTree({
     );
   };
 
+  const isRootSelected =
+    selectedPolygonIndex === null && selectedGroupIndex === null;
+
   return (
     <div className="space-y-0.5">
+      {/* Root item */}
+      <button
+        type="button"
+        onClick={onSelectRoot}
+        className={`w-full truncate rounded px-2 py-0.5 text-left font-medium ${
+          isRootSelected
+            ? "bg-blue-100 font-semibold text-blue-800"
+            : "hover:bg-gray-100"
+        }`}
+      >
+        モデル
+      </button>
       {/* Root drop zone */}
       {/* biome-ignore lint/a11y/noStaticElementInteractions: drop zone */}
       <div
