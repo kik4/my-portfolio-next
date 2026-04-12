@@ -31,9 +31,8 @@ function createEllipsePoints(rx: number, ry: number, n: number): Point2D[] {
   return points;
 }
 
-let nextId = 1;
 function genId(prefix: string) {
-  return `${prefix}_${nextId++}`;
+  return `${prefix}_${crypto.randomUUID().slice(0, 8)}`;
 }
 
 function createOutlinePolygon(layerIndex: number): OutlinePolygon {
