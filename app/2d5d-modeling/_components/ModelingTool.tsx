@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import type {
   FaceModel,
   OutlineKeyframe,
+  OutlinePolygon,
   Point2D,
   YawPitch,
 } from "../_lib/types";
@@ -11,11 +12,8 @@ import { PointEditor } from "./PointEditor";
 import { ReferenceScene } from "./ReferenceScene";
 import { Scene } from "./Scene";
 
-function createInitialFaceOutline(): Point2D[] {
+function createEllipsePoints(rx: number, ry: number, n: number): Point2D[] {
   const points: Point2D[] = [];
-  const n = 16;
-  const rx = 0.3;
-  const ry = 0.4;
   for (let i = 0; i < n; i++) {
     const t = (i / n) * Math.PI * 2;
     points.push([Math.sin(t) * rx, Math.cos(t) * ry]);
@@ -23,13 +21,44 @@ function createInitialFaceOutline(): Point2D[] {
   return points;
 }
 
+function createDefaultPolygon(id: string, layerIndex: number): OutlinePolygon {
+  return {
+    id,
+    group: "outline",
+    basePoints: createEllipsePoints(0.3, 0.4, 16),
+    layerIndex,
+    fillColor: [0.99, 0.88, 0.78, 1],
+    yawPitchKeyframes: [],
+  };
+}
+
 type EditMode = { type: "base" } | { type: "keyframe"; index: number };
 
+function hexToRgba(hex: string): [number, number, number, number] {
+  const r = Number.parseInt(hex.slice(1, 3), 16) / 255;
+  const g = Number.parseInt(hex.slice(3, 5), 16) / 255;
+  const b = Number.parseInt(hex.slice(5, 7), 16) / 255;
+  return [r, g, b, 1];
+}
+
+function rgbaToHex(c: [number, number, number, number]): string {
+  const r = Math.round(c[0] * 255)
+    .toString(16)
+    .padStart(2, "0");
+  const g = Math.round(c[1] * 255)
+    .toString(16)
+    .padStart(2, "0");
+  const b = Math.round(c[2] * 255)
+    .toString(16)
+    .padStart(2, "0");
+  return `#${r}${g}${b}`;
+}
+
 export function ModelingTool() {
-  const [basePoints, setBasePoints] = useState<Point2D[]>(() =>
-    createInitialFaceOutline(),
-  );
-  const [keyframes, setKeyframes] = useState<OutlineKeyframe[]>([]);
+  const [polygons, setPolygons] = useState<OutlinePolygon[]>(() => [
+    createDefaultPolygon("faceOutline", 0),
+  ]);
+  const [selectedPolygonIndex, setSelectedPolygonIndex] = useState(0);
   const [editMode, setEditMode] = useState<EditMode>({ type: "base" });
 
   const [referenceVisible, setReferenceVisible] = useState(true);
@@ -46,10 +75,23 @@ export function ModelingTool() {
     setZoom(newZoom);
   }, []);
 
-  // Points shown in editor: base or base+delta
+  const selectedPolygon = polygons[selectedPolygonIndex];
+
+  const updateSelectedPolygon = useCallback(
+    (updater: (p: OutlinePolygon) => OutlinePolygon) => {
+      setPolygons((prev) =>
+        prev.map((p, i) => (i === selectedPolygonIndex ? updater(p) : p)),
+      );
+    },
+    [selectedPolygonIndex],
+  );
+
+  // Points shown in editor
   const editorPoints = useMemo(() => {
+    if (!selectedPolygon) return [];
+    const { basePoints, yawPitchKeyframes } = selectedPolygon;
     if (editMode.type === "base") return basePoints;
-    const kf = keyframes[editMode.index];
+    const kf = yawPitchKeyframes[editMode.index];
     if (!kf) return basePoints;
     return basePoints.map(
       ([bx, by], i) =>
@@ -58,42 +100,53 @@ export function ModelingTool() {
           by + (kf.deltas[i]?.[1] ?? 0),
         ] as Point2D,
     );
-  }, [editMode, basePoints, keyframes]);
+  }, [editMode, selectedPolygon]);
 
   const handleEditorChange = useCallback(
     (newPoints: Point2D[]) => {
       if (editMode.type === "base") {
-        setBasePoints(newPoints);
+        updateSelectedPolygon((p) => ({ ...p, basePoints: newPoints }));
       } else {
         const kfIndex = editMode.index;
-        setKeyframes((prev) =>
-          prev.map((kf, i) => {
+        updateSelectedPolygon((p) => ({
+          ...p,
+          yawPitchKeyframes: p.yawPitchKeyframes.map((kf, i) => {
             if (i !== kfIndex) return kf;
             const deltas: Point2D[] = newPoints.map(([px, py], j) => [
-              px - basePoints[j][0],
-              py - basePoints[j][1],
+              px - p.basePoints[j][0],
+              py - p.basePoints[j][1],
             ]);
             return { ...kf, deltas };
           }),
-        );
+        }));
       }
     },
-    [editMode, basePoints],
+    [editMode, updateSelectedPolygon],
   );
 
   const addKeyframe = useCallback(() => {
-    const deltas: Point2D[] = basePoints.map(() => [0, 0]);
+    if (!selectedPolygon) return;
+    const deltas: Point2D[] = selectedPolygon.basePoints.map(() => [0, 0]);
     const newKf: OutlineKeyframe = {
       angle: { yaw: angle.yaw, pitch: angle.pitch },
       deltas,
     };
-    setKeyframes((prev) => [...prev, newKf]);
-    setEditMode({ type: "keyframe", index: keyframes.length });
-  }, [angle, basePoints, keyframes.length]);
+    updateSelectedPolygon((p) => ({
+      ...p,
+      yawPitchKeyframes: [...p.yawPitchKeyframes, newKf],
+    }));
+    setEditMode({
+      type: "keyframe",
+      index: selectedPolygon.yawPitchKeyframes.length,
+    });
+  }, [angle, selectedPolygon, updateSelectedPolygon]);
 
   const deleteKeyframe = useCallback(
     (index: number) => {
-      setKeyframes((prev) => prev.filter((_, i) => i !== index));
+      updateSelectedPolygon((p) => ({
+        ...p,
+        yawPitchKeyframes: p.yawPitchKeyframes.filter((_, i) => i !== index),
+      }));
       if (editMode.type === "keyframe") {
         if (editMode.index === index) {
           setEditMode({ type: "base" });
@@ -102,39 +155,143 @@ export function ModelingTool() {
         }
       }
     },
-    [editMode],
+    [editMode, updateSelectedPolygon],
   );
 
-  const model: FaceModel = {
-    polygons: [
-      {
-        id: "faceOutline",
-        group: "outline",
-        basePoints,
-        layerIndex: 0,
-        fillColor: [0.99, 0.88, 0.78, 1],
-        yawPitchKeyframes: keyframes,
-      },
-    ],
-  };
+  const addPolygon = useCallback(() => {
+    const id = `polygon_${Date.now()}`;
+    const maxLayer = polygons.reduce(
+      (max, p) => Math.max(max, p.layerIndex),
+      -1,
+    );
+    setPolygons((prev) => [...prev, createDefaultPolygon(id, maxLayer + 1)]);
+    setSelectedPolygonIndex(polygons.length);
+    setEditMode({ type: "base" });
+  }, [polygons]);
+
+  const deletePolygon = useCallback(
+    (index: number) => {
+      if (polygons.length <= 1) return;
+      setPolygons((prev) => prev.filter((_, i) => i !== index));
+      if (selectedPolygonIndex === index) {
+        setSelectedPolygonIndex(Math.max(0, index - 1));
+        setEditMode({ type: "base" });
+      } else if (selectedPolygonIndex > index) {
+        setSelectedPolygonIndex(selectedPolygonIndex - 1);
+      }
+    },
+    [polygons.length, selectedPolygonIndex],
+  );
+
+  const model: FaceModel = { polygons };
 
   return (
     <div className="flex min-h-0 flex-1">
       <div className="flex w-120 shrink-0 flex-col border-r bg-white">
-        <div className="border-b px-4 py-2 font-semibold text-sm">
-          {editMode.type === "base"
-            ? "正面ベース点列（顔輪郭）"
-            : `キーフレーム ${editMode.index + 1} (${keyframes[editMode.index]?.angle.yaw.toFixed(0)}°, ${keyframes[editMode.index]?.angle.pitch.toFixed(0)}°)`}
+        {/* Polygon list */}
+        <div className="max-h-40 shrink-0 space-y-1 overflow-y-auto border-b px-4 py-2 text-sm">
+          <div className="font-semibold">ポリゴン一覧</div>
+          {polygons.map((p, i) => (
+            <div key={p.id} className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedPolygonIndex(i);
+                  setEditMode({ type: "base" });
+                }}
+                className={`flex-1 rounded px-2 py-0.5 text-left ${
+                  selectedPolygonIndex === i
+                    ? "bg-blue-100 font-semibold text-blue-800"
+                    : "hover:bg-gray-100"
+                }`}
+              >
+                <span
+                  className="mr-1 inline-block h-3 w-3 rounded-sm border"
+                  style={{ backgroundColor: rgbaToHex(p.fillColor) }}
+                />
+                {p.id} (L{p.layerIndex})
+              </button>
+              {polygons.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => deletePolygon(i)}
+                  className="rounded px-1 text-red-500 hover:bg-red-50"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addPolygon}
+            className="w-full rounded border border-gray-400 border-dashed px-2 py-0.5 text-gray-600 hover:bg-gray-50"
+          >
+            + ポリゴン追加
+          </button>
         </div>
-        <div className="flex-1">
+
+        {/* Polygon properties */}
+        {selectedPolygon && (
+          <div className="shrink-0 space-y-2 border-b px-4 py-2 text-sm">
+            <label className="flex items-center gap-2">
+              <span className="w-16 shrink-0">ID</span>
+              <input
+                type="text"
+                value={selectedPolygon.id}
+                onChange={(e) =>
+                  updateSelectedPolygon((p) => ({ ...p, id: e.target.value }))
+                }
+                className="flex-1 rounded border px-1"
+              />
+            </label>
+            <label className="flex items-center gap-2">
+              <span className="w-16 shrink-0">レイヤー</span>
+              <input
+                type="number"
+                value={selectedPolygon.layerIndex}
+                onChange={(e) =>
+                  updateSelectedPolygon((p) => ({
+                    ...p,
+                    layerIndex: Number(e.target.value),
+                  }))
+                }
+                className="w-16 rounded border px-1"
+              />
+            </label>
+            <label className="flex items-center gap-2">
+              <span className="w-16 shrink-0">色</span>
+              <input
+                type="color"
+                value={rgbaToHex(selectedPolygon.fillColor)}
+                onChange={(e) =>
+                  updateSelectedPolygon((p) => ({
+                    ...p,
+                    fillColor: hexToRgba(e.target.value),
+                  }))
+                }
+              />
+            </label>
+          </div>
+        )}
+
+        {/* Point editor */}
+        <div className="border-b px-4 py-1 font-semibold text-sm">
+          {editMode.type === "base"
+            ? "正面ベース点列"
+            : `KF ${editMode.index + 1} (${selectedPolygon?.yawPitchKeyframes[editMode.index]?.angle.yaw.toFixed(0)}°, ${selectedPolygon?.yawPitchKeyframes[editMode.index]?.angle.pitch.toFixed(0)}°)`}
+        </div>
+        <div className="min-h-0 flex-1">
           <PointEditor points={editorPoints} onChange={handleEditorChange} />
         </div>
-        <div className="max-h-64 space-y-2 overflow-y-auto border-t px-4 py-3 text-sm">
+
+        {/* Keyframes */}
+        <div className="max-h-48 shrink-0 space-y-1 overflow-y-auto border-t px-4 py-2 text-sm">
           <div className="font-semibold">キーフレーム</div>
           <button
             type="button"
             onClick={() => setEditMode({ type: "base" })}
-            className={`w-full rounded px-2 py-1 text-left ${
+            className={`w-full rounded px-2 py-0.5 text-left ${
               editMode.type === "base"
                 ? "bg-blue-100 font-semibold text-blue-800"
                 : "hover:bg-gray-100"
@@ -142,7 +299,7 @@ export function ModelingTool() {
           >
             正面 (ベース)
           </button>
-          {keyframes.map((kf, i) => (
+          {selectedPolygon?.yawPitchKeyframes.map((kf, i) => (
             <div
               key={`${kf.angle.yaw},${kf.angle.pitch}`}
               className="flex items-center gap-1"
@@ -150,7 +307,7 @@ export function ModelingTool() {
               <button
                 type="button"
                 onClick={() => setEditMode({ type: "keyframe", index: i })}
-                className={`flex-1 rounded px-2 py-1 text-left ${
+                className={`flex-1 rounded px-2 py-0.5 text-left ${
                   editMode.type === "keyframe" && editMode.index === i
                     ? "bg-blue-100 font-semibold text-blue-800"
                     : "hover:bg-gray-100"
@@ -170,20 +327,21 @@ export function ModelingTool() {
           <button
             type="button"
             onClick={addKeyframe}
-            className="w-full rounded border border-gray-400 border-dashed px-2 py-1 text-gray-600 hover:bg-gray-50"
+            className="w-full rounded border border-gray-400 border-dashed px-2 py-0.5 text-gray-600 hover:bg-gray-50"
           >
-            + 現在の角度 ({angle.yaw.toFixed(0)}°, {angle.pitch.toFixed(0)}°)
-            でキーフレーム追加
+            + ({angle.yaw.toFixed(0)}°, {angle.pitch.toFixed(0)}°)
           </button>
         </div>
-        <div className="space-y-3 border-t px-4 py-3 text-sm">
+
+        {/* Display settings */}
+        <div className="shrink-0 space-y-2 border-t px-4 py-2 text-sm">
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
               checked={referenceVisible}
               onChange={(e) => setReferenceVisible(e.target.checked)}
             />
-            <span>参考3Dモデルを表示</span>
+            <span>参考3Dモデル</span>
           </label>
           <label className="flex items-center gap-2">
             <span className="w-24 shrink-0">参考モデル</span>
