@@ -1573,6 +1573,11 @@ export function ModelingTool() {
             angleSource={angleSourceRef.current}
             faceOpacity={faceOpacity}
             zoom={zoom}
+            selectedPolygonId={
+              selectedPolygon?.group === "outline"
+                ? selectedPolygon.id
+                : undefined
+            }
             onAngleChange={handleAngleChange}
             onZoomChange={handleZoomChange}
           />

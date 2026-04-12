@@ -14,6 +14,7 @@ interface SceneProps {
   angleSource: "slider" | "controls";
   faceOpacity: number;
   zoom: number;
+  selectedPolygonId?: string;
   onAngleChange: (yaw: number, pitch: number) => void;
   onZoomChange: (zoom: number) => void;
 }
@@ -61,6 +62,7 @@ export function Scene({
   angleSource,
   faceOpacity,
   zoom,
+  selectedPolygonId,
   onAngleChange,
   onZoomChange,
 }: SceneProps) {
@@ -102,7 +104,11 @@ export function Scene({
         }}
       />
       <ambientLight intensity={2.5} />
-      <FaceMesh model={model} angle={angle} />
+      <FaceMesh
+        model={model}
+        angle={angle}
+        selectedPolygonId={selectedPolygonId}
+      />
     </Canvas>
   );
 }

@@ -13,13 +13,14 @@ import type { FaceModel, YawPitch } from "../_lib/types";
 interface FaceMeshProps {
   model: FaceModel;
   angle: YawPitch;
+  selectedPolygonId?: string;
 }
 
-export function FaceMesh({ model, angle }: FaceMeshProps) {
+export function FaceMesh({ model, angle, selectedPolygonId }: FaceMeshProps) {
   const { size } = useThree();
-  const { fillGeometry, strokes } = useMemo(
-    () => buildFaceGeometry(model, angle),
-    [model, angle],
+  const { fillGeometry, strokes, selectedOutlineStroke } = useMemo(
+    () => buildFaceGeometry(model, angle, selectedPolygonId),
+    [model, angle, selectedPolygonId],
   );
 
   const fillMaterial = useMemo(
@@ -60,12 +61,34 @@ export function FaceMesh({ model, angle }: FaceMeshProps) {
     });
   }, [strokes, size.width, size.height]);
 
+  const selectionLine = useMemo(() => {
+    if (!selectedOutlineStroke) return null;
+    const pts = selectedOutlineStroke.points;
+    const posArr: number[] = [];
+    for (let i = 0; i <= pts.length; i++) {
+      const p = pts[i % pts.length];
+      posArr.push(p[0], p[1], selectedOutlineStroke.z);
+    }
+    const geo = new LineGeometry();
+    geo.setPositions(posArr);
+    const mat = new LineMaterial({
+      color: 0x3b82f6,
+      linewidth: 2,
+      toneMapped: false,
+      resolution: new THREE.Vector2(size.width, size.height),
+    });
+    return new Line2(geo, mat);
+  }, [selectedOutlineStroke, size.width, size.height]);
+
   return (
     <Billboard>
       <mesh geometry={fillGeometry} material={fillMaterial} />
       {strokeData.map((s) => (
         <primitive key={`stroke-${s.line.id}`} object={s.line} />
       ))}
+      {selectionLine && (
+        <primitive key={`sel-${selectionLine.id}`} object={selectionLine} />
+      )}
     </Billboard>
   );
 }

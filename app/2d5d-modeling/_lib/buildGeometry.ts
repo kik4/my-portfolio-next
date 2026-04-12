@@ -27,17 +27,20 @@ export interface StrokeLine {
 export interface FaceGeometryResult {
   fillGeometry: THREE.BufferGeometry;
   strokes: StrokeLine[];
+  selectedOutlineStroke: { points: Point2D[]; z: number } | null;
 }
 
 export function buildFaceGeometry(
   model: FaceModel,
   angle: YawPitch,
+  selectedPolygonId?: string,
 ): FaceGeometryResult {
   const positions: number[] = [];
   const colors: number[] = [];
   const indices: number[] = [];
   let vertexOffset = 0;
   const strokes: StrokeLine[] = [];
+  let selectedOutlineStroke: { points: Point2D[]; z: number } | null = null;
   const { blendShapeWeights, featureGroups, outlineFillColor, outlineStroke } =
     model;
 
@@ -143,6 +146,12 @@ export function buildFaceGeometry(
     if (polygon.group === "outline") {
       // Collect for merged outline stroke
       outlineSubdivided.push({ points: subdivided, z: z + STROKE_Z_OFFSET });
+      if (selectedPolygonId && polygon.id === selectedPolygonId) {
+        selectedOutlineStroke = {
+          points: subdivided,
+          z: z + STROKE_Z_OFFSET * 2,
+        };
+      }
     } else if (polygon.strokeColor) {
       // Feature polygons: individual stroke
       strokes.push({
@@ -215,5 +224,5 @@ export function buildFaceGeometry(
   fillGeometry.setIndex(indices);
   fillGeometry.computeBoundingSphere();
 
-  return { fillGeometry, strokes };
+  return { fillGeometry, strokes, selectedOutlineStroke };
 }
