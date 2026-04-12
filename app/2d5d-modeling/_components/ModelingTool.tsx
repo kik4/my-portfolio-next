@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type {
   FaceModel,
+  FeatureGroup,
   FeatureKeyframe,
   FeaturePolygon,
   OutlineKeyframe,
@@ -82,6 +83,7 @@ export function ModelingTool() {
   const [selectedPolygonIndex, setSelectedPolygonIndex] = useState(0);
   const [editMode, setEditMode] = useState<EditMode>({ type: "base" });
 
+  const [featureGroups, setFeatureGroups] = useState<FeatureGroup[]>([]);
   const [blendShapeWeights, setBlendShapeWeights] = useState<
     Record<string, number>
   >({});
@@ -349,7 +351,7 @@ export function ModelingTool() {
     return [...ids];
   }, [polygons]);
 
-  const model: FaceModel = { polygons, blendShapeWeights };
+  const model: FaceModel = { polygons, featureGroups, blendShapeWeights };
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -409,6 +411,55 @@ export function ModelingTool() {
           </div>
         </div>
 
+        {/* Feature groups */}
+        <div className="max-h-32 shrink-0 space-y-1 overflow-y-auto border-b px-4 py-2 text-sm">
+          <div className="font-semibold">グループ</div>
+          {featureGroups.map((g, i) => (
+            <div key={g.id} className="flex items-center gap-1">
+              <span className="flex-1 truncate">{g.id}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setFeatureGroups((prev) => prev.filter((_, j) => j !== i));
+                  // Unassign polygons from deleted group
+                  setPolygons((prev) =>
+                    prev.map((p) =>
+                      p.group === "feature" && p.groupId === g.id
+                        ? { ...p, groupId: undefined }
+                        : p,
+                    ),
+                  );
+                }}
+                className="rounded px-1 text-red-500 hover:bg-red-50"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => {
+              const id = prompt("グループ ID");
+              if (!id) return;
+              setFeatureGroups((prev) => [
+                ...prev,
+                {
+                  id,
+                  yawPitchKeyframes: [],
+                  visibility: {
+                    yawRange: [-180, 180],
+                    pitchRange: [-90, 90],
+                  },
+                  baseLayerIndex: 0,
+                },
+              ]);
+            }}
+            className="w-full rounded border border-gray-400 border-dashed px-2 py-0.5 text-gray-600 hover:bg-gray-50"
+          >
+            + グループ追加
+          </button>
+        </div>
+
         {/* Polygon properties */}
         {selectedPolygon && (
           <div className="shrink-0 space-y-2 border-b px-4 py-2 text-sm">
@@ -451,26 +502,48 @@ export function ModelingTool() {
               />
             </label>
             {selectedPolygon.group === "feature" && (
-              <label className="flex items-center gap-2">
-                <span className="w-16 shrink-0">基本α</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={selectedPolygon.baseAlpha}
-                  onChange={(e) =>
-                    updateSelectedPolygon((p) => ({
-                      ...p,
-                      baseAlpha: Number(e.target.value),
-                    }))
-                  }
-                  className="flex-1"
-                />
-                <span className="w-10 text-right tabular-nums">
-                  {selectedPolygon.baseAlpha.toFixed(2)}
-                </span>
-              </label>
+              <>
+                <label className="flex items-center gap-2">
+                  <span className="w-16 shrink-0">基本α</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={selectedPolygon.baseAlpha}
+                    onChange={(e) =>
+                      updateSelectedPolygon((p) => ({
+                        ...p,
+                        baseAlpha: Number(e.target.value),
+                      }))
+                    }
+                    className="flex-1"
+                  />
+                  <span className="w-10 text-right tabular-nums">
+                    {selectedPolygon.baseAlpha.toFixed(2)}
+                  </span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <span className="w-16 shrink-0">グループ</span>
+                  <select
+                    value={selectedPolygon.groupId ?? ""}
+                    onChange={(e) =>
+                      updateSelectedPolygon((p) => ({
+                        ...p,
+                        groupId: e.target.value || undefined,
+                      }))
+                    }
+                    className="flex-1 rounded border px-1"
+                  >
+                    <option value="">なし</option>
+                    {featureGroups.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.id}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
             )}
           </div>
         )}

@@ -53,12 +53,35 @@ export interface FeaturePolygon {
   baseAlpha: number;
   yawPitchKeyframes: FeatureKeyframe[];
   blendShapes: FeatureBlendShape[];
+  groupId?: string;
+}
+
+// Feature group: bundles feature polygons with shared transform and visibility
+export interface FeatureGroupKeyframe {
+  angle: YawPitch;
+  position: Point2D;
+  matrix: Mat2;
+}
+
+export interface FeatureGroup {
+  id: string;
+  yawPitchKeyframes: FeatureGroupKeyframe[];
+  visibility: {
+    yawRange: [number, number];
+    pitchRange: [number, number];
+  };
+  baseLayerIndex: number;
+  layerIndexKeyframes?: {
+    angle: YawPitch;
+    layerIndex: number;
+  }[];
 }
 
 export type Polygon = OutlinePolygon | FeaturePolygon;
 
 export interface FaceModel {
   polygons: Polygon[];
+  featureGroups: FeatureGroup[];
   blendShapeWeights: Record<string, number>;
 }
 

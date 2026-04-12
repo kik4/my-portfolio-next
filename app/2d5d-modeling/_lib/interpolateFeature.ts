@@ -6,24 +6,24 @@ import { buildRBFInterpolator } from "./rbf";
 import type { FeaturePolygon, Mat2, Point2D, YawPitch } from "./types";
 import { MAT2_IDENTITY } from "./types";
 
-interface FeatureTransform {
-  position: Point2D;
-  matrix: Mat2;
-  alpha: number;
+export interface FeatureInterpolationResult {
+  blendedPoints: Point2D[]; // after blend shapes, before affine
+  position: Point2D; // local translation
+  matrix: Mat2; // local 2x2 affine
+  alpha: number; // baseAlpha × keyframe alpha × blend alpha
 }
 
 /**
- * Interpolate a FeaturePolygon.
- * Flow: basePoints → blend shapes → affine transform (from yaw/pitch keyframes)
- * Alpha: baseAlpha × keyframe alpha × blend shape alpha
+ * Interpolate a FeaturePolygon's blend shapes and affine transform.
+ * Does NOT apply the affine to points (caller may compose with group transform first).
  */
 export function interpolateFeature(
   polygon: FeaturePolygon,
   angle: YawPitch,
   weights: Record<string, number>,
-): { points: Point2D[]; alpha: number } {
+): FeatureInterpolationResult {
   // 1. Apply blend shapes to base
-  const blended = applyBlendShapePoints(
+  const blendedPoints = applyBlendShapePoints(
     polygon.basePoints,
     polygon.blendShapes,
     weights,
@@ -33,11 +33,9 @@ export function interpolateFeature(
   const blendAlpha = computeBlendShapeAlpha(polygon.blendShapes, weights);
 
   // 3. Interpolate affine transform from keyframes
-  let transform: FeatureTransform = {
-    position: [0, 0],
-    matrix: MAT2_IDENTITY,
-    alpha: 1,
-  };
+  let position: Point2D = [0, 0];
+  let matrix: Mat2 = MAT2_IDENTITY;
+  let kfAlpha = 1;
 
   if (polygon.yawPitchKeyframes.length > 0) {
     const interpolator = buildRBFInterpolator(
@@ -57,23 +55,15 @@ export function interpolateFeature(
     );
 
     const v = interpolator.interpolate(angle.yaw, angle.pitch);
-    transform = {
-      position: [v[0], v[1]],
-      matrix: [v[2], v[3], v[4], v[5]],
-      alpha: Math.max(0, Math.min(1, v[6])),
-    };
+    position = [v[0], v[1]];
+    matrix = [v[2], v[3], v[4], v[5]];
+    kfAlpha = Math.max(0, Math.min(1, v[6]));
   }
 
-  // 4. Apply affine transform
-  const [m00, m01, m10, m11] = transform.matrix;
-  const [tx, ty] = transform.position;
-  const points: Point2D[] = blended.map(([x, y]) => [
-    m00 * x + m01 * y + tx,
-    m10 * x + m11 * y + ty,
-  ]);
+  const alpha = Math.max(
+    0,
+    Math.min(1, polygon.baseAlpha * kfAlpha * blendAlpha),
+  );
 
-  // 5. Combine alpha: baseAlpha × keyframe alpha × blend alpha
-  const alpha = polygon.baseAlpha * transform.alpha * blendAlpha;
-
-  return { points, alpha: Math.max(0, Math.min(1, alpha)) };
+  return { blendedPoints, position, matrix, alpha };
 }
