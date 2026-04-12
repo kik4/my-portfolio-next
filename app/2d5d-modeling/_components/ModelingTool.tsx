@@ -93,6 +93,18 @@ function rgbaToHex(c: [number, number, number, number]): string {
   return `#${r}${g}${b}`;
 }
 
+const LS_KEY = "2d5d-modeling-data";
+
+function loadFromLocalStorage(): FaceModel | null {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    return importFaceModel(raw);
+  } catch {
+    return null;
+  }
+}
+
 export function ModelingTool() {
   const [polygons, setPolygons] = useState<Polygon[]>(() => [
     createOutlinePolygon(0),
@@ -107,6 +119,20 @@ export function ModelingTool() {
   const [blendShapeWeights, setBlendShapeWeights] = useState<
     Record<string, number>
   >({});
+
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    const saved = loadFromLocalStorage();
+    if (saved) {
+      setPolygons(saved.polygons);
+      setFeatureGroups(saved.featureGroups);
+      setBlendShapeWeights(saved.blendShapeWeights);
+      setSelectedPolygonIndex(0);
+      setEditMode({ type: "base" });
+    }
+  }, []);
 
   const [referenceVisible, setReferenceVisible] = useState(true);
   const [referenceOpacity, setReferenceOpacity] = useState(0.5);
@@ -451,6 +477,17 @@ export function ModelingTool() {
   );
 
   const model: FaceModel = { polygons, featureGroups, blendShapeWeights };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        LS_KEY,
+        exportFaceModel({ polygons, featureGroups, blendShapeWeights }),
+      );
+    } catch {
+      // storage full or unavailable
+    }
+  }, [polygons, featureGroups, blendShapeWeights]);
 
   return (
     <div className="flex min-h-0 flex-1">
