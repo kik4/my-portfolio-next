@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { ColorRGBA, Point2D } from "../_lib/types";
 
 interface BackgroundPolygon {
@@ -25,7 +25,15 @@ const CANVAS_PX = 480;
 type DragState =
   | null
   | { type: "point"; index: number }
-  | { type: "move"; lastSx: number; lastSy: number };
+  | { type: "move"; lastSx: number; lastSy: number }
+  | {
+      type: "scale";
+      axis: "x" | "y" | "xy";
+      startSx: number;
+      startSy: number;
+      center: Point2D;
+      startPoints: Point2D[];
+    };
 
 export function PointEditor({
   points,
@@ -64,6 +72,22 @@ export function PointEditor({
     ];
   }, []);
 
+  // Bounding box in world coords
+  const bbox = useMemo(() => {
+    if (points.length === 0) return null;
+    let minX = points[0][0];
+    let minY = points[0][1];
+    let maxX = points[0][0];
+    let maxY = points[0][1];
+    for (const [x, y] of points) {
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+    return { minX, minY, maxX, maxY };
+  }, [points]);
+
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<SVGSVGElement>) => {
       if (!drag) return;
@@ -83,6 +107,37 @@ export function PointEditor({
         onChange(points.map(([px, py]) => [px + dx, py + dy]));
         setDrag({ type: "move", lastSx: sx, lastSy: sy });
       }
+
+      if (drag.type === "scale") {
+        const [wx, wy] = toWorld(sx, sy);
+        const [swx, swy] = toWorld(drag.startSx, drag.startSy);
+        const cx = drag.center[0];
+        const cy = drag.center[1];
+        const startDx = swx - cx;
+        const startDy = swy - cy;
+        const curDx = wx - cx;
+        const curDy = wy - cy;
+
+        const scaleX =
+          drag.axis === "y"
+            ? 1
+            : Math.abs(startDx) > 0.0001
+              ? curDx / startDx
+              : 1;
+        const scaleY =
+          drag.axis === "x"
+            ? 1
+            : Math.abs(startDy) > 0.0001
+              ? curDy / startDy
+              : 1;
+
+        onChange(
+          drag.startPoints.map(([px, py]) => [
+            cx + (px - cx) * scaleX,
+            cy + (py - cy) * scaleY,
+          ]),
+        );
+      }
     },
     [drag, points, onChange, toWorld, getSvgPos],
   );
@@ -97,6 +152,34 @@ export function PointEditor({
       return `${i === 0 ? "M" : "L"}${sx},${sy}`;
     })
     .join(" ")} Z`;
+
+  // Bbox screen coords for scale handles
+  const bboxScreen = bbox
+    ? {
+        tl: toScreen([bbox.minX, bbox.maxY]),
+        tr: toScreen([bbox.maxX, bbox.maxY]),
+        bl: toScreen([bbox.minX, bbox.minY]),
+        br: toScreen([bbox.maxX, bbox.minY]),
+      }
+    : null;
+
+  const startScale = (e: React.PointerEvent, axis: "x" | "y" | "xy") => {
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const [sx, sy] = getSvgPos(e);
+    const cx = bbox ? (bbox.minX + bbox.maxX) / 2 : 0;
+    const cy = bbox ? (bbox.minY + bbox.maxY) / 2 : 0;
+    setDrag({
+      type: "scale",
+      axis,
+      startSx: sx,
+      startSy: sy,
+      center: [cx, cy],
+      startPoints: points.map(([x, y]) => [x, y]),
+    });
+  };
+
+  const HANDLE_SIZE = 6;
 
   return (
     <svg
@@ -164,6 +247,118 @@ export function PointEditor({
           setDrag({ type: "move", lastSx: sx, lastSy: sy });
         }}
       />
+
+      {/* Scale handles on bbox edges */}
+      {bboxScreen && (
+        <>
+          {/* Bbox outline */}
+          <rect
+            x={bboxScreen.tl[0]}
+            y={bboxScreen.tl[1]}
+            width={bboxScreen.tr[0] - bboxScreen.tl[0]}
+            height={bboxScreen.bl[1] - bboxScreen.tl[1]}
+            fill="none"
+            stroke="#9ca3af"
+            strokeWidth={0.5}
+            strokeDasharray="3 2"
+          />
+          {/* Right (scaleX) */}
+          <rect
+            x={bboxScreen.tr[0] - HANDLE_SIZE / 2}
+            y={(bboxScreen.tr[1] + bboxScreen.br[1]) / 2 - HANDLE_SIZE / 2}
+            width={HANDLE_SIZE}
+            height={HANDLE_SIZE}
+            fill="#10b981"
+            stroke="white"
+            strokeWidth={1}
+            className="cursor-ew-resize"
+            onPointerDown={(e) => startScale(e, "x")}
+          />
+          {/* Left (scaleX) */}
+          <rect
+            x={bboxScreen.tl[0] - HANDLE_SIZE / 2}
+            y={(bboxScreen.tl[1] + bboxScreen.bl[1]) / 2 - HANDLE_SIZE / 2}
+            width={HANDLE_SIZE}
+            height={HANDLE_SIZE}
+            fill="#10b981"
+            stroke="white"
+            strokeWidth={1}
+            className="cursor-ew-resize"
+            onPointerDown={(e) => startScale(e, "x")}
+          />
+          {/* Top (scaleY) */}
+          <rect
+            x={(bboxScreen.tl[0] + bboxScreen.tr[0]) / 2 - HANDLE_SIZE / 2}
+            y={bboxScreen.tl[1] - HANDLE_SIZE / 2}
+            width={HANDLE_SIZE}
+            height={HANDLE_SIZE}
+            fill="#10b981"
+            stroke="white"
+            strokeWidth={1}
+            className="cursor-ns-resize"
+            onPointerDown={(e) => startScale(e, "y")}
+          />
+          {/* Bottom (scaleY) */}
+          <rect
+            x={(bboxScreen.bl[0] + bboxScreen.br[0]) / 2 - HANDLE_SIZE / 2}
+            y={bboxScreen.bl[1] - HANDLE_SIZE / 2}
+            width={HANDLE_SIZE}
+            height={HANDLE_SIZE}
+            fill="#10b981"
+            stroke="white"
+            strokeWidth={1}
+            className="cursor-ns-resize"
+            onPointerDown={(e) => startScale(e, "y")}
+          />
+          {/* Corners (scaleXY) */}
+          <rect
+            x={bboxScreen.tr[0] - HANDLE_SIZE / 2}
+            y={bboxScreen.tr[1] - HANDLE_SIZE / 2}
+            width={HANDLE_SIZE}
+            height={HANDLE_SIZE}
+            fill="#f59e0b"
+            stroke="white"
+            strokeWidth={1}
+            className="cursor-nwse-resize"
+            onPointerDown={(e) => startScale(e, "xy")}
+          />
+          <rect
+            x={bboxScreen.bl[0] - HANDLE_SIZE / 2}
+            y={bboxScreen.bl[1] - HANDLE_SIZE / 2}
+            width={HANDLE_SIZE}
+            height={HANDLE_SIZE}
+            fill="#f59e0b"
+            stroke="white"
+            strokeWidth={1}
+            className="cursor-nwse-resize"
+            onPointerDown={(e) => startScale(e, "xy")}
+          />
+          <rect
+            x={bboxScreen.tl[0] - HANDLE_SIZE / 2}
+            y={bboxScreen.tl[1] - HANDLE_SIZE / 2}
+            width={HANDLE_SIZE}
+            height={HANDLE_SIZE}
+            fill="#f59e0b"
+            stroke="white"
+            strokeWidth={1}
+            className="cursor-nesw-resize"
+            onPointerDown={(e) => startScale(e, "xy")}
+          />
+          <rect
+            x={bboxScreen.br[0] - HANDLE_SIZE / 2}
+            y={bboxScreen.br[1] - HANDLE_SIZE / 2}
+            width={HANDLE_SIZE}
+            height={HANDLE_SIZE}
+            fill="#f59e0b"
+            stroke="white"
+            strokeWidth={1}
+            className="cursor-nesw-resize"
+            onPointerDown={(e) => startScale(e, "xy")}
+          />
+        </>
+      )}
+
+      {/* Point handles */}
       {points.map((p, i) => {
         const [sx, sy] = toScreen(p);
         return (
