@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import { subdivideClosed } from "../_lib/catmullRom";
 import type { ColorRGBA, Point2D } from "../_lib/types";
 
 interface BackgroundPolygon {
@@ -155,7 +156,15 @@ export function PointEditor({
     setDrag(null);
   }, []);
 
-  const pathD = `${points
+  const SUBDIV_SEGMENTS = 8;
+
+  const smoothPoints = useMemo(
+    () =>
+      points.length >= 3 ? subdivideClosed(points, SUBDIV_SEGMENTS) : points,
+    [points],
+  );
+
+  const pathD = `${smoothPoints
     .map((p, i) => {
       const [sx, sy] = toScreen(p);
       return `${i === 0 ? "M" : "L"}${sx},${sy}`;
@@ -219,7 +228,11 @@ export function PointEditor({
         strokeWidth={1}
       />
       {backgroundPolygons.map((bg) => {
-        const bgD = `${bg.points
+        const bgSmooth =
+          bg.points.length >= 3
+            ? subdivideClosed(bg.points, SUBDIV_SEGMENTS)
+            : bg.points;
+        const bgD = `${bgSmooth
           .map((p, i) => {
             const [sx, sy] = toScreen(p);
             return `${i === 0 ? "M" : "L"}${sx},${sy}`;
