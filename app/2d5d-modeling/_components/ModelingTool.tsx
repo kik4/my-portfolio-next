@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { downloadJson, exportFaceModel, importFaceModel } from "../_lib/jsonIO";
+import { composeMat2, decomposeMat2 } from "../_lib/mat2utils";
 import type {
   FaceModel,
   FeatureGroup,
@@ -832,6 +833,87 @@ export function ModelingTool() {
                       className="w-20 rounded border px-1"
                     />
                   </div>
+                  {(() => {
+                    const p = decomposeMat2(kf.matrix);
+                    const updateMatrix = (patch: Partial<typeof p>) => {
+                      const idx = selectedGroupIndex!;
+                      const newMatrix = composeMat2({ ...p, ...patch });
+                      setFeatureGroups((prev) =>
+                        prev.map((g, i) =>
+                          i === idx
+                            ? {
+                                ...g,
+                                yawPitchKeyframes: g.yawPitchKeyframes.map(
+                                  (k, j) =>
+                                    j === ki ? { ...k, matrix: newMatrix } : k,
+                                ),
+                              }
+                            : g,
+                        ),
+                      );
+                    };
+                    return (
+                      <div className="space-y-0.5 text-xs">
+                        <div className="flex items-center gap-1">
+                          <span className="w-10">回転</span>
+                          <input
+                            type="number"
+                            step={1}
+                            value={Number(p.rotation.toFixed(1))}
+                            onChange={(e) =>
+                              updateMatrix({ rotation: Number(e.target.value) })
+                            }
+                            className="w-16 rounded border px-1"
+                          />
+                          <span>°</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span>拡縮X</span>
+                          <input
+                            type="number"
+                            step={0.01}
+                            value={Number(p.scaleX.toFixed(3))}
+                            onChange={(e) =>
+                              updateMatrix({ scaleX: Number(e.target.value) })
+                            }
+                            className="w-14 rounded border px-1"
+                          />
+                          <span>拡縮Y</span>
+                          <input
+                            type="number"
+                            step={0.01}
+                            value={Number(p.scaleY.toFixed(3))}
+                            onChange={(e) =>
+                              updateMatrix({ scaleY: Number(e.target.value) })
+                            }
+                            className="w-14 rounded border px-1"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span>剪断X</span>
+                          <input
+                            type="number"
+                            step={0.01}
+                            value={Number(p.shearX.toFixed(3))}
+                            onChange={(e) =>
+                              updateMatrix({ shearX: Number(e.target.value) })
+                            }
+                            className="w-14 rounded border px-1"
+                          />
+                          <span>剪断Y</span>
+                          <input
+                            type="number"
+                            step={0.01}
+                            value={Number(p.shearY.toFixed(3))}
+                            onChange={(e) =>
+                              updateMatrix({ shearY: Number(e.target.value) })
+                            }
+                            className="w-14 rounded border px-1"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               ))}
               <button
