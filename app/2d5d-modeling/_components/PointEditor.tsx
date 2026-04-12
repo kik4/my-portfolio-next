@@ -22,6 +22,11 @@ function rgbaToCss(c: ColorRGBA): string {
 
 const CANVAS_PX = 480;
 
+type DragState =
+  | null
+  | { type: "point"; index: number }
+  | { type: "move"; lastSx: number; lastSy: number };
+
 export function PointEditor({
   points,
   fillColor,
@@ -30,7 +35,7 @@ export function PointEditor({
   viewSize = 0.5,
 }: PointEditorProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [drag, setDrag] = useState<DragState>(null);
 
   const toScreen = useCallback(
     (p: Point2D): [number, number] => {
@@ -50,21 +55,40 @@ export function PointEditor({
     [viewSize],
   );
 
+  const getSvgPos = useCallback((e: React.PointerEvent): [number, number] => {
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (!rect) return [0, 0];
+    return [
+      ((e.clientX - rect.left) / rect.width) * CANVAS_PX,
+      ((e.clientY - rect.top) / rect.height) * CANVAS_PX,
+    ];
+  }, []);
+
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<SVGSVGElement>) => {
-      if (draggingIndex === null || !svgRef.current) return;
-      const rect = svgRef.current.getBoundingClientRect();
-      const sx = ((e.clientX - rect.left) / rect.width) * CANVAS_PX;
-      const sy = ((e.clientY - rect.top) / rect.height) * CANVAS_PX;
-      const next = points.slice();
-      next[draggingIndex] = toWorld(sx, sy);
-      onChange(next);
+      if (!drag) return;
+      const [sx, sy] = getSvgPos(e);
+
+      if (drag.type === "point") {
+        const next = points.slice();
+        next[drag.index] = toWorld(sx, sy);
+        onChange(next);
+      }
+
+      if (drag.type === "move") {
+        const [wx, wy] = toWorld(sx, sy);
+        const [lwx, lwy] = toWorld(drag.lastSx, drag.lastSy);
+        const dx = wx - lwx;
+        const dy = wy - lwy;
+        onChange(points.map(([px, py]) => [px + dx, py + dy]));
+        setDrag({ type: "move", lastSx: sx, lastSy: sy });
+      }
     },
-    [draggingIndex, points, onChange, toWorld],
+    [drag, points, onChange, toWorld, getSvgPos],
   );
 
   const handlePointerUp = useCallback(() => {
-    setDraggingIndex(null);
+    setDrag(null);
   }, []);
 
   const pathD = `${points
@@ -133,6 +157,12 @@ export function PointEditor({
         fill={rgbaToCss(fillColor)}
         stroke="#b45309"
         strokeWidth={1.5}
+        className="cursor-move"
+        onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          const [sx, sy] = getSvgPos(e);
+          setDrag({ type: "move", lastSx: sx, lastSy: sy });
+        }}
       />
       {points.map((p, i) => {
         const [sx, sy] = toScreen(p);
@@ -142,13 +172,16 @@ export function PointEditor({
             cx={sx}
             cy={sy}
             r={6}
-            fill={draggingIndex === i ? "#ef4444" : "#2563eb"}
+            fill={
+              drag?.type === "point" && drag.index === i ? "#ef4444" : "#2563eb"
+            }
             stroke="white"
             strokeWidth={2}
             className="cursor-grab"
             onPointerDown={(e) => {
+              e.stopPropagation();
               e.currentTarget.setPointerCapture(e.pointerId);
-              setDraggingIndex(i);
+              setDrag({ type: "point", index: i });
             }}
           />
         );
