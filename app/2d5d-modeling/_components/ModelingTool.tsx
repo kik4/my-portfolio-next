@@ -744,9 +744,16 @@ export function ModelingTool() {
                   className="space-y-1 rounded border p-1"
                 >
                   <div className="flex items-center gap-1">
-                    <span className="flex-1 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        angleSourceRef.current = "slider";
+                        setAngle({ yaw: kf.angle.yaw, pitch: kf.angle.pitch });
+                      }}
+                      className="flex-1 rounded px-1 text-left text-xs hover:bg-gray-100"
+                    >
                       ({kf.angle.yaw.toFixed(0)}°, {kf.angle.pitch.toFixed(0)}°)
-                    </span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => {
