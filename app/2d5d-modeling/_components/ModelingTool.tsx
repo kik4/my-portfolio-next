@@ -1453,7 +1453,14 @@ export function ModelingTool() {
                 >
                   <button
                     type="button"
-                    onClick={() => setEditMode({ type: "keyframe", index: i })}
+                    onClick={() => {
+                      setEditMode({ type: "keyframe", index: i });
+                      angleSourceRef.current = "slider";
+                      setAngle({
+                        yaw: kf.angle.yaw,
+                        pitch: kf.angle.pitch,
+                      });
+                    }}
                     className={`flex-1 rounded px-2 py-0.5 text-left ${editMode.type === "keyframe" && editMode.index === i ? "bg-blue-100 font-semibold text-blue-800" : "hover:bg-gray-100"}`}
                   >
                     {getKfAngleLabel(kf)}
