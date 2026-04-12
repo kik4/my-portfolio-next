@@ -17,6 +17,7 @@ interface PointEditorProps {
   strokeWidth?: number;
   backgroundPolygons?: BackgroundPolygon[];
   backgroundColor?: string;
+  allowAddRemove?: boolean;
   onChange: (points: Point2D[]) => void;
   viewSize?: number;
 }
@@ -70,6 +71,7 @@ export function PointEditor({
   strokeColor = null,
   strokeWidth = 2,
   backgroundColor = "#ffffff",
+  allowAddRemove = true,
   onChange,
   viewSize: initialViewSize = 0.5,
 }: PointEditorProps) {
@@ -416,7 +418,8 @@ export function PointEditor({
       )}
 
       {/* Edge hit areas for inserting points */}
-      {points.length >= 2 &&
+      {allowAddRemove &&
+        points.length >= 2 &&
         points.map((p, i) => {
           const next = points[(i + 1) % points.length];
           const [sx1, sy1] = toScreen(p);
@@ -473,6 +476,7 @@ export function PointEditor({
             onContextMenu={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              if (!allowAddRemove) return;
               if (points.length <= 3) return;
               const newPoints = points.filter((_, j) => j !== i);
               onChange(newPoints);

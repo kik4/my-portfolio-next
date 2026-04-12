@@ -1283,6 +1283,7 @@ export function ModelingTool() {
                 strokeWidth={selectedPolygon.strokeWidth}
                 backgroundPolygons={siblingPolygons}
                 backgroundColor={editorBgColor}
+                allowAddRemove={editMode.type === "base"}
                 onChange={handleEditorChange}
               />
             </div>
