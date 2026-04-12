@@ -1134,48 +1134,26 @@ export function ModelingTool() {
                 />
               </label>
               {selectedPolygon.group === "feature" && (
-                <>
-                  <label className="flex items-center gap-2">
-                    <span className="w-14 shrink-0">基本α</span>
-                    <input
-                      type="range"
-                      min={0}
-                      max={1}
-                      step={0.01}
-                      value={selectedPolygon.baseAlpha}
-                      onChange={(e) =>
-                        updateSelectedPolygon((p) => ({
-                          ...p,
-                          baseAlpha: Number(e.target.value),
-                        }))
-                      }
-                      className="flex-1"
-                    />
-                    <span className="w-8 text-right tabular-nums">
-                      {selectedPolygon.baseAlpha.toFixed(2)}
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <span className="w-14 shrink-0">グループ</span>
-                    <select
-                      value={selectedPolygon.groupId ?? ""}
-                      onChange={(e) =>
-                        updateSelectedPolygon((p) => ({
-                          ...p,
-                          groupId: e.target.value || undefined,
-                        }))
-                      }
-                      className="flex-1 rounded border px-1"
-                    >
-                      <option value="">なし</option>
-                      {featureGroups.map((g) => (
-                        <option key={g.id} value={g.id}>
-                          {g.id}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </>
+                <label className="flex items-center gap-2">
+                  <span className="w-14 shrink-0">基本α</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={selectedPolygon.baseAlpha}
+                    onChange={(e) =>
+                      updateSelectedPolygon((p) => ({
+                        ...p,
+                        baseAlpha: Number(e.target.value),
+                      }))
+                    }
+                    className="flex-1"
+                  />
+                  <span className="w-8 text-right tabular-nums">
+                    {selectedPolygon.baseAlpha.toFixed(2)}
+                  </span>
+                </label>
               )}
             </div>
 
