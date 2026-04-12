@@ -106,6 +106,7 @@ export function ModelingTool() {
   const [referenceVisible, setReferenceVisible] = useState(true);
   const [referenceOpacity, setReferenceOpacity] = useState(0.5);
   const [faceOpacity, setFaceOpacity] = useState(1);
+  const [editorBgColor, setEditorBgColor] = useState("#ffffff");
   const [angle, setAngle] = useState<YawPitch>({ yaw: 0, pitch: 0 });
   const [zoom, setZoom] = useState(600);
   const angleSourceRef = useRef<"slider" | "controls">("controls");
@@ -578,6 +579,14 @@ export function ModelingTool() {
             <span className="w-8 text-right text-xs tabular-nums">
               {faceOpacity.toFixed(2)}
             </span>
+          </label>
+          <label className="flex items-center gap-1">
+            <span className="w-12 shrink-0 text-xs">背景色</span>
+            <input
+              type="color"
+              value={editorBgColor}
+              onChange={(e) => setEditorBgColor(e.target.value)}
+            />
           </label>
           <label className="flex items-center gap-1">
             <span className="w-12 shrink-0 text-xs">yaw</span>
@@ -1170,6 +1179,7 @@ export function ModelingTool() {
                 points={editorPoints}
                 fillColor={selectedPolygon.fillColor}
                 backgroundPolygons={siblingPolygons}
+                backgroundColor={editorBgColor}
                 onChange={handleEditorChange}
               />
             </div>

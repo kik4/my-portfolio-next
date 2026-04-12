@@ -13,6 +13,7 @@ interface PointEditorProps {
   points: Point2D[];
   fillColor: ColorRGBA;
   backgroundPolygons?: BackgroundPolygon[];
+  backgroundColor?: string;
   onChange: (points: Point2D[]) => void;
   viewSize?: number;
 }
@@ -40,6 +41,7 @@ export function PointEditor({
   points,
   fillColor,
   backgroundPolygons = [],
+  backgroundColor = "#ffffff",
   onChange,
   viewSize: initialViewSize = 0.5,
 }: PointEditorProps) {
@@ -203,7 +205,8 @@ export function PointEditor({
     <svg
       ref={svgRef}
       viewBox={`0 0 ${CANVAS_PX} ${CANVAS_PX}`}
-      className="h-full w-full touch-none select-none bg-white"
+      className="h-full w-full touch-none select-none"
+      style={{ backgroundColor }}
       onWheel={handleWheel}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
