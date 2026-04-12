@@ -339,6 +339,24 @@ export function ModelingTool() {
   const selectedGroup =
     selectedGroupIndex !== null ? featureGroups[selectedGroupIndex] : null;
 
+  // Sibling polygons in the same group (for background display in PointEditor)
+  const siblingPolygons = useMemo(() => {
+    if (
+      !selectedPolygon ||
+      selectedPolygon.group !== "feature" ||
+      !selectedPolygon.groupId
+    )
+      return [];
+    return polygons
+      .filter(
+        (p, i) =>
+          i !== selectedPolygonIndex &&
+          p.group === "feature" &&
+          p.groupId === selectedPolygon.groupId,
+      )
+      .map((p) => ({ points: p.basePoints, fillColor: p.fillColor }));
+  }, [polygons, selectedPolygonIndex, selectedPolygon]);
+
   const model: FaceModel = { polygons, featureGroups, blendShapeWeights };
 
   return (
@@ -958,6 +976,7 @@ export function ModelingTool() {
               <PointEditor
                 points={editorPoints}
                 fillColor={selectedPolygon.fillColor}
+                backgroundPolygons={siblingPolygons}
                 onChange={handleEditorChange}
               />
             </div>

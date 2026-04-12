@@ -3,9 +3,15 @@
 import { useCallback, useRef, useState } from "react";
 import type { ColorRGBA, Point2D } from "../_lib/types";
 
+interface BackgroundPolygon {
+  points: Point2D[];
+  fillColor: ColorRGBA;
+}
+
 interface PointEditorProps {
   points: Point2D[];
   fillColor: ColorRGBA;
+  backgroundPolygons?: BackgroundPolygon[];
   onChange: (points: Point2D[]) => void;
   viewSize?: number;
 }
@@ -19,6 +25,7 @@ const CANVAS_PX = 480;
 export function PointEditor({
   points,
   fillColor,
+  backgroundPolygons = [],
   onChange,
   viewSize = 0.5,
 }: PointEditorProps) {
@@ -94,6 +101,33 @@ export function PointEditor({
         stroke="#e5e7eb"
         strokeWidth={1}
       />
+      {backgroundPolygons.map((bg) => {
+        const bgD = `${bg.points
+          .map((p, i) => {
+            const [sx, sy] = toScreen(p);
+            return `${i === 0 ? "M" : "L"}${sx},${sy}`;
+          })
+          .join(" ")} Z`;
+        return (
+          <path
+            key={`bg-${bg.fillColor.join(",")}-${bg.points.length}`}
+            d={bgD}
+            fill={rgbaToCss([
+              bg.fillColor[0],
+              bg.fillColor[1],
+              bg.fillColor[2],
+              0.25,
+            ])}
+            stroke={rgbaToCss([
+              bg.fillColor[0],
+              bg.fillColor[1],
+              bg.fillColor[2],
+              0.4,
+            ])}
+            strokeWidth={1}
+          />
+        );
+      })}
       <path
         d={pathD}
         fill={rgbaToCss(fillColor)}
