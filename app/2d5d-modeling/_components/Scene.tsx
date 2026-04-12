@@ -1,14 +1,17 @@
 "use client";
 
 import { OrbitControls, OrthographicCamera } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { FaceModel, YawPitch } from "../_lib/types";
 import { FaceMesh } from "./FaceMesh";
 
 interface SceneProps {
   model: FaceModel;
   angle: YawPitch;
+  angleSource: "slider" | "controls";
   faceOpacity: number;
   zoom: number;
   onAngleChange: (yaw: number, pitch: number) => void;
@@ -17,14 +20,52 @@ interface SceneProps {
 
 const CAMERA_DISTANCE = 1;
 
+function CameraSync({
+  angle,
+  controlsRef,
+  enabled,
+}: {
+  angle: YawPitch;
+  controlsRef: React.RefObject<OrbitControlsImpl | null>;
+  enabled: boolean;
+}) {
+  const { camera } = useThree();
+  const prevAngle = useRef(angle);
+
+  useEffect(() => {
+    if (!enabled) {
+      prevAngle.current = angle;
+      return;
+    }
+    if (prevAngle.current === angle) return;
+    prevAngle.current = angle;
+
+    const hRad = (angle.yaw * Math.PI) / 180;
+    const vRad = (angle.pitch * Math.PI) / 180;
+    camera.position.set(
+      Math.sin(hRad) * Math.cos(vRad) * CAMERA_DISTANCE,
+      Math.sin(vRad) * CAMERA_DISTANCE,
+      Math.cos(hRad) * Math.cos(vRad) * CAMERA_DISTANCE,
+    );
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
+    controlsRef.current?.update();
+  }, [angle, camera, controlsRef, enabled]);
+
+  return null;
+}
+
 export function Scene({
   model,
   angle,
+  angleSource,
   faceOpacity,
   zoom,
   onAngleChange,
   onZoomChange,
 }: SceneProps) {
+  const controlsRef = useRef<OrbitControlsImpl>(null);
+
   return (
     <Canvas
       gl={{ antialias: true, alpha: true }}
@@ -38,7 +79,13 @@ export function Scene({
         near={0.01}
         far={10}
       />
+      <CameraSync
+        angle={angle}
+        controlsRef={controlsRef}
+        enabled={angleSource === "slider"}
+      />
       <OrbitControls
+        ref={controlsRef}
         enablePan={false}
         target={[0, 0, 0]}
         onChange={(e) => {

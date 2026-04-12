@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { downloadJson, exportFaceModel, importFaceModel } from "../_lib/jsonIO";
 import type {
   FaceModel,
@@ -98,9 +98,15 @@ export function ModelingTool() {
   const [faceOpacity, setFaceOpacity] = useState(1);
   const [angle, setAngle] = useState<YawPitch>({ yaw: 0, pitch: 0 });
   const [zoom, setZoom] = useState(600);
+  const angleSourceRef = useRef<"slider" | "controls">("controls");
 
   const handleAngleChange = useCallback((yaw: number, pitch: number) => {
+    angleSourceRef.current = "controls";
     setAngle({ yaw, pitch });
+  }, []);
+  const handleSliderAngle = useCallback((partial: Partial<YawPitch>) => {
+    angleSourceRef.current = "slider";
+    setAngle((prev) => ({ ...prev, ...partial }));
   }, []);
   const handleZoomChange = useCallback((newZoom: number) => {
     setZoom(newZoom);
@@ -493,9 +499,40 @@ export function ModelingTool() {
               {faceOpacity.toFixed(2)}
             </span>
           </label>
-          <div className="text-gray-500 text-xs">
-            yaw: {angle.yaw.toFixed(1)}° pitch: {angle.pitch.toFixed(1)}°
-          </div>
+          <label className="flex items-center gap-1">
+            <span className="w-12 shrink-0 text-xs">yaw</span>
+            <input
+              type="range"
+              min={-180}
+              max={180}
+              step={1}
+              value={Math.round(angle.yaw)}
+              onChange={(e) =>
+                handleSliderAngle({ yaw: Number(e.target.value) })
+              }
+              className="flex-1"
+            />
+            <span className="w-10 text-right text-xs tabular-nums">
+              {angle.yaw.toFixed(1)}°
+            </span>
+          </label>
+          <label className="flex items-center gap-1">
+            <span className="w-12 shrink-0 text-xs">pitch</span>
+            <input
+              type="range"
+              min={-90}
+              max={90}
+              step={1}
+              value={Math.round(angle.pitch)}
+              onChange={(e) =>
+                handleSliderAngle({ pitch: Number(e.target.value) })
+              }
+              className="flex-1"
+            />
+            <span className="w-10 text-right text-xs tabular-nums">
+              {angle.pitch.toFixed(1)}°
+            </span>
+          </label>
         </div>
 
         {/* JSON IO */}
@@ -1162,6 +1199,7 @@ export function ModelingTool() {
           <Scene
             model={model}
             angle={angle}
+            angleSource={angleSourceRef.current}
             faceOpacity={faceOpacity}
             zoom={zoom}
             onAngleChange={handleAngleChange}
