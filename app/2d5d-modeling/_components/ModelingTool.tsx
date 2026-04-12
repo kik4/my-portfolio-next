@@ -282,7 +282,11 @@ export function ModelingTool() {
             : `KF ${editMode.index + 1} (${selectedPolygon?.yawPitchKeyframes[editMode.index]?.angle.yaw.toFixed(0)}°, ${selectedPolygon?.yawPitchKeyframes[editMode.index]?.angle.pitch.toFixed(0)}°)`}
         </div>
         <div className="min-h-0 flex-1">
-          <PointEditor points={editorPoints} onChange={handleEditorChange} />
+          <PointEditor
+            points={editorPoints}
+            fillColor={selectedPolygon?.fillColor ?? [0.99, 0.88, 0.78, 1]}
+            onChange={handleEditorChange}
+          />
         </div>
 
         {/* Keyframes */}

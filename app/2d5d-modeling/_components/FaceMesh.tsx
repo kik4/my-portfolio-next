@@ -23,6 +23,7 @@ export function FaceMesh({ model, angle, opacity }: FaceMeshProps) {
       new THREE.MeshBasicMaterial({
         vertexColors: true,
         side: THREE.DoubleSide,
+        toneMapped: false,
       }),
     [],
   );

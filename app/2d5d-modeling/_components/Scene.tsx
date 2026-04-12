@@ -28,6 +28,7 @@ export function Scene({
   return (
     <Canvas
       gl={{ antialias: true, alpha: true }}
+      linear
       style={{ background: "transparent" }}
     >
       <OrthographicCamera

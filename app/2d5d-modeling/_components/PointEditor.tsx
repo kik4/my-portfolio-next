@@ -1,18 +1,24 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { Point2D } from "../_lib/types";
+import type { ColorRGBA, Point2D } from "../_lib/types";
 
 interface PointEditorProps {
   points: Point2D[];
+  fillColor: ColorRGBA;
   onChange: (points: Point2D[]) => void;
   viewSize?: number;
+}
+
+function rgbaToCss(c: ColorRGBA): string {
+  return `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${c[3]})`;
 }
 
 const CANVAS_PX = 480;
 
 export function PointEditor({
   points,
+  fillColor,
   onChange,
   viewSize = 0.5,
 }: PointEditorProps) {
@@ -88,7 +94,12 @@ export function PointEditor({
         stroke="#e5e7eb"
         strokeWidth={1}
       />
-      <path d={pathD} fill="#fde1c6" stroke="#b45309" strokeWidth={1.5} />
+      <path
+        d={pathD}
+        fill={rgbaToCss(fillColor)}
+        stroke="#b45309"
+        strokeWidth={1.5}
+      />
       {points.map((p, i) => {
         const [sx, sy] = toScreen(p);
         return (
