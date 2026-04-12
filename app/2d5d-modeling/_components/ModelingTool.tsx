@@ -945,25 +945,15 @@ export function ModelingTool() {
                           />
                         </div>
                         <div className="flex items-center gap-1">
-                          <span>剪断X</span>
+                          <span className="w-10">剪断</span>
                           <input
                             type="number"
                             step={0.01}
-                            value={Number(p.shearX.toFixed(3))}
+                            value={Number(p.shear.toFixed(3))}
                             onChange={(e) =>
-                              updateMatrix({ shearX: Number(e.target.value) })
+                              updateMatrix({ shear: Number(e.target.value) })
                             }
-                            className="w-14 rounded border px-1"
-                          />
-                          <span>剪断Y</span>
-                          <input
-                            type="number"
-                            step={0.01}
-                            value={Number(p.shearY.toFixed(3))}
-                            onChange={(e) =>
-                              updateMatrix({ shearY: Number(e.target.value) })
-                            }
-                            className="w-14 rounded border px-1"
+                            className="w-16 rounded border px-1"
                           />
                         </div>
                       </div>

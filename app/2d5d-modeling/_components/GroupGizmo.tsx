@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { composeMat2, decomposeMat2 } from "../_lib/mat2utils";
+import { decomposeMat2, mulMat2 } from "../_lib/mat2utils";
 import type {
   FeatureGroup,
   FeatureGroupKeyframe,
+  Mat2,
+  Point2D,
   Polygon,
   YawPitch,
 } from "../_lib/types";
@@ -72,8 +74,7 @@ type DragMode =
   | { type: "rotate"; startAngle: number; startRotation: number }
   | { type: "scaleX"; startX: number; startScaleX: number }
   | { type: "scaleY"; startY: number; startScaleY: number }
-  | { type: "shearX"; startX: number; startShearX: number }
-  | { type: "shearY"; startY: number; startShearY: number };
+  | { type: "shear"; startX: number; startShear: number };
 
 export function GroupGizmo({
   group,
@@ -88,6 +89,8 @@ export function GroupGizmo({
   const [dragMode, setDragMode] = useState<DragMode>(null);
   const dragStart = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const kfRef = useRef<FeatureGroupKeyframe | null>(null);
+  const startMatrixRef = useRef<Mat2>(MAT2_IDENTITY);
+  const startPositionRef = useRef<Point2D>([0, 0]);
 
   const bbox = useMemo(() => getGroupBBox(group, polygons), [group, polygons]);
 
@@ -181,6 +184,8 @@ export function GroupGizmo({
     if (!rect) return;
     dragStart.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     kfRef.current = { ...currentKf };
+    startMatrixRef.current = [...currentKf.matrix] as Mat2;
+    startPositionRef.current = [...currentKf.position];
     setDragMode(mode);
   };
 
@@ -190,15 +195,18 @@ export function GroupGizmo({
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
     const kf = ensureKf();
+    const sm = startMatrixRef.current;
 
     if (dragMode.type === "move") {
       const [wx, wy] = toWorld(sx, sy);
       const [swx, swy] = toWorld(dragStart.current.x, dragStart.current.y);
       const newKf: FeatureGroupKeyframe = {
         ...kf,
-        position: [kf.position[0] + (wx - swx), kf.position[1] + (wy - swy)],
+        position: [
+          startPositionRef.current[0] + (wx - swx),
+          startPositionRef.current[1] + (wy - swy),
+        ],
       };
-      dragStart.current = { x: sx, y: sy };
       kfRef.current = newKf;
       onUpdateKeyframe(newKf);
     }
@@ -207,9 +215,11 @@ export function GroupGizmo({
       const dx = sx - screenCenter[0];
       const dy = sy - screenCenter[1];
       const currentAngle = (Math.atan2(-dx, -dy) * 180) / Math.PI;
-      const delta = currentAngle - dragMode.startAngle;
-      const newRotation = dragMode.startRotation + delta;
-      const newMatrix = composeMat2({ ...params, rotation: newRotation });
+      const deltaRad = ((currentAngle - dragMode.startAngle) * Math.PI) / 180;
+      const cos = Math.cos(deltaRad);
+      const sin = Math.sin(deltaRad);
+      // Left-multiply rotation delta: R_delta * startMatrix
+      const newMatrix = mulMat2([cos, sin, -sin, cos], sm);
       const newKf: FeatureGroupKeyframe = { ...kf, matrix: newMatrix };
       kfRef.current = newKf;
       onUpdateKeyframe(newKf);
@@ -217,8 +227,10 @@ export function GroupGizmo({
 
     if (dragMode.type === "scaleX") {
       const dx = (sx - dragMode.startX) / zoom;
-      const newScaleX = Math.max(0.01, dragMode.startScaleX + dx * 2);
-      const newMatrix = composeMat2({ ...params, scaleX: newScaleX });
+      const ratio =
+        Math.max(0.01, dragMode.startScaleX + dx * 2) / dragMode.startScaleX;
+      // Right-multiply scale: startMatrix * [ratio, 0, 0, 1]
+      const newMatrix = mulMat2(sm, [ratio, 0, 0, 1]);
       const newKf: FeatureGroupKeyframe = { ...kf, matrix: newMatrix };
       kfRef.current = newKf;
       onUpdateKeyframe(newKf);
@@ -226,26 +238,19 @@ export function GroupGizmo({
 
     if (dragMode.type === "scaleY") {
       const dy = -(sy - dragMode.startY) / zoom;
-      const newScaleY = Math.max(0.01, dragMode.startScaleY + dy * 2);
-      const newMatrix = composeMat2({ ...params, scaleY: newScaleY });
+      const ratio =
+        Math.max(0.01, dragMode.startScaleY + dy * 2) / dragMode.startScaleY;
+      // Right-multiply scale: startMatrix * [1, 0, 0, ratio]
+      const newMatrix = mulMat2(sm, [1, 0, 0, ratio]);
       const newKf: FeatureGroupKeyframe = { ...kf, matrix: newMatrix };
       kfRef.current = newKf;
       onUpdateKeyframe(newKf);
     }
 
-    if (dragMode.type === "shearX") {
+    if (dragMode.type === "shear") {
       const dx = (sx - dragMode.startX) / zoom;
-      const newShearX = dragMode.startShearX + dx * 2;
-      const newMatrix = composeMat2({ ...params, shearX: newShearX });
-      const newKf: FeatureGroupKeyframe = { ...kf, matrix: newMatrix };
-      kfRef.current = newKf;
-      onUpdateKeyframe(newKf);
-    }
-
-    if (dragMode.type === "shearY") {
-      const dy = -(sy - dragMode.startY) / zoom;
-      const newShearY = dragMode.startShearY + dy * 2;
-      const newMatrix = composeMat2({ ...params, shearY: newShearY });
+      // Right-multiply shear: startMatrix * [1, delta, 0, 1]
+      const newMatrix = mulMat2(sm, [1, dx * 2, 0, 1]);
       const newKf: FeatureGroupKeyframe = { ...kf, matrix: newMatrix };
       kfRef.current = newKf;
       onUpdateKeyframe(newKf);
@@ -416,7 +421,7 @@ export function GroupGizmo({
         }}
       />
 
-      {/* ShearX handles (corners top-left, top-right) */}
+      {/* Shear handles (corners top-left, top-right) */}
       <polygon
         points={`${screenCorners[2][0] - 3},${screenCorners[2][1] - 6} ${screenCorners[2][0] + 3},${screenCorners[2][1] - 6} ${screenCorners[2][0]},${screenCorners[2][1]}`}
         {...HANDLE_STYLE_SHEAR}
@@ -425,9 +430,9 @@ export function GroupGizmo({
           const rect = svgRef.current?.getBoundingClientRect();
           if (!rect) return;
           handlePointerDown(e, {
-            type: "shearX",
+            type: "shear",
             startX: e.clientX - rect.left,
-            startShearX: params.shearX,
+            startShear: params.shear,
           });
         }}
       />
@@ -439,39 +444,9 @@ export function GroupGizmo({
           const rect = svgRef.current?.getBoundingClientRect();
           if (!rect) return;
           handlePointerDown(e, {
-            type: "shearX",
+            type: "shear",
             startX: e.clientX - rect.left,
-            startShearX: params.shearX,
-          });
-        }}
-      />
-
-      {/* ShearY handles (corners bottom-right, top-right) */}
-      <polygon
-        points={`${screenCorners[1][0] + 6},${screenCorners[1][1] - 3} ${screenCorners[1][0] + 6},${screenCorners[1][1] + 3} ${screenCorners[1][0]},${screenCorners[1][1]}`}
-        {...HANDLE_STYLE_SHEAR}
-        className={`cursor-n-resize ${HANDLE_POINTER}`}
-        onPointerDown={(e) => {
-          const rect = svgRef.current?.getBoundingClientRect();
-          if (!rect) return;
-          handlePointerDown(e, {
-            type: "shearY",
-            startY: e.clientY - rect.top,
-            startShearY: params.shearY,
-          });
-        }}
-      />
-      <polygon
-        points={`${screenCorners[2][0] + 6},${screenCorners[2][1] - 3} ${screenCorners[2][0] + 6},${screenCorners[2][1] + 3} ${screenCorners[2][0]},${screenCorners[2][1]}`}
-        {...HANDLE_STYLE_SHEAR}
-        className={`cursor-n-resize ${HANDLE_POINTER}`}
-        onPointerDown={(e) => {
-          const rect = svgRef.current?.getBoundingClientRect();
-          if (!rect) return;
-          handlePointerDown(e, {
-            type: "shearY",
-            startY: e.clientY - rect.top,
-            startShearY: params.shearY,
+            startShear: params.shear,
           });
         }}
       />
