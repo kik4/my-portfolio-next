@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { downloadJson, exportFaceModel, importFaceModel } from "../_lib/jsonIO";
 import type {
   FaceModel,
   FeatureGroup,
@@ -531,6 +532,48 @@ export function ModelingTool() {
           <div className="text-gray-500 text-xs">
             yaw: {angle.yaw.toFixed(1)}° pitch: {angle.pitch.toFixed(1)}°
           </div>
+        </div>
+
+        {/* JSON IO */}
+        <div className="flex gap-1 border-t px-3 py-2">
+          <button
+            type="button"
+            onClick={() => {
+              const json = exportFaceModel(model);
+              downloadJson(json, "face-model.json");
+            }}
+            className="flex-1 rounded bg-gray-200 px-2 py-1 text-xs hover:bg-gray-300"
+          >
+            Export
+          </button>
+          <label className="flex-1 cursor-pointer rounded bg-gray-200 px-2 py-1 text-center text-xs hover:bg-gray-300">
+            Import
+            <input
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                  try {
+                    const imported = importFaceModel(reader.result as string);
+                    setPolygons(imported.polygons);
+                    setFeatureGroups(imported.featureGroups);
+                    setBlendShapeWeights(imported.blendShapeWeights);
+                    setSelectedPolygonIndex(0);
+                    setSelectedGroupIndex(null);
+                    setEditMode({ type: "base" });
+                  } catch (err) {
+                    alert(`Import failed: ${err}`);
+                  }
+                };
+                reader.readAsText(file);
+                e.target.value = "";
+              }}
+            />
+          </label>
         </div>
       </div>
 
