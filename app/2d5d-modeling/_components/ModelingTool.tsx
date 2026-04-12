@@ -100,7 +100,6 @@ export function ModelingTool() {
   const handleAngleChange = useCallback((yaw: number, pitch: number) => {
     setAngle({ yaw, pitch });
   }, []);
-
   const handleZoomChange = useCallback((newZoom: number) => {
     setZoom(newZoom);
   }, []);
@@ -116,12 +115,10 @@ export function ModelingTool() {
     [selectedPolygonIndex],
   );
 
-  // Points shown in editor
   const editorPoints = useMemo(() => {
     if (!selectedPolygon) return [];
     const { basePoints } = selectedPolygon;
     if (editMode.type === "base") return basePoints;
-
     if (editMode.type === "blendshape") {
       const bs = selectedPolygon.blendShapes[editMode.index];
       if (!bs) return basePoints;
@@ -133,7 +130,6 @@ export function ModelingTool() {
           ] as Point2D,
       );
     }
-
     if (selectedPolygon.group === "outline") {
       const kf = selectedPolygon.yawPitchKeyframes[editMode.index];
       if (!kf) return basePoints;
@@ -145,26 +141,22 @@ export function ModelingTool() {
           ] as Point2D,
       );
     }
-
     if (selectedPolygon.group === "feature") {
       const kf = selectedPolygon.yawPitchKeyframes[editMode.index];
       if (!kf) return basePoints;
       const [tx, ty] = kf.position;
       return basePoints.map(([bx, by]) => [bx + tx, by + ty] as Point2D);
     }
-
     return basePoints;
   }, [editMode, selectedPolygon]);
 
   const handleEditorChange = useCallback(
     (newPoints: Point2D[]) => {
       if (!selectedPolygon) return;
-
       if (editMode.type === "base") {
         updateSelectedPolygon((p) => ({ ...p, basePoints: newPoints }));
         return;
       }
-
       if (editMode.type === "blendshape") {
         const bsIndex = editMode.index;
         const deltas: Point2D[] = newPoints.map(([px, py], j) => [
@@ -194,7 +186,6 @@ export function ModelingTool() {
         }
         return;
       }
-
       if (selectedPolygon.group === "outline") {
         const kfIndex = editMode.index;
         updateSelectedPolygon((p) => {
@@ -212,9 +203,7 @@ export function ModelingTool() {
           };
         });
       }
-
       if (selectedPolygon.group === "feature") {
-        // Dragging in keyframe mode moves position
         const kfIndex = editMode.index;
         const baseCenter: Point2D = [
           selectedPolygon.basePoints.reduce((s, p) => s + p[0], 0) /
@@ -230,16 +219,17 @@ export function ModelingTool() {
           if (p.group !== "feature") return p;
           return {
             ...p,
-            yawPitchKeyframes: p.yawPitchKeyframes.map((kf, i) => {
-              if (i !== kfIndex) return kf;
-              return {
-                ...kf,
-                position: [
-                  newCenter[0] - baseCenter[0],
-                  newCenter[1] - baseCenter[1],
-                ] as Point2D,
-              };
-            }),
+            yawPitchKeyframes: p.yawPitchKeyframes.map((kf, i) =>
+              i !== kfIndex
+                ? kf
+                : {
+                    ...kf,
+                    position: [
+                      newCenter[0] - baseCenter[0],
+                      newCenter[1] - baseCenter[1],
+                    ] as Point2D,
+                  },
+            ),
           };
         });
       }
@@ -249,7 +239,6 @@ export function ModelingTool() {
 
   const addKeyframe = useCallback(() => {
     if (!selectedPolygon) return;
-
     if (selectedPolygon.group === "outline") {
       const deltas: Point2D[] = selectedPolygon.basePoints.map(() => [0, 0]);
       const newKf: OutlineKeyframe = {
@@ -261,7 +250,6 @@ export function ModelingTool() {
         return { ...p, yawPitchKeyframes: [...p.yawPitchKeyframes, newKf] };
       });
     }
-
     if (selectedPolygon.group === "feature") {
       const newKf: FeatureKeyframe = {
         angle: { yaw: angle.yaw, pitch: angle.pitch },
@@ -274,7 +262,6 @@ export function ModelingTool() {
         return { ...p, yawPitchKeyframes: [...p.yawPitchKeyframes, newKf] };
       });
     }
-
     setEditMode({
       type: "keyframe",
       index: selectedPolygon.yawPitchKeyframes.length,
@@ -293,11 +280,9 @@ export function ModelingTool() {
           }) as Polygon,
       );
       if (editMode.type === "keyframe") {
-        if (editMode.index === index) {
-          setEditMode({ type: "base" });
-        } else if (editMode.index > index) {
+        if (editMode.index === index) setEditMode({ type: "base" });
+        else if (editMode.index > index)
           setEditMode({ type: "keyframe", index: editMode.index - 1 });
-        }
       }
     },
     [editMode, updateSelectedPolygon],
@@ -310,11 +295,12 @@ export function ModelingTool() {
         (max, p) => Math.max(max, p.layerIndex),
         -1,
       );
-      const newPoly =
+      setPolygons((prev) => [
+        ...prev,
         group === "outline"
           ? createOutlinePolygon(id, maxLayer + 1)
-          : createFeaturePolygon(id, maxLayer + 1);
-      setPolygons((prev) => [...prev, newPoly]);
+          : createFeaturePolygon(id, maxLayer + 1),
+      ]);
       setSelectedPolygonIndex(polygons.length);
       setEditMode({ type: "base" });
     },
@@ -328,14 +314,12 @@ export function ModelingTool() {
       if (selectedPolygonIndex === index) {
         setSelectedPolygonIndex(Math.max(0, index - 1));
         setEditMode({ type: "base" });
-      } else if (selectedPolygonIndex > index) {
+      } else if (selectedPolygonIndex > index)
         setSelectedPolygonIndex(selectedPolygonIndex - 1);
-      }
     },
     [polygons.length, selectedPolygonIndex],
   );
 
-  // Get keyframe angle label
   const getKfAngleLabel = (kf: OutlineKeyframe | FeatureKeyframe) =>
     `(${kf.angle.yaw.toFixed(0)}°, ${kf.angle.pitch.toFixed(0)}°)`;
 
@@ -346,42 +330,39 @@ export function ModelingTool() {
 
   const allBlendShapeIds = useMemo(() => {
     const ids = new Set<string>();
-    for (const p of polygons) {
-      for (const bs of p.blendShapes) {
-        ids.add(bs.id);
-      }
-    }
+    for (const p of polygons) for (const bs of p.blendShapes) ids.add(bs.id);
     return [...ids];
   }, [polygons]);
+
+  const selectedGroup =
+    selectedGroupIndex !== null ? featureGroups[selectedGroupIndex] : null;
 
   const model: FaceModel = { polygons, featureGroups, blendShapeWeights };
 
   return (
     <div className="flex min-h-0 flex-1">
-      <div className="flex w-120 shrink-0 flex-col border-r bg-white">
-        {/* Polygon list */}
-        <div className="max-h-40 shrink-0 space-y-1 overflow-y-auto border-b px-4 py-2 text-sm">
-          <div className="font-semibold">ポリゴン一覧</div>
+      {/* ===== LEFT PANE: Data Management ===== */}
+      <div className="flex w-56 shrink-0 flex-col overflow-y-auto border-r bg-white text-sm">
+        {/* Polygons */}
+        <div className="space-y-1 border-b px-3 py-2">
+          <div className="font-semibold">ポリゴン</div>
           {polygons.map((p, i) => (
             <div key={p.id} className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => {
                   setSelectedPolygonIndex(i);
+                  setSelectedGroupIndex(null);
                   setEditMode({ type: "base" });
                 }}
-                className={`flex-1 rounded px-2 py-0.5 text-left ${
-                  selectedPolygonIndex === i
-                    ? "bg-blue-100 font-semibold text-blue-800"
-                    : "hover:bg-gray-100"
-                }`}
+                className={`flex-1 truncate rounded px-2 py-0.5 text-left ${selectedPolygonIndex === i && selectedGroupIndex === null ? "bg-blue-100 font-semibold text-blue-800" : "hover:bg-gray-100"}`}
               >
                 <span
                   className="mr-1 inline-block h-3 w-3 rounded-sm border"
                   style={{ backgroundColor: rgbaToHex(p.fillColor) }}
                 />
                 {p.id}
-                <span className="ml-1 text-gray-500">
+                <span className="ml-1 text-gray-500 text-xs">
                   {p.group === "outline" ? "輪郭" : "特徴"} L{p.layerIndex}
                 </span>
               </button>
@@ -400,35 +381,31 @@ export function ModelingTool() {
             <button
               type="button"
               onClick={() => addPolygon("outline")}
-              className="flex-1 rounded border border-gray-400 border-dashed px-2 py-0.5 text-gray-600 hover:bg-gray-50"
+              className="flex-1 rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
             >
               + 輪郭
             </button>
             <button
               type="button"
               onClick={() => addPolygon("feature")}
-              className="flex-1 rounded border border-gray-400 border-dashed px-2 py-0.5 text-gray-600 hover:bg-gray-50"
+              className="flex-1 rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
             >
               + 特徴
             </button>
           </div>
         </div>
 
-        {/* Feature groups */}
-        <div className="max-h-32 shrink-0 space-y-1 overflow-y-auto border-b px-4 py-2 text-sm">
+        {/* Groups */}
+        <div className="space-y-1 border-b px-3 py-2">
           <div className="font-semibold">グループ</div>
           {featureGroups.map((g, i) => (
             <div key={g.id} className="flex items-center gap-1">
               <button
                 type="button"
-                onClick={() =>
-                  setSelectedGroupIndex(selectedGroupIndex === i ? null : i)
-                }
-                className={`flex-1 truncate rounded px-2 py-0.5 text-left ${
-                  selectedGroupIndex === i
-                    ? "bg-purple-100 font-semibold text-purple-800"
-                    : "hover:bg-gray-100"
-                }`}
+                onClick={() => {
+                  setSelectedGroupIndex(selectedGroupIndex === i ? null : i);
+                }}
+                className={`flex-1 truncate rounded px-2 py-0.5 text-left ${selectedGroupIndex === i ? "bg-purple-100 font-semibold text-purple-800" : "hover:bg-gray-100"}`}
               >
                 {g.id}
               </button>
@@ -475,25 +452,102 @@ export function ModelingTool() {
               ]);
               setSelectedGroupIndex(featureGroups.length);
             }}
-            className="w-full rounded border border-gray-400 border-dashed px-2 py-0.5 text-gray-600 hover:bg-gray-50"
+            className="w-full rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
           >
             + グループ追加
           </button>
         </div>
 
-        {/* Selected group details */}
-        {selectedGroupIndex !== null && featureGroups[selectedGroupIndex] && (
-          <div className="shrink-0 space-y-2 border-b px-4 py-2 text-sm">
-            <div className="font-semibold">
-              グループ: {featureGroups[selectedGroupIndex].id}
-            </div>
+        {/* Blend shape weights */}
+        {allBlendShapeIds.length > 0 && (
+          <div className="space-y-1 border-b px-3 py-2">
+            <div className="font-semibold">BS重み</div>
+            {allBlendShapeIds.map((bsId) => (
+              <label key={bsId} className="flex items-center gap-1">
+                <span className="w-16 shrink-0 truncate text-xs">{bsId}</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={blendShapeWeights[bsId] ?? 0}
+                  onChange={(e) =>
+                    setBlendShapeWeights((prev) => ({
+                      ...prev,
+                      [bsId]: Number(e.target.value),
+                    }))
+                  }
+                  className="flex-1"
+                />
+                <span className="w-8 text-right text-xs tabular-nums">
+                  {(blendShapeWeights[bsId] ?? 0).toFixed(2)}
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
+
+        {/* Display settings */}
+        <div className="space-y-2 px-3 py-2">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={referenceVisible}
+              onChange={(e) => setReferenceVisible(e.target.checked)}
+            />
+            <span>参考3D</span>
+          </label>
+          <label className="flex items-center gap-1">
+            <span className="w-12 shrink-0 text-xs">参考</span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={referenceOpacity}
+              onChange={(e) => setReferenceOpacity(Number(e.target.value))}
+              disabled={!referenceVisible}
+              className="flex-1"
+            />
+            <span className="w-8 text-right text-xs tabular-nums">
+              {referenceOpacity.toFixed(2)}
+            </span>
+          </label>
+          <label className="flex items-center gap-1">
+            <span className="w-12 shrink-0 text-xs">ポリゴン</span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={faceOpacity}
+              onChange={(e) => setFaceOpacity(Number(e.target.value))}
+              className="flex-1"
+            />
+            <span className="w-8 text-right text-xs tabular-nums">
+              {faceOpacity.toFixed(2)}
+            </span>
+          </label>
+          <div className="text-gray-500 text-xs">
+            yaw: {angle.yaw.toFixed(1)}° pitch: {angle.pitch.toFixed(1)}°
+          </div>
+        </div>
+      </div>
+
+      {/* ===== CENTER PANE: Editor ===== */}
+      <div className="flex w-80 shrink-0 flex-col overflow-y-auto border-r bg-gray-50 text-sm">
+        {/* Context: polygon or group */}
+        {selectedGroup ? (
+          /* Group editing */
+          <div className="space-y-2 px-3 py-2">
+            <div className="font-semibold">グループ: {selectedGroup.id}</div>
             <label className="flex items-center gap-2">
               <span className="w-20 shrink-0">基本レイヤー</span>
               <input
                 type="number"
-                value={featureGroups[selectedGroupIndex].baseLayerIndex}
+                value={selectedGroup.baseLayerIndex}
                 onChange={(e) => {
-                  const idx = selectedGroupIndex;
+                  const idx = selectedGroupIndex!;
                   setFeatureGroups((prev) =>
                     prev.map((g, i) =>
                       i === idx
@@ -506,15 +560,13 @@ export function ModelingTool() {
               />
             </label>
             <div className="space-y-1">
-              <div className="text-gray-600">Visibility (yaw)</div>
-              <div className="flex gap-2">
+              <div className="text-gray-600 text-xs">Visibility yaw</div>
+              <div className="flex gap-1">
                 <input
                   type="number"
-                  value={
-                    featureGroups[selectedGroupIndex].visibility.yawRange[0]
-                  }
+                  value={selectedGroup.visibility.yawRange[0]}
                   onChange={(e) => {
-                    const idx = selectedGroupIndex;
+                    const idx = selectedGroupIndex!;
                     setFeatureGroups((prev) =>
                       prev.map((g, i) =>
                         i === idx
@@ -532,16 +584,14 @@ export function ModelingTool() {
                       ),
                     );
                   }}
-                  className="w-16 rounded border px-1"
+                  className="w-14 rounded border px-1"
                 />
                 <span>〜</span>
                 <input
                   type="number"
-                  value={
-                    featureGroups[selectedGroupIndex].visibility.yawRange[1]
-                  }
+                  value={selectedGroup.visibility.yawRange[1]}
                   onChange={(e) => {
-                    const idx = selectedGroupIndex;
+                    const idx = selectedGroupIndex!;
                     setFeatureGroups((prev) =>
                       prev.map((g, i) =>
                         i === idx
@@ -559,18 +609,16 @@ export function ModelingTool() {
                       ),
                     );
                   }}
-                  className="w-16 rounded border px-1"
+                  className="w-14 rounded border px-1"
                 />
               </div>
-              <div className="text-gray-600">Visibility (pitch)</div>
-              <div className="flex gap-2">
+              <div className="text-gray-600 text-xs">Visibility pitch</div>
+              <div className="flex gap-1">
                 <input
                   type="number"
-                  value={
-                    featureGroups[selectedGroupIndex].visibility.pitchRange[0]
-                  }
+                  value={selectedGroup.visibility.pitchRange[0]}
                   onChange={(e) => {
-                    const idx = selectedGroupIndex;
+                    const idx = selectedGroupIndex!;
                     setFeatureGroups((prev) =>
                       prev.map((g, i) =>
                         i === idx
@@ -588,16 +636,14 @@ export function ModelingTool() {
                       ),
                     );
                   }}
-                  className="w-16 rounded border px-1"
+                  className="w-14 rounded border px-1"
                 />
                 <span>〜</span>
                 <input
                   type="number"
-                  value={
-                    featureGroups[selectedGroupIndex].visibility.pitchRange[1]
-                  }
+                  value={selectedGroup.visibility.pitchRange[1]}
                   onChange={(e) => {
-                    const idx = selectedGroupIndex;
+                    const idx = selectedGroupIndex!;
                     setFeatureGroups((prev) =>
                       prev.map((g, i) =>
                         i === idx
@@ -615,27 +661,25 @@ export function ModelingTool() {
                       ),
                     );
                   }}
-                  className="w-16 rounded border px-1"
+                  className="w-14 rounded border px-1"
                 />
               </div>
             </div>
             <div className="space-y-1">
-              <div className="text-gray-600">グループ キーフレーム</div>
-              {featureGroups[selectedGroupIndex].yawPitchKeyframes.map(
-                (kf, ki) => (
-                  <div
-                    key={`${kf.angle.yaw},${kf.angle.pitch}`}
-                    className="flex items-center gap-1"
-                  >
-                    <span className="flex-1">
+              <div className="text-gray-600 text-xs">グループKF</div>
+              {selectedGroup.yawPitchKeyframes.map((kf, ki) => (
+                <div
+                  key={`gkf-${kf.angle.yaw},${kf.angle.pitch}`}
+                  className="space-y-1 rounded border p-1"
+                >
+                  <div className="flex items-center gap-1">
+                    <span className="flex-1 text-xs">
                       ({kf.angle.yaw.toFixed(0)}°, {kf.angle.pitch.toFixed(0)}°)
-                      pos=
-                      {kf.position[0].toFixed(2)},{kf.position[1].toFixed(2)}
                     </span>
                     <button
                       type="button"
                       onClick={() => {
-                        const idx = selectedGroupIndex;
+                        const idx = selectedGroupIndex!;
                         setFeatureGroups((prev) =>
                           prev.map((g, i) =>
                             i === idx
@@ -654,12 +698,76 @@ export function ModelingTool() {
                       ×
                     </button>
                   </div>
-                ),
-              )}
+                  <div className="flex items-center gap-1 text-xs">
+                    <span className="w-6">X</span>
+                    <input
+                      type="number"
+                      step={0.01}
+                      value={kf.position[0]}
+                      onChange={(e) => {
+                        const idx = selectedGroupIndex!;
+                        setFeatureGroups((prev) =>
+                          prev.map((g, i) =>
+                            i === idx
+                              ? {
+                                  ...g,
+                                  yawPitchKeyframes: g.yawPitchKeyframes.map(
+                                    (k, j) =>
+                                      j === ki
+                                        ? {
+                                            ...k,
+                                            position: [
+                                              Number(e.target.value),
+                                              k.position[1],
+                                            ] as Point2D,
+                                          }
+                                        : k,
+                                  ),
+                                }
+                              : g,
+                          ),
+                        );
+                      }}
+                      className="w-20 rounded border px-1"
+                    />
+                    <span className="w-6">Y</span>
+                    <input
+                      type="number"
+                      step={0.01}
+                      value={kf.position[1]}
+                      onChange={(e) => {
+                        const idx = selectedGroupIndex!;
+                        setFeatureGroups((prev) =>
+                          prev.map((g, i) =>
+                            i === idx
+                              ? {
+                                  ...g,
+                                  yawPitchKeyframes: g.yawPitchKeyframes.map(
+                                    (k, j) =>
+                                      j === ki
+                                        ? {
+                                            ...k,
+                                            position: [
+                                              k.position[0],
+                                              Number(e.target.value),
+                                            ] as Point2D,
+                                          }
+                                        : k,
+                                  ),
+                                }
+                              : g,
+                          ),
+                        );
+                      }}
+                      className="w-20 rounded border px-1"
+                    />
+                  </div>
+                </div>
+              ))}
               <button
                 type="button"
                 onClick={() => {
-                  const idx = selectedGroupIndex;
+                  const idx = selectedGroupIndex!;
                   setFeatureGroups((prev) =>
                     prev.map((g, i) =>
                       i === idx
@@ -668,10 +776,7 @@ export function ModelingTool() {
                             yawPitchKeyframes: [
                               ...g.yawPitchKeyframes,
                               {
-                                angle: {
-                                  yaw: angle.yaw,
-                                  pitch: angle.pitch,
-                                },
+                                angle: { yaw: angle.yaw, pitch: angle.pitch },
                                 position: [0, 0] as Point2D,
                                 matrix: MAT2_IDENTITY,
                               },
@@ -681,28 +786,26 @@ export function ModelingTool() {
                     ),
                   );
                 }}
-                className="w-full rounded border border-gray-400 border-dashed px-2 py-0.5 text-gray-600 hover:bg-gray-50"
+                className="w-full rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
               >
                 + ({angle.yaw.toFixed(0)}°, {angle.pitch.toFixed(0)}°)
               </button>
             </div>
             <div className="space-y-1">
-              <div className="text-gray-600">LayerIndex キーフレーム</div>
-              {(
-                featureGroups[selectedGroupIndex]?.layerIndexKeyframes ?? []
-              ).map((kf, ki) => (
+              <div className="text-gray-600 text-xs">LayerIndex KF</div>
+              {(selectedGroup.layerIndexKeyframes ?? []).map((kf, ki) => (
                 <div
                   key={`li-${kf.angle.yaw},${kf.angle.pitch}`}
                   className="flex items-center gap-1"
                 >
-                  <span className="flex-1">
+                  <span className="flex-1 text-xs">
                     ({kf.angle.yaw.toFixed(0)}°, {kf.angle.pitch.toFixed(0)}°)
                     L={kf.layerIndex}
                   </span>
                   <button
                     type="button"
                     onClick={() => {
-                      const idx = selectedGroupIndex;
+                      const idx = selectedGroupIndex!;
                       setFeatureGroups((prev) =>
                         prev.map((g, i) =>
                           i === idx
@@ -727,7 +830,7 @@ export function ModelingTool() {
                   type="number"
                   id="layerIndexInput"
                   defaultValue={0}
-                  className="w-16 rounded border px-1"
+                  className="w-14 rounded border px-1"
                 />
                 <button
                   type="button"
@@ -736,7 +839,7 @@ export function ModelingTool() {
                       "layerIndexInput",
                     ) as HTMLInputElement;
                     const layerIndex = Number(input?.value ?? 0);
-                    const idx = selectedGroupIndex;
+                    const idx = selectedGroupIndex!;
                     setFeatureGroups((prev) =>
                       prev.map((g, i) =>
                         i === idx
@@ -745,10 +848,7 @@ export function ModelingTool() {
                               layerIndexKeyframes: [
                                 ...(g.layerIndexKeyframes ?? []),
                                 {
-                                  angle: {
-                                    yaw: angle.yaw,
-                                    pitch: angle.pitch,
-                                  },
+                                  angle: { yaw: angle.yaw, pitch: angle.pitch },
                                   layerIndex,
                                 },
                               ],
@@ -757,368 +857,289 @@ export function ModelingTool() {
                       ),
                     );
                   }}
-                  className="flex-1 rounded border border-gray-400 border-dashed px-2 py-0.5 text-gray-600 hover:bg-gray-50"
+                  className="flex-1 rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
                 >
                   + ({angle.yaw.toFixed(0)}°, {angle.pitch.toFixed(0)}°)
                 </button>
               </div>
             </div>
           </div>
-        )}
+        ) : selectedPolygon ? (
+          /* Polygon editing */
+          <>
+            {/* Properties */}
+            <div className="space-y-2 border-b px-3 py-2">
+              <div className="font-semibold">
+                {selectedPolygon.id} (
+                {selectedPolygon.group === "outline" ? "輪郭" : "特徴"})
+              </div>
+              <label className="flex items-center gap-2">
+                <span className="w-14 shrink-0">ID</span>
+                <input
+                  type="text"
+                  value={selectedPolygon.id}
+                  onChange={(e) =>
+                    updateSelectedPolygon((p) => ({ ...p, id: e.target.value }))
+                  }
+                  className="flex-1 rounded border px-1"
+                />
+              </label>
+              <label className="flex items-center gap-2">
+                <span className="w-14 shrink-0">レイヤー</span>
+                <input
+                  type="number"
+                  value={selectedPolygon.layerIndex}
+                  onChange={(e) =>
+                    updateSelectedPolygon((p) => ({
+                      ...p,
+                      layerIndex: Number(e.target.value),
+                    }))
+                  }
+                  className="w-16 rounded border px-1"
+                />
+              </label>
+              <label className="flex items-center gap-2">
+                <span className="w-14 shrink-0">色</span>
+                <input
+                  type="color"
+                  value={rgbaToHex(selectedPolygon.fillColor)}
+                  onChange={(e) =>
+                    updateSelectedPolygon((p) => ({
+                      ...p,
+                      fillColor: hexToRgba(e.target.value),
+                    }))
+                  }
+                />
+              </label>
+              {selectedPolygon.group === "feature" && (
+                <>
+                  <label className="flex items-center gap-2">
+                    <span className="w-14 shrink-0">基本α</span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      value={selectedPolygon.baseAlpha}
+                      onChange={(e) =>
+                        updateSelectedPolygon((p) => ({
+                          ...p,
+                          baseAlpha: Number(e.target.value),
+                        }))
+                      }
+                      className="flex-1"
+                    />
+                    <span className="w-8 text-right tabular-nums">
+                      {selectedPolygon.baseAlpha.toFixed(2)}
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <span className="w-14 shrink-0">グループ</span>
+                    <select
+                      value={selectedPolygon.groupId ?? ""}
+                      onChange={(e) =>
+                        updateSelectedPolygon((p) => ({
+                          ...p,
+                          groupId: e.target.value || undefined,
+                        }))
+                      }
+                      className="flex-1 rounded border px-1"
+                    >
+                      <option value="">なし</option>
+                      {featureGroups.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.id}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </>
+              )}
+            </div>
 
-        {/* Polygon properties */}
-        {selectedPolygon && (
-          <div className="shrink-0 space-y-2 border-b px-4 py-2 text-sm">
-            <label className="flex items-center gap-2">
-              <span className="w-16 shrink-0">ID</span>
-              <input
-                type="text"
-                value={selectedPolygon.id}
-                onChange={(e) =>
-                  updateSelectedPolygon((p) => ({ ...p, id: e.target.value }))
-                }
-                className="flex-1 rounded border px-1"
+            {/* Point editor */}
+            <div className="border-b px-3 py-1 font-semibold text-xs">
+              {editMode.type === "base"
+                ? "正面ベース点列"
+                : editMode.type === "blendshape"
+                  ? `BS: ${selectedPolygon.blendShapes[editMode.index]?.id ?? ""}`
+                  : `KF ${editMode.index + 1} ${getKfAngleLabel(selectedPolygon.yawPitchKeyframes[editMode.index] as OutlineKeyframe | FeatureKeyframe)}`}
+            </div>
+            <div className="min-h-0 flex-1">
+              <PointEditor
+                points={editorPoints}
+                fillColor={selectedPolygon.fillColor}
+                onChange={handleEditorChange}
               />
-            </label>
-            <label className="flex items-center gap-2">
-              <span className="w-16 shrink-0">レイヤー</span>
-              <input
-                type="number"
-                value={selectedPolygon.layerIndex}
-                onChange={(e) =>
-                  updateSelectedPolygon((p) => ({
-                    ...p,
-                    layerIndex: Number(e.target.value),
-                  }))
-                }
-                className="w-16 rounded border px-1"
-              />
-            </label>
-            <label className="flex items-center gap-2">
-              <span className="w-16 shrink-0">色</span>
-              <input
-                type="color"
-                value={rgbaToHex(selectedPolygon.fillColor)}
-                onChange={(e) =>
-                  updateSelectedPolygon((p) => ({
-                    ...p,
-                    fillColor: hexToRgba(e.target.value),
-                  }))
-                }
-              />
-            </label>
-            {selectedPolygon.group === "feature" && (
-              <>
+            </div>
+
+            {/* Feature KF alpha */}
+            {selectedFeatureKf && (
+              <div className="border-t px-3 py-1">
                 <label className="flex items-center gap-2">
-                  <span className="w-16 shrink-0">基本α</span>
+                  <span className="w-14 shrink-0">KF α</span>
                   <input
                     type="range"
                     min={0}
                     max={1}
                     step={0.01}
-                    value={selectedPolygon.baseAlpha}
-                    onChange={(e) =>
-                      updateSelectedPolygon((p) => ({
-                        ...p,
-                        baseAlpha: Number(e.target.value),
-                      }))
-                    }
-                    className="flex-1"
-                  />
-                  <span className="w-10 text-right tabular-nums">
-                    {selectedPolygon.baseAlpha.toFixed(2)}
-                  </span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <span className="w-16 shrink-0">グループ</span>
-                  <select
-                    value={selectedPolygon.groupId ?? ""}
-                    onChange={(e) =>
-                      updateSelectedPolygon((p) => ({
-                        ...p,
-                        groupId: e.target.value || undefined,
-                      }))
-                    }
-                    className="flex-1 rounded border px-1"
-                  >
-                    <option value="">なし</option>
-                    {featureGroups.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.id}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Point editor */}
-        <div className="border-b px-4 py-1 font-semibold text-sm">
-          {editMode.type === "base"
-            ? "正面ベース点列"
-            : editMode.type === "blendshape"
-              ? `BS: ${selectedPolygon?.blendShapes[editMode.index]?.id ?? ""}`
-              : `KF ${editMode.index + 1} ${getKfAngleLabel(selectedPolygon?.yawPitchKeyframes[editMode.index] as OutlineKeyframe | FeatureKeyframe)}`}
-        </div>
-        <div className="min-h-0 flex-1">
-          <PointEditor
-            points={editorPoints}
-            fillColor={selectedPolygon?.fillColor ?? [0.99, 0.88, 0.78, 1]}
-            onChange={handleEditorChange}
-          />
-        </div>
-
-        {/* Feature keyframe alpha */}
-        {selectedFeatureKf && (
-          <div className="shrink-0 border-t px-4 py-2 text-sm">
-            <label className="flex items-center gap-2">
-              <span className="w-16 shrink-0">KF α</span>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.01}
-                value={selectedFeatureKf.alpha}
-                onChange={(e) => {
-                  const kfIndex =
-                    editMode.type === "keyframe" ? editMode.index : -1;
-                  if (kfIndex < 0) return;
-                  updateSelectedPolygon((p) => {
-                    if (p.group !== "feature") return p;
-                    return {
-                      ...p,
-                      yawPitchKeyframes: p.yawPitchKeyframes.map((kf, i) =>
-                        i === kfIndex
-                          ? { ...kf, alpha: Number(e.target.value) }
-                          : kf,
-                      ),
-                    };
-                  });
-                }}
-                className="flex-1"
-              />
-              <span className="w-10 text-right tabular-nums">
-                {selectedFeatureKf.alpha.toFixed(2)}
-              </span>
-            </label>
-          </div>
-        )}
-
-        {/* Keyframes */}
-        <div className="max-h-48 shrink-0 space-y-1 overflow-y-auto border-t px-4 py-2 text-sm">
-          <div className="font-semibold">キーフレーム</div>
-          <button
-            type="button"
-            onClick={() => setEditMode({ type: "base" })}
-            className={`w-full rounded px-2 py-0.5 text-left ${
-              editMode.type === "base"
-                ? "bg-blue-100 font-semibold text-blue-800"
-                : "hover:bg-gray-100"
-            }`}
-          >
-            正面 (ベース)
-          </button>
-          {selectedPolygon?.yawPitchKeyframes.map((kf, i) => (
-            <div
-              key={`${kf.angle.yaw},${kf.angle.pitch}`}
-              className="flex items-center gap-1"
-            >
-              <button
-                type="button"
-                onClick={() => setEditMode({ type: "keyframe", index: i })}
-                className={`flex-1 rounded px-2 py-0.5 text-left ${
-                  editMode.type === "keyframe" && editMode.index === i
-                    ? "bg-blue-100 font-semibold text-blue-800"
-                    : "hover:bg-gray-100"
-                }`}
-              >
-                {getKfAngleLabel(kf)}
-              </button>
-              <button
-                type="button"
-                onClick={() => deleteKeyframe(i)}
-                className="rounded px-1 text-red-500 hover:bg-red-50"
-              >
-                ×
-              </button>
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={addKeyframe}
-            className="w-full rounded border border-gray-400 border-dashed px-2 py-0.5 text-gray-600 hover:bg-gray-50"
-          >
-            + ({angle.yaw.toFixed(0)}°, {angle.pitch.toFixed(0)}°)
-          </button>
-        </div>
-
-        {/* Blend shapes for selected polygon */}
-        {selectedPolygon && (
-          <div className="max-h-40 shrink-0 space-y-1 overflow-y-auto border-t px-4 py-2 text-sm">
-            <div className="font-semibold">ブレンドシェイプ</div>
-            {selectedPolygon.blendShapes.map((bs, i) => (
-              <div key={bs.id} className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setEditMode({ type: "blendshape", index: i })}
-                  className={`flex-1 rounded px-2 py-0.5 text-left ${
-                    editMode.type === "blendshape" && editMode.index === i
-                      ? "bg-green-100 font-semibold text-green-800"
-                      : "hover:bg-gray-100"
-                  }`}
-                >
-                  {bs.id}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (selectedPolygon.group === "outline") {
-                      updateSelectedPolygon((p) => {
-                        if (p.group !== "outline") return p;
-                        return {
-                          ...p,
-                          blendShapes: p.blendShapes.filter((_, j) => j !== i),
-                        };
-                      });
-                    } else {
+                    value={selectedFeatureKf.alpha}
+                    onChange={(e) => {
+                      const kfIndex =
+                        editMode.type === "keyframe" ? editMode.index : -1;
+                      if (kfIndex < 0) return;
                       updateSelectedPolygon((p) => {
                         if (p.group !== "feature") return p;
                         return {
                           ...p,
-                          blendShapes: p.blendShapes.filter((_, j) => j !== i),
+                          yawPitchKeyframes: p.yawPitchKeyframes.map((kf, i) =>
+                            i === kfIndex
+                              ? { ...kf, alpha: Number(e.target.value) }
+                              : kf,
+                          ),
                         };
                       });
-                    }
-                    if (
-                      editMode.type === "blendshape" &&
-                      editMode.index === i
-                    ) {
-                      setEditMode({ type: "base" });
-                    }
-                  }}
-                  className="rounded px-1 text-red-500 hover:bg-red-50"
-                >
-                  ×
-                </button>
+                    }}
+                    className="flex-1"
+                  />
+                  <span className="w-8 text-right tabular-nums">
+                    {selectedFeatureKf.alpha.toFixed(2)}
+                  </span>
+                </label>
               </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => {
-                const id = prompt("ブレンドシェイプ ID");
-                if (!id) return;
-                const deltas: Point2D[] = selectedPolygon.basePoints.map(() => [
-                  0, 0,
-                ]);
-                if (selectedPolygon.group === "outline") {
-                  updateSelectedPolygon((p) => {
-                    if (p.group !== "outline") return p;
-                    return {
-                      ...p,
-                      blendShapes: [...p.blendShapes, { id, deltas }],
-                    };
-                  });
-                } else {
-                  updateSelectedPolygon((p) => {
-                    if (p.group !== "feature") return p;
-                    return {
-                      ...p,
-                      blendShapes: [
-                        ...p.blendShapes,
-                        { id, deltas, alphaDelta: 0 },
-                      ],
-                    };
-                  });
-                }
-                setEditMode({
-                  type: "blendshape",
-                  index: selectedPolygon.blendShapes.length,
-                });
-              }}
-              className="w-full rounded border border-gray-400 border-dashed px-2 py-0.5 text-gray-600 hover:bg-gray-50"
-            >
-              + ブレンドシェイプ追加
-            </button>
-          </div>
-        )}
+            )}
 
-        {/* Blend shape weights (global) */}
-        {allBlendShapeIds.length > 0 && (
-          <div className="max-h-40 shrink-0 space-y-1 overflow-y-auto border-t px-4 py-2 text-sm">
-            <div className="font-semibold">ブレンドシェイプ重み</div>
-            {allBlendShapeIds.map((bsId) => (
-              <label key={bsId} className="flex items-center gap-2">
-                <span className="w-20 shrink-0 truncate">{bsId}</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={blendShapeWeights[bsId] ?? 0}
-                  onChange={(e) =>
-                    setBlendShapeWeights((prev) => ({
-                      ...prev,
-                      [bsId]: Number(e.target.value),
-                    }))
-                  }
-                  className="flex-1"
-                />
-                <span className="w-10 text-right tabular-nums">
-                  {(blendShapeWeights[bsId] ?? 0).toFixed(2)}
-                </span>
-              </label>
-            ))}
-          </div>
-        )}
+            {/* Keyframes */}
+            <div className="space-y-1 border-t px-3 py-2">
+              <div className="font-semibold text-xs">キーフレーム</div>
+              <button
+                type="button"
+                onClick={() => setEditMode({ type: "base" })}
+                className={`w-full rounded px-2 py-0.5 text-left ${editMode.type === "base" ? "bg-blue-100 font-semibold text-blue-800" : "hover:bg-gray-100"}`}
+              >
+                正面 (ベース)
+              </button>
+              {selectedPolygon.yawPitchKeyframes.map((kf, i) => (
+                <div
+                  key={`${kf.angle.yaw},${kf.angle.pitch}`}
+                  className="flex items-center gap-1"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setEditMode({ type: "keyframe", index: i })}
+                    className={`flex-1 rounded px-2 py-0.5 text-left ${editMode.type === "keyframe" && editMode.index === i ? "bg-blue-100 font-semibold text-blue-800" : "hover:bg-gray-100"}`}
+                  >
+                    {getKfAngleLabel(kf)}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteKeyframe(i)}
+                    className="rounded px-1 text-red-500 hover:bg-red-50"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addKeyframe}
+                className="w-full rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
+              >
+                + ({angle.yaw.toFixed(0)}°, {angle.pitch.toFixed(0)}°)
+              </button>
+            </div>
 
-        {/* Display settings */}
-        <div className="shrink-0 space-y-2 border-t px-4 py-2 text-sm">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={referenceVisible}
-              onChange={(e) => setReferenceVisible(e.target.checked)}
-            />
-            <span>参考3Dモデル</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <span className="w-24 shrink-0">参考モデル</span>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={referenceOpacity}
-              onChange={(e) => setReferenceOpacity(Number(e.target.value))}
-              disabled={!referenceVisible}
-              className="flex-1"
-            />
-            <span className="w-10 text-right tabular-nums">
-              {referenceOpacity.toFixed(2)}
-            </span>
-          </label>
-          <label className="flex items-center gap-2">
-            <span className="w-24 shrink-0">顔ポリゴン</span>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={faceOpacity}
-              onChange={(e) => setFaceOpacity(Number(e.target.value))}
-              className="flex-1"
-            />
-            <span className="w-10 text-right tabular-nums">
-              {faceOpacity.toFixed(2)}
-            </span>
-          </label>
-          <div className="text-gray-600">
-            yaw: {angle.yaw.toFixed(1)}°, pitch: {angle.pitch.toFixed(1)}°
-          </div>
-        </div>
+            {/* Blend shapes */}
+            <div className="space-y-1 border-t px-3 py-2">
+              <div className="font-semibold text-xs">ブレンドシェイプ</div>
+              {selectedPolygon.blendShapes.map((bs, i) => (
+                <div key={bs.id} className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setEditMode({ type: "blendshape", index: i })
+                    }
+                    className={`flex-1 rounded px-2 py-0.5 text-left ${editMode.type === "blendshape" && editMode.index === i ? "bg-green-100 font-semibold text-green-800" : "hover:bg-gray-100"}`}
+                  >
+                    {bs.id}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedPolygon.group === "outline")
+                        updateSelectedPolygon((p) => {
+                          if (p.group !== "outline") return p;
+                          return {
+                            ...p,
+                            blendShapes: p.blendShapes.filter(
+                              (_, j) => j !== i,
+                            ),
+                          };
+                        });
+                      else
+                        updateSelectedPolygon((p) => {
+                          if (p.group !== "feature") return p;
+                          return {
+                            ...p,
+                            blendShapes: p.blendShapes.filter(
+                              (_, j) => j !== i,
+                            ),
+                          };
+                        });
+                      if (
+                        editMode.type === "blendshape" &&
+                        editMode.index === i
+                      )
+                        setEditMode({ type: "base" });
+                    }}
+                    className="rounded px-1 text-red-500 hover:bg-red-50"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  const id = prompt("ブレンドシェイプ ID");
+                  if (!id) return;
+                  const deltas: Point2D[] = selectedPolygon.basePoints.map(
+                    () => [0, 0],
+                  );
+                  if (selectedPolygon.group === "outline")
+                    updateSelectedPolygon((p) => {
+                      if (p.group !== "outline") return p;
+                      return {
+                        ...p,
+                        blendShapes: [...p.blendShapes, { id, deltas }],
+                      };
+                    });
+                  else
+                    updateSelectedPolygon((p) => {
+                      if (p.group !== "feature") return p;
+                      return {
+                        ...p,
+                        blendShapes: [
+                          ...p.blendShapes,
+                          { id, deltas, alphaDelta: 0 },
+                        ],
+                      };
+                    });
+                  setEditMode({
+                    type: "blendshape",
+                    index: selectedPolygon.blendShapes.length,
+                  });
+                }}
+                className="w-full rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
+              >
+                + BS追加
+              </button>
+            </div>
+          </>
+        ) : null}
       </div>
+
+      {/* ===== RIGHT PANE: 3D Preview ===== */}
       <div className="relative h-full min-w-0 flex-1">
         <div className="pointer-events-none absolute inset-0">
           <ReferenceScene
