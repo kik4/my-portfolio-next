@@ -786,6 +786,31 @@ export function ModelingTool() {
               }}
             />
           </label>
+          <button
+            type="button"
+            onClick={() => {
+              if (!window.confirm("すべてのデータを初期状態に戻しますか？"))
+                return;
+              setPolygons([createOutlinePolygon(0)]);
+              setFeatureGroups([]);
+              setBlendShapeWeights({});
+              setOutlineFillColor([0.99, 0.88, 0.78, 1]);
+              setOutlineStroke(null);
+              setSelectedPolygonIndex(null);
+              setSelectedGroupIndex(null);
+              setEditMode({ type: "base" });
+              angleSourceRef.current = "slider";
+              setAngle({ yaw: 0, pitch: 0 });
+              setReferenceVisible(true);
+              setReferenceOpacity(0.5);
+              setFaceOpacity(1);
+              setEditorBgColor("#ffffff");
+              setZoom(600);
+            }}
+            className="flex-1 rounded bg-red-100 px-2 py-1 text-red-700 text-xs hover:bg-red-200"
+          >
+            Reset
+          </button>
         </div>
       </div>
 
