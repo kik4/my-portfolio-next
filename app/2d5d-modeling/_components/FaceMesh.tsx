@@ -2,7 +2,7 @@
 
 import { Billboard } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import * as THREE from "three";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
@@ -13,10 +13,9 @@ import type { FaceModel, YawPitch } from "../_lib/types";
 interface FaceMeshProps {
   model: FaceModel;
   angle: YawPitch;
-  opacity: number;
 }
 
-export function FaceMesh({ model, angle, opacity }: FaceMeshProps) {
+export function FaceMesh({ model, angle }: FaceMeshProps) {
   const { size } = useThree();
   const { fillGeometry, strokes } = useMemo(
     () => buildFaceGeometry(model, angle),
@@ -32,13 +31,6 @@ export function FaceMesh({ model, angle, opacity }: FaceMeshProps) {
       }),
     [],
   );
-
-  useEffect(() => {
-    fillMaterial.opacity = opacity;
-    fillMaterial.transparent = opacity < 1;
-    fillMaterial.depthWrite = opacity >= 1;
-    fillMaterial.needsUpdate = true;
-  }, [fillMaterial, opacity]);
 
   const strokeData = useMemo(() => {
     return strokes.map((stroke) => {

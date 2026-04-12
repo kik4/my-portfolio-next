@@ -70,7 +70,7 @@ export function Scene({
     <Canvas
       gl={{ antialias: true, alpha: true }}
       linear
-      style={{ background: "transparent" }}
+      style={{ background: "transparent", opacity: faceOpacity }}
     >
       <OrthographicCamera
         makeDefault
@@ -102,7 +102,7 @@ export function Scene({
         }}
       />
       <ambientLight intensity={2.5} />
-      <FaceMesh model={model} angle={angle} opacity={faceOpacity} />
+      <FaceMesh model={model} angle={angle} />
     </Canvas>
   );
 }
