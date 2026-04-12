@@ -686,6 +686,83 @@ export function ModelingTool() {
                 + ({angle.yaw.toFixed(0)}°, {angle.pitch.toFixed(0)}°)
               </button>
             </div>
+            <div className="space-y-1">
+              <div className="text-gray-600">LayerIndex キーフレーム</div>
+              {(
+                featureGroups[selectedGroupIndex]?.layerIndexKeyframes ?? []
+              ).map((kf, ki) => (
+                <div
+                  key={`li-${kf.angle.yaw},${kf.angle.pitch}`}
+                  className="flex items-center gap-1"
+                >
+                  <span className="flex-1">
+                    ({kf.angle.yaw.toFixed(0)}°, {kf.angle.pitch.toFixed(0)}°)
+                    L={kf.layerIndex}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const idx = selectedGroupIndex;
+                      setFeatureGroups((prev) =>
+                        prev.map((g, i) =>
+                          i === idx
+                            ? {
+                                ...g,
+                                layerIndexKeyframes: (
+                                  g.layerIndexKeyframes ?? []
+                                ).filter((_, j) => j !== ki),
+                              }
+                            : g,
+                        ),
+                      );
+                    }}
+                    className="rounded px-1 text-red-500 hover:bg-red-50"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <div className="flex gap-1">
+                <input
+                  type="number"
+                  id="layerIndexInput"
+                  defaultValue={0}
+                  className="w-16 rounded border px-1"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const input = document.getElementById(
+                      "layerIndexInput",
+                    ) as HTMLInputElement;
+                    const layerIndex = Number(input?.value ?? 0);
+                    const idx = selectedGroupIndex;
+                    setFeatureGroups((prev) =>
+                      prev.map((g, i) =>
+                        i === idx
+                          ? {
+                              ...g,
+                              layerIndexKeyframes: [
+                                ...(g.layerIndexKeyframes ?? []),
+                                {
+                                  angle: {
+                                    yaw: angle.yaw,
+                                    pitch: angle.pitch,
+                                  },
+                                  layerIndex,
+                                },
+                              ],
+                            }
+                          : g,
+                      ),
+                    );
+                  }}
+                  className="flex-1 rounded border border-gray-400 border-dashed px-2 py-0.5 text-gray-600 hover:bg-gray-50"
+                >
+                  + ({angle.yaw.toFixed(0)}°, {angle.pitch.toFixed(0)}°)
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
