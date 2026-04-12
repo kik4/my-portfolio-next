@@ -147,9 +147,10 @@ export function buildFaceGeometry(
       // Collect for merged outline stroke
       outlineSubdivided.push({ points: subdivided, z: z + STROKE_Z_OFFSET });
       if (selectedPolygonId && polygon.id === selectedPolygonId) {
+        // z is set after the loop to ensure it's on top of everything
         selectedOutlineStroke = {
           points: subdivided,
-          z: z + STROKE_Z_OFFSET * 2,
+          z: 0,
         };
       }
     } else if (polygon.strokeColor) {
@@ -210,6 +211,17 @@ export function buildFaceGeometry(
         });
       }
     }
+  }
+
+  // Place selection stroke above everything (all fills, strokes, and outlines)
+  if (selectedOutlineStroke) {
+    const allZ = [
+      ...sorted.map((p) => p.layerIndex * LAYER_Z_STEP + STROKE_Z_OFFSET),
+      ...strokes.map((s) => s.z),
+      ...outlineSubdivided.map((o) => o.z),
+    ];
+    const maxZ = allZ.length > 0 ? Math.max(...allZ) : 0;
+    selectedOutlineStroke.z = maxZ + LAYER_Z_STEP;
   }
 
   const fillGeometry = new THREE.BufferGeometry();
