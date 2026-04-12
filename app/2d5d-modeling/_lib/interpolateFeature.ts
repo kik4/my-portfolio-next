@@ -1,3 +1,7 @@
+import {
+  applyBlendShapePoints,
+  computeBlendShapeAlpha,
+} from "./applyBlendShapes";
 import { buildRBFInterpolator } from "./rbf";
 import type { FeaturePolygon, Mat2, Point2D, YawPitch } from "./types";
 import { MAT2_IDENTITY } from "./types";
@@ -9,25 +13,35 @@ interface FeatureTransform {
 }
 
 /**
- * Interpolate a FeaturePolygon's affine transform and alpha at the given angle.
- * Returns the transformed points and final alpha.
+ * Interpolate a FeaturePolygon.
+ * Flow: basePoints → blend shapes → affine transform (from yaw/pitch keyframes)
+ * Alpha: baseAlpha × keyframe alpha × blend shape alpha
  */
 export function interpolateFeature(
   polygon: FeaturePolygon,
   angle: YawPitch,
+  weights: Record<string, number>,
 ): { points: Point2D[]; alpha: number } {
-  const { basePoints, baseAlpha, yawPitchKeyframes } = polygon;
+  // 1. Apply blend shapes to base
+  const blended = applyBlendShapePoints(
+    polygon.basePoints,
+    polygon.blendShapes,
+    weights,
+  );
 
+  // 2. Compute blend shape alpha
+  const blendAlpha = computeBlendShapeAlpha(polygon.blendShapes, weights);
+
+  // 3. Interpolate affine transform from keyframes
   let transform: FeatureTransform = {
     position: [0, 0],
     matrix: MAT2_IDENTITY,
     alpha: 1,
   };
 
-  if (yawPitchKeyframes.length > 0) {
-    // RBF interpolate: position(2) + matrix(4) + alpha(1) = 7 values
+  if (polygon.yawPitchKeyframes.length > 0) {
     const interpolator = buildRBFInterpolator(
-      yawPitchKeyframes.map((kf) => ({
+      polygon.yawPitchKeyframes.map((kf) => ({
         yaw: kf.angle.yaw,
         pitch: kf.angle.pitch,
         values: [
@@ -50,16 +64,16 @@ export function interpolateFeature(
     };
   }
 
+  // 4. Apply affine transform
   const [m00, m01, m10, m11] = transform.matrix;
   const [tx, ty] = transform.position;
-
-  const points: Point2D[] = basePoints.map(([x, y]) => [
+  const points: Point2D[] = blended.map(([x, y]) => [
     m00 * x + m01 * y + tx,
     m10 * x + m11 * y + ty,
   ]);
 
-  return {
-    points,
-    alpha: baseAlpha * transform.alpha,
-  };
+  // 5. Combine alpha: baseAlpha × keyframe alpha × blend alpha
+  const alpha = polygon.baseAlpha * transform.alpha * blendAlpha;
+
+  return { points, alpha: Math.max(0, Math.min(1, alpha)) };
 }

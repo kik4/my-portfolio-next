@@ -16,6 +16,7 @@ export function buildFaceGeometry(
   const colors: number[] = [];
   const indices: number[] = [];
   let vertexOffset = 0;
+  const { blendShapeWeights } = model;
 
   const sorted = [...model.polygons].sort(
     (a, b) => a.layerIndex - b.layerIndex,
@@ -26,14 +27,13 @@ export function buildFaceGeometry(
     let alpha = 1;
 
     if (polygon.group === "outline") {
-      points = interpolateOutlinePoints(polygon, angle);
+      points = interpolateOutlinePoints(polygon, angle, blendShapeWeights);
     } else if (polygon.group === "feature") {
-      const result = interpolateFeature(polygon, angle);
+      const result = interpolateFeature(polygon, angle, blendShapeWeights);
       points = result.points;
       alpha = result.alpha;
     }
 
-    // Skip fully transparent polygons
     if (alpha <= 0) continue;
 
     const subdivided = subdivideClosed(points, SUBDIVISION_SEGMENTS);

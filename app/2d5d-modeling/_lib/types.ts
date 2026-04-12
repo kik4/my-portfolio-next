@@ -8,9 +8,22 @@ export interface YawPitch {
   pitch: number;
 }
 
+// Blend shapes
+export interface OutlineBlendShape {
+  id: string; // e.g. "cheek_puff"
+  deltas: Point2D[]; // same length as basePoints
+}
+
+export interface FeatureBlendShape {
+  id: string; // e.g. "blink", "smile"
+  deltas: Point2D[]; // same length as basePoints
+  alphaDelta: number; // additive alpha change
+}
+
+// Outline polygon
 export interface OutlineKeyframe {
   angle: YawPitch;
-  deltas: Point2D[]; // same length as basePoints, offset from base
+  deltas: Point2D[];
 }
 
 export interface OutlinePolygon {
@@ -20,13 +33,15 @@ export interface OutlinePolygon {
   layerIndex: number;
   fillColor: ColorRGBA;
   yawPitchKeyframes: OutlineKeyframe[];
+  blendShapes: OutlineBlendShape[];
 }
 
+// Feature polygon
 export interface FeatureKeyframe {
   angle: YawPitch;
-  position: Point2D; // translation
-  matrix: Mat2; // 2x2 affine
-  alpha: number; // opacity at this angle (0-1)
+  position: Point2D;
+  matrix: Mat2;
+  alpha: number;
 }
 
 export interface FeaturePolygon {
@@ -37,12 +52,14 @@ export interface FeaturePolygon {
   fillColor: ColorRGBA;
   baseAlpha: number;
   yawPitchKeyframes: FeatureKeyframe[];
+  blendShapes: FeatureBlendShape[];
 }
 
 export type Polygon = OutlinePolygon | FeaturePolygon;
 
 export interface FaceModel {
   polygons: Polygon[];
+  blendShapeWeights: Record<string, number>;
 }
 
 // Identity matrix for Mat2

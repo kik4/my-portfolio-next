@@ -33,6 +33,7 @@ function createOutlinePolygon(id: string, layerIndex: number): OutlinePolygon {
     layerIndex,
     fillColor: [0.99, 0.88, 0.78, 1],
     yawPitchKeyframes: [],
+    blendShapes: [],
   };
 }
 
@@ -45,10 +46,14 @@ function createFeaturePolygon(id: string, layerIndex: number): FeaturePolygon {
     fillColor: [0.2, 0.2, 0.2, 1],
     baseAlpha: 1,
     yawPitchKeyframes: [],
+    blendShapes: [],
   };
 }
 
-type EditMode = { type: "base" } | { type: "keyframe"; index: number };
+type EditMode =
+  | { type: "base" }
+  | { type: "keyframe"; index: number }
+  | { type: "blendshape"; index: number };
 
 function hexToRgba(hex: string): [number, number, number, number] {
   const r = Number.parseInt(hex.slice(1, 3), 16) / 255;
@@ -76,6 +81,10 @@ export function ModelingTool() {
   ]);
   const [selectedPolygonIndex, setSelectedPolygonIndex] = useState(0);
   const [editMode, setEditMode] = useState<EditMode>({ type: "base" });
+
+  const [blendShapeWeights, setBlendShapeWeights] = useState<
+    Record<string, number>
+  >({});
 
   const [referenceVisible, setReferenceVisible] = useState(true);
   const [referenceOpacity, setReferenceOpacity] = useState(0.5);
@@ -108,6 +117,18 @@ export function ModelingTool() {
     const { basePoints } = selectedPolygon;
     if (editMode.type === "base") return basePoints;
 
+    if (editMode.type === "blendshape") {
+      const bs = selectedPolygon.blendShapes[editMode.index];
+      if (!bs) return basePoints;
+      return basePoints.map(
+        ([bx, by], i) =>
+          [
+            bx + (bs.deltas[i]?.[0] ?? 0),
+            by + (bs.deltas[i]?.[1] ?? 0),
+          ] as Point2D,
+      );
+    }
+
     if (selectedPolygon.group === "outline") {
       const kf = selectedPolygon.yawPitchKeyframes[editMode.index];
       if (!kf) return basePoints;
@@ -123,7 +144,6 @@ export function ModelingTool() {
     if (selectedPolygon.group === "feature") {
       const kf = selectedPolygon.yawPitchKeyframes[editMode.index];
       if (!kf) return basePoints;
-      // Show base points offset by keyframe position
       const [tx, ty] = kf.position;
       return basePoints.map(([bx, by]) => [bx + tx, by + ty] as Point2D);
     }
@@ -136,10 +156,36 @@ export function ModelingTool() {
       if (!selectedPolygon) return;
 
       if (editMode.type === "base") {
-        if (selectedPolygon.group === "feature") {
-          updateSelectedPolygon((p) => ({ ...p, basePoints: newPoints }));
+        updateSelectedPolygon((p) => ({ ...p, basePoints: newPoints }));
+        return;
+      }
+
+      if (editMode.type === "blendshape") {
+        const bsIndex = editMode.index;
+        const deltas: Point2D[] = newPoints.map(([px, py], j) => [
+          px - selectedPolygon.basePoints[j][0],
+          py - selectedPolygon.basePoints[j][1],
+        ]);
+        if (selectedPolygon.group === "outline") {
+          updateSelectedPolygon((p) => {
+            if (p.group !== "outline") return p;
+            return {
+              ...p,
+              blendShapes: p.blendShapes.map((bs, i) =>
+                i === bsIndex ? { ...bs, deltas } : bs,
+              ),
+            };
+          });
         } else {
-          updateSelectedPolygon((p) => ({ ...p, basePoints: newPoints }));
+          updateSelectedPolygon((p) => {
+            if (p.group !== "feature") return p;
+            return {
+              ...p,
+              blendShapes: p.blendShapes.map((bs, i) =>
+                i === bsIndex ? { ...bs, deltas } : bs,
+              ),
+            };
+          });
         }
         return;
       }
@@ -293,7 +339,17 @@ export function ModelingTool() {
       ? selectedPolygon.yawPitchKeyframes[editMode.index]
       : null;
 
-  const model: FaceModel = { polygons };
+  const allBlendShapeIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const p of polygons) {
+      for (const bs of p.blendShapes) {
+        ids.add(bs.id);
+      }
+    }
+    return [...ids];
+  }, [polygons]);
+
+  const model: FaceModel = { polygons, blendShapeWeights };
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -423,7 +479,9 @@ export function ModelingTool() {
         <div className="border-b px-4 py-1 font-semibold text-sm">
           {editMode.type === "base"
             ? "正面ベース点列"
-            : `KF ${editMode.index + 1} ${getKfAngleLabel(selectedPolygon?.yawPitchKeyframes[editMode.index] as OutlineKeyframe | FeatureKeyframe)}`}
+            : editMode.type === "blendshape"
+              ? `BS: ${selectedPolygon?.blendShapes[editMode.index]?.id ?? ""}`
+              : `KF ${editMode.index + 1} ${getKfAngleLabel(selectedPolygon?.yawPitchKeyframes[editMode.index] as OutlineKeyframe | FeatureKeyframe)}`}
         </div>
         <div className="min-h-0 flex-1">
           <PointEditor
@@ -516,6 +574,125 @@ export function ModelingTool() {
             + ({angle.yaw.toFixed(0)}°, {angle.pitch.toFixed(0)}°)
           </button>
         </div>
+
+        {/* Blend shapes for selected polygon */}
+        {selectedPolygon && (
+          <div className="max-h-40 shrink-0 space-y-1 overflow-y-auto border-t px-4 py-2 text-sm">
+            <div className="font-semibold">ブレンドシェイプ</div>
+            {selectedPolygon.blendShapes.map((bs, i) => (
+              <div key={bs.id} className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setEditMode({ type: "blendshape", index: i })}
+                  className={`flex-1 rounded px-2 py-0.5 text-left ${
+                    editMode.type === "blendshape" && editMode.index === i
+                      ? "bg-green-100 font-semibold text-green-800"
+                      : "hover:bg-gray-100"
+                  }`}
+                >
+                  {bs.id}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedPolygon.group === "outline") {
+                      updateSelectedPolygon((p) => {
+                        if (p.group !== "outline") return p;
+                        return {
+                          ...p,
+                          blendShapes: p.blendShapes.filter((_, j) => j !== i),
+                        };
+                      });
+                    } else {
+                      updateSelectedPolygon((p) => {
+                        if (p.group !== "feature") return p;
+                        return {
+                          ...p,
+                          blendShapes: p.blendShapes.filter((_, j) => j !== i),
+                        };
+                      });
+                    }
+                    if (
+                      editMode.type === "blendshape" &&
+                      editMode.index === i
+                    ) {
+                      setEditMode({ type: "base" });
+                    }
+                  }}
+                  className="rounded px-1 text-red-500 hover:bg-red-50"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                const id = prompt("ブレンドシェイプ ID");
+                if (!id) return;
+                const deltas: Point2D[] = selectedPolygon.basePoints.map(() => [
+                  0, 0,
+                ]);
+                if (selectedPolygon.group === "outline") {
+                  updateSelectedPolygon((p) => {
+                    if (p.group !== "outline") return p;
+                    return {
+                      ...p,
+                      blendShapes: [...p.blendShapes, { id, deltas }],
+                    };
+                  });
+                } else {
+                  updateSelectedPolygon((p) => {
+                    if (p.group !== "feature") return p;
+                    return {
+                      ...p,
+                      blendShapes: [
+                        ...p.blendShapes,
+                        { id, deltas, alphaDelta: 0 },
+                      ],
+                    };
+                  });
+                }
+                setEditMode({
+                  type: "blendshape",
+                  index: selectedPolygon.blendShapes.length,
+                });
+              }}
+              className="w-full rounded border border-gray-400 border-dashed px-2 py-0.5 text-gray-600 hover:bg-gray-50"
+            >
+              + ブレンドシェイプ追加
+            </button>
+          </div>
+        )}
+
+        {/* Blend shape weights (global) */}
+        {allBlendShapeIds.length > 0 && (
+          <div className="max-h-40 shrink-0 space-y-1 overflow-y-auto border-t px-4 py-2 text-sm">
+            <div className="font-semibold">ブレンドシェイプ重み</div>
+            {allBlendShapeIds.map((bsId) => (
+              <label key={bsId} className="flex items-center gap-2">
+                <span className="w-20 shrink-0 truncate">{bsId}</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={blendShapeWeights[bsId] ?? 0}
+                  onChange={(e) =>
+                    setBlendShapeWeights((prev) => ({
+                      ...prev,
+                      [bsId]: Number(e.target.value),
+                    }))
+                  }
+                  className="flex-1"
+                />
+                <span className="w-10 text-right tabular-nums">
+                  {(blendShapeWeights[bsId] ?? 0).toFixed(2)}
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
 
         {/* Display settings */}
         <div className="shrink-0 space-y-2 border-t px-4 py-2 text-sm">
