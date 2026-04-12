@@ -84,6 +84,9 @@ export function ModelingTool() {
   const [editMode, setEditMode] = useState<EditMode>({ type: "base" });
 
   const [featureGroups, setFeatureGroups] = useState<FeatureGroup[]>([]);
+  const [selectedGroupIndex, setSelectedGroupIndex] = useState<number | null>(
+    null,
+  );
   const [blendShapeWeights, setBlendShapeWeights] = useState<
     Record<string, number>
   >({});
@@ -416,12 +419,23 @@ export function ModelingTool() {
           <div className="font-semibold">グループ</div>
           {featureGroups.map((g, i) => (
             <div key={g.id} className="flex items-center gap-1">
-              <span className="flex-1 truncate">{g.id}</span>
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedGroupIndex(selectedGroupIndex === i ? null : i)
+                }
+                className={`flex-1 truncate rounded px-2 py-0.5 text-left ${
+                  selectedGroupIndex === i
+                    ? "bg-purple-100 font-semibold text-purple-800"
+                    : "hover:bg-gray-100"
+                }`}
+              >
+                {g.id}
+              </button>
               <button
                 type="button"
                 onClick={() => {
                   setFeatureGroups((prev) => prev.filter((_, j) => j !== i));
-                  // Unassign polygons from deleted group
                   setPolygons((prev) =>
                     prev.map((p) =>
                       p.group === "feature" && p.groupId === g.id
@@ -429,6 +443,12 @@ export function ModelingTool() {
                         : p,
                     ),
                   );
+                  if (selectedGroupIndex === i) setSelectedGroupIndex(null);
+                  else if (
+                    selectedGroupIndex !== null &&
+                    selectedGroupIndex > i
+                  )
+                    setSelectedGroupIndex(selectedGroupIndex - 1);
                 }}
                 className="rounded px-1 text-red-500 hover:bg-red-50"
               >
@@ -447,18 +467,227 @@ export function ModelingTool() {
                   id,
                   yawPitchKeyframes: [],
                   visibility: {
-                    yawRange: [-180, 180],
-                    pitchRange: [-90, 90],
+                    yawRange: [-180, 180] as [number, number],
+                    pitchRange: [-90, 90] as [number, number],
                   },
                   baseLayerIndex: 0,
                 },
               ]);
+              setSelectedGroupIndex(featureGroups.length);
             }}
             className="w-full rounded border border-gray-400 border-dashed px-2 py-0.5 text-gray-600 hover:bg-gray-50"
           >
             + グループ追加
           </button>
         </div>
+
+        {/* Selected group details */}
+        {selectedGroupIndex !== null && featureGroups[selectedGroupIndex] && (
+          <div className="shrink-0 space-y-2 border-b px-4 py-2 text-sm">
+            <div className="font-semibold">
+              グループ: {featureGroups[selectedGroupIndex].id}
+            </div>
+            <label className="flex items-center gap-2">
+              <span className="w-20 shrink-0">基本レイヤー</span>
+              <input
+                type="number"
+                value={featureGroups[selectedGroupIndex].baseLayerIndex}
+                onChange={(e) => {
+                  const idx = selectedGroupIndex;
+                  setFeatureGroups((prev) =>
+                    prev.map((g, i) =>
+                      i === idx
+                        ? { ...g, baseLayerIndex: Number(e.target.value) }
+                        : g,
+                    ),
+                  );
+                }}
+                className="w-16 rounded border px-1"
+              />
+            </label>
+            <div className="space-y-1">
+              <div className="text-gray-600">Visibility (yaw)</div>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={
+                    featureGroups[selectedGroupIndex].visibility.yawRange[0]
+                  }
+                  onChange={(e) => {
+                    const idx = selectedGroupIndex;
+                    setFeatureGroups((prev) =>
+                      prev.map((g, i) =>
+                        i === idx
+                          ? {
+                              ...g,
+                              visibility: {
+                                ...g.visibility,
+                                yawRange: [
+                                  Number(e.target.value),
+                                  g.visibility.yawRange[1],
+                                ],
+                              },
+                            }
+                          : g,
+                      ),
+                    );
+                  }}
+                  className="w-16 rounded border px-1"
+                />
+                <span>〜</span>
+                <input
+                  type="number"
+                  value={
+                    featureGroups[selectedGroupIndex].visibility.yawRange[1]
+                  }
+                  onChange={(e) => {
+                    const idx = selectedGroupIndex;
+                    setFeatureGroups((prev) =>
+                      prev.map((g, i) =>
+                        i === idx
+                          ? {
+                              ...g,
+                              visibility: {
+                                ...g.visibility,
+                                yawRange: [
+                                  g.visibility.yawRange[0],
+                                  Number(e.target.value),
+                                ],
+                              },
+                            }
+                          : g,
+                      ),
+                    );
+                  }}
+                  className="w-16 rounded border px-1"
+                />
+              </div>
+              <div className="text-gray-600">Visibility (pitch)</div>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={
+                    featureGroups[selectedGroupIndex].visibility.pitchRange[0]
+                  }
+                  onChange={(e) => {
+                    const idx = selectedGroupIndex;
+                    setFeatureGroups((prev) =>
+                      prev.map((g, i) =>
+                        i === idx
+                          ? {
+                              ...g,
+                              visibility: {
+                                ...g.visibility,
+                                pitchRange: [
+                                  Number(e.target.value),
+                                  g.visibility.pitchRange[1],
+                                ],
+                              },
+                            }
+                          : g,
+                      ),
+                    );
+                  }}
+                  className="w-16 rounded border px-1"
+                />
+                <span>〜</span>
+                <input
+                  type="number"
+                  value={
+                    featureGroups[selectedGroupIndex].visibility.pitchRange[1]
+                  }
+                  onChange={(e) => {
+                    const idx = selectedGroupIndex;
+                    setFeatureGroups((prev) =>
+                      prev.map((g, i) =>
+                        i === idx
+                          ? {
+                              ...g,
+                              visibility: {
+                                ...g.visibility,
+                                pitchRange: [
+                                  g.visibility.pitchRange[0],
+                                  Number(e.target.value),
+                                ],
+                              },
+                            }
+                          : g,
+                      ),
+                    );
+                  }}
+                  className="w-16 rounded border px-1"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-gray-600">グループ キーフレーム</div>
+              {featureGroups[selectedGroupIndex].yawPitchKeyframes.map(
+                (kf, ki) => (
+                  <div
+                    key={`${kf.angle.yaw},${kf.angle.pitch}`}
+                    className="flex items-center gap-1"
+                  >
+                    <span className="flex-1">
+                      ({kf.angle.yaw.toFixed(0)}°, {kf.angle.pitch.toFixed(0)}°)
+                      pos=
+                      {kf.position[0].toFixed(2)},{kf.position[1].toFixed(2)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const idx = selectedGroupIndex;
+                        setFeatureGroups((prev) =>
+                          prev.map((g, i) =>
+                            i === idx
+                              ? {
+                                  ...g,
+                                  yawPitchKeyframes: g.yawPitchKeyframes.filter(
+                                    (_, j) => j !== ki,
+                                  ),
+                                }
+                              : g,
+                          ),
+                        );
+                      }}
+                      className="rounded px-1 text-red-500 hover:bg-red-50"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ),
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  const idx = selectedGroupIndex;
+                  setFeatureGroups((prev) =>
+                    prev.map((g, i) =>
+                      i === idx
+                        ? {
+                            ...g,
+                            yawPitchKeyframes: [
+                              ...g.yawPitchKeyframes,
+                              {
+                                angle: {
+                                  yaw: angle.yaw,
+                                  pitch: angle.pitch,
+                                },
+                                position: [0, 0] as Point2D,
+                                matrix: MAT2_IDENTITY,
+                              },
+                            ],
+                          }
+                        : g,
+                    ),
+                  );
+                }}
+                className="w-full rounded border border-gray-400 border-dashed px-2 py-0.5 text-gray-600 hover:bg-gray-50"
+              >
+                + ({angle.yaw.toFixed(0)}°, {angle.pitch.toFixed(0)}°)
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Polygon properties */}
         {selectedPolygon && (
