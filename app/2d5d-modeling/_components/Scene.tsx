@@ -3,11 +3,12 @@
 import { OrbitControls, OrthographicCamera } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import * as THREE from "three";
-import type { FaceModel } from "../_lib/types";
+import type { FaceModel, YawPitch } from "../_lib/types";
 import { FaceMesh } from "./FaceMesh";
 
 interface SceneProps {
   model: FaceModel;
+  angle: YawPitch;
   faceOpacity: number;
   zoom: number;
   onAngleChange: (yaw: number, pitch: number) => void;
@@ -18,6 +19,7 @@ const CAMERA_DISTANCE = 1;
 
 export function Scene({
   model,
+  angle,
   faceOpacity,
   zoom,
   onAngleChange,
@@ -52,7 +54,7 @@ export function Scene({
         }}
       />
       <ambientLight intensity={2.5} />
-      <FaceMesh model={model} opacity={faceOpacity} />
+      <FaceMesh model={model} angle={angle} opacity={faceOpacity} />
     </Canvas>
   );
 }

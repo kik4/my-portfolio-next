@@ -1,12 +1,16 @@
 import * as THREE from "three";
 import { subdivideClosed } from "./catmullRom";
+import { interpolateOutlinePoints } from "./interpolateOutline";
 import { triangulate } from "./triangulate";
-import type { FaceModel } from "./types";
+import type { FaceModel, YawPitch } from "./types";
 
 const SUBDIVISION_SEGMENTS = 8;
 const LAYER_Z_STEP = 0.001;
 
-export function buildFaceGeometry(model: FaceModel): THREE.BufferGeometry {
+export function buildFaceGeometry(
+  model: FaceModel,
+  angle: YawPitch,
+): THREE.BufferGeometry {
   const positions: number[] = [];
   const colors: number[] = [];
   const indices: number[] = [];
@@ -17,10 +21,13 @@ export function buildFaceGeometry(model: FaceModel): THREE.BufferGeometry {
   );
 
   for (const polygon of sorted) {
-    const subdivided = subdivideClosed(
-      polygon.basePoints,
-      SUBDIVISION_SEGMENTS,
-    );
+    let points = polygon.basePoints;
+
+    if (polygon.group === "outline") {
+      points = interpolateOutlinePoints(polygon, angle);
+    }
+
+    const subdivided = subdivideClosed(points, SUBDIVISION_SEGMENTS);
     const tris = triangulate(subdivided);
 
     const z = polygon.layerIndex * LAYER_Z_STEP;

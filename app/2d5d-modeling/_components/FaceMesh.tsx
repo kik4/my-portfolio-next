@@ -4,15 +4,19 @@ import { Billboard } from "@react-three/drei";
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { buildFaceGeometry } from "../_lib/buildGeometry";
-import type { FaceModel } from "../_lib/types";
+import type { FaceModel, YawPitch } from "../_lib/types";
 
 interface FaceMeshProps {
   model: FaceModel;
+  angle: YawPitch;
   opacity: number;
 }
 
-export function FaceMesh({ model, opacity }: FaceMeshProps) {
-  const geometry = useMemo(() => buildFaceGeometry(model), [model]);
+export function FaceMesh({ model, angle, opacity }: FaceMeshProps) {
+  const geometry = useMemo(
+    () => buildFaceGeometry(model, angle),
+    [model, angle],
+  );
 
   const material = useMemo(
     () =>
