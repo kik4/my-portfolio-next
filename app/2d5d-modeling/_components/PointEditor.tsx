@@ -40,10 +40,19 @@ export function PointEditor({
   fillColor,
   backgroundPolygons = [],
   onChange,
-  viewSize = 0.5,
+  viewSize: initialViewSize = 0.5,
 }: PointEditorProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [drag, setDrag] = useState<DragState>(null);
+  const [viewSize, setViewSize] = useState(initialViewSize);
+
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    setViewSize((prev) => {
+      const factor = e.deltaY > 0 ? 1.1 : 0.9;
+      return Math.max(0.05, Math.min(5, prev * factor));
+    });
+  }, []);
 
   const toScreen = useCallback(
     (p: Point2D): [number, number] => {
@@ -186,6 +195,7 @@ export function PointEditor({
       ref={svgRef}
       viewBox={`0 0 ${CANVAS_PX} ${CANVAS_PX}`}
       className="h-full w-full touch-none select-none bg-white"
+      onWheel={handleWheel}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
