@@ -38,6 +38,8 @@ export function interpolateFeature(
   let kfAlpha = 1;
 
   if (polygon.yawPitchKeyframes.length > 0) {
+    // Interpolate deltas from defaults to avoid Gaussian decay
+    // position default=0, matrix default=identity, alpha default=1
     const interpolator = buildRBFInterpolator(
       polygon.yawPitchKeyframes.map((kf) => ({
         yaw: kf.angle.yaw,
@@ -45,19 +47,19 @@ export function interpolateFeature(
         values: [
           kf.position[0],
           kf.position[1],
-          kf.matrix[0],
+          kf.matrix[0] - 1, // delta from identity
           kf.matrix[1],
           kf.matrix[2],
-          kf.matrix[3],
-          kf.alpha,
+          kf.matrix[3] - 1, // delta from identity
+          kf.alpha - 1, // delta from 1
         ],
       })),
     );
 
     const v = interpolator.interpolate(angle.yaw, angle.pitch);
     position = [v[0], v[1]];
-    matrix = [v[2], v[3], v[4], v[5]];
-    kfAlpha = Math.max(0, Math.min(1, v[6]));
+    matrix = [v[2] + 1, v[3], v[4], v[5] + 1]; // add identity back
+    kfAlpha = Math.max(0, Math.min(1, v[6] + 1)); // add 1 back
   }
 
   const alpha = Math.max(

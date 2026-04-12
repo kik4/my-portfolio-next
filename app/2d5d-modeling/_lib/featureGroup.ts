@@ -32,6 +32,7 @@ export function interpolateGroupTransform(
     return { position: [0, 0], matrix: MAT2_IDENTITY };
   }
 
+  // Interpolate deltas from identity to avoid Gaussian decay shrinking the matrix
   const interpolator = buildRBFInterpolator(
     group.yawPitchKeyframes.map((kf) => ({
       yaw: kf.angle.yaw,
@@ -39,10 +40,10 @@ export function interpolateGroupTransform(
       values: [
         kf.position[0],
         kf.position[1],
-        kf.matrix[0],
+        kf.matrix[0] - 1, // delta from identity
         kf.matrix[1],
         kf.matrix[2],
-        kf.matrix[3],
+        kf.matrix[3] - 1, // delta from identity
       ],
     })),
   );
@@ -50,7 +51,7 @@ export function interpolateGroupTransform(
   const v = interpolator.interpolate(angle.yaw, angle.pitch);
   return {
     position: [v[0], v[1]],
-    matrix: [v[2], v[3], v[4], v[5]],
+    matrix: [v[2] + 1, v[3], v[4], v[5] + 1], // add identity back
   };
 }
 
