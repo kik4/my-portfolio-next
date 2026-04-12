@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { subdivideClosed } from "./catmullRom";
+import { interpolateFeature } from "./interpolateFeature";
 import { interpolateOutlinePoints } from "./interpolateOutline";
 import { triangulate } from "./triangulate";
 import type { FaceModel, YawPitch } from "./types";
@@ -22,20 +23,28 @@ export function buildFaceGeometry(
 
   for (const polygon of sorted) {
     let points = polygon.basePoints;
+    let alpha = 1;
 
     if (polygon.group === "outline") {
       points = interpolateOutlinePoints(polygon, angle);
+    } else if (polygon.group === "feature") {
+      const result = interpolateFeature(polygon, angle);
+      points = result.points;
+      alpha = result.alpha;
     }
+
+    // Skip fully transparent polygons
+    if (alpha <= 0) continue;
 
     const subdivided = subdivideClosed(points, SUBDIVISION_SEGMENTS);
     const tris = triangulate(subdivided);
 
     const z = polygon.layerIndex * LAYER_Z_STEP;
-    const [r, g, b, a] = polygon.fillColor;
+    const [r, g, b] = polygon.fillColor;
 
     for (const [x, y] of subdivided) {
       positions.push(x, y, z);
-      colors.push(r, g, b, a);
+      colors.push(r * alpha, g * alpha, b * alpha);
     }
     for (const idx of tris) {
       indices.push(idx + vertexOffset);
@@ -48,7 +57,7 @@ export function buildFaceGeometry(
     "position",
     new THREE.Float32BufferAttribute(positions, 3),
   );
-  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 4));
+  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
   geometry.setIndex(indices);
   geometry.computeBoundingSphere();
   return geometry;

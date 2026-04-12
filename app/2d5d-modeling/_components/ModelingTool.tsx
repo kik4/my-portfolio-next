@@ -3,11 +3,15 @@
 import { useCallback, useMemo, useState } from "react";
 import type {
   FaceModel,
+  FeatureKeyframe,
+  FeaturePolygon,
   OutlineKeyframe,
   OutlinePolygon,
   Point2D,
+  Polygon,
   YawPitch,
 } from "../_lib/types";
+import { MAT2_IDENTITY } from "../_lib/types";
 import { PointEditor } from "./PointEditor";
 import { ReferenceScene } from "./ReferenceScene";
 import { Scene } from "./Scene";
@@ -21,13 +25,25 @@ function createEllipsePoints(rx: number, ry: number, n: number): Point2D[] {
   return points;
 }
 
-function createDefaultPolygon(id: string, layerIndex: number): OutlinePolygon {
+function createOutlinePolygon(id: string, layerIndex: number): OutlinePolygon {
   return {
     id,
     group: "outline",
     basePoints: createEllipsePoints(0.3, 0.4, 16),
     layerIndex,
     fillColor: [0.99, 0.88, 0.78, 1],
+    yawPitchKeyframes: [],
+  };
+}
+
+function createFeaturePolygon(id: string, layerIndex: number): FeaturePolygon {
+  return {
+    id,
+    group: "feature",
+    basePoints: createEllipsePoints(0.05, 0.03, 8),
+    layerIndex,
+    fillColor: [0.2, 0.2, 0.2, 1],
+    baseAlpha: 1,
     yawPitchKeyframes: [],
   };
 }
@@ -55,8 +71,8 @@ function rgbaToHex(c: [number, number, number, number]): string {
 }
 
 export function ModelingTool() {
-  const [polygons, setPolygons] = useState<OutlinePolygon[]>(() => [
-    createDefaultPolygon("faceOutline", 0),
+  const [polygons, setPolygons] = useState<Polygon[]>(() => [
+    createOutlinePolygon("faceOutline", 0),
   ]);
   const [selectedPolygonIndex, setSelectedPolygonIndex] = useState(0);
   const [editMode, setEditMode] = useState<EditMode>({ type: "base" });
@@ -78,7 +94,7 @@ export function ModelingTool() {
   const selectedPolygon = polygons[selectedPolygonIndex];
 
   const updateSelectedPolygon = useCallback(
-    (updater: (p: OutlinePolygon) => OutlinePolygon) => {
+    (updater: (p: Polygon) => Polygon) => {
       setPolygons((prev) =>
         prev.map((p, i) => (i === selectedPolygonIndex ? updater(p) : p)),
       );
@@ -89,52 +105,125 @@ export function ModelingTool() {
   // Points shown in editor
   const editorPoints = useMemo(() => {
     if (!selectedPolygon) return [];
-    const { basePoints, yawPitchKeyframes } = selectedPolygon;
+    const { basePoints } = selectedPolygon;
     if (editMode.type === "base") return basePoints;
-    const kf = yawPitchKeyframes[editMode.index];
-    if (!kf) return basePoints;
-    return basePoints.map(
-      ([bx, by], i) =>
-        [
-          bx + (kf.deltas[i]?.[0] ?? 0),
-          by + (kf.deltas[i]?.[1] ?? 0),
-        ] as Point2D,
-    );
+
+    if (selectedPolygon.group === "outline") {
+      const kf = selectedPolygon.yawPitchKeyframes[editMode.index];
+      if (!kf) return basePoints;
+      return basePoints.map(
+        ([bx, by], i) =>
+          [
+            bx + (kf.deltas[i]?.[0] ?? 0),
+            by + (kf.deltas[i]?.[1] ?? 0),
+          ] as Point2D,
+      );
+    }
+
+    if (selectedPolygon.group === "feature") {
+      const kf = selectedPolygon.yawPitchKeyframes[editMode.index];
+      if (!kf) return basePoints;
+      // Show base points offset by keyframe position
+      const [tx, ty] = kf.position;
+      return basePoints.map(([bx, by]) => [bx + tx, by + ty] as Point2D);
+    }
+
+    return basePoints;
   }, [editMode, selectedPolygon]);
 
   const handleEditorChange = useCallback(
     (newPoints: Point2D[]) => {
+      if (!selectedPolygon) return;
+
       if (editMode.type === "base") {
-        updateSelectedPolygon((p) => ({ ...p, basePoints: newPoints }));
-      } else {
+        if (selectedPolygon.group === "feature") {
+          updateSelectedPolygon((p) => ({ ...p, basePoints: newPoints }));
+        } else {
+          updateSelectedPolygon((p) => ({ ...p, basePoints: newPoints }));
+        }
+        return;
+      }
+
+      if (selectedPolygon.group === "outline") {
         const kfIndex = editMode.index;
-        updateSelectedPolygon((p) => ({
-          ...p,
-          yawPitchKeyframes: p.yawPitchKeyframes.map((kf, i) => {
-            if (i !== kfIndex) return kf;
-            const deltas: Point2D[] = newPoints.map(([px, py], j) => [
-              px - p.basePoints[j][0],
-              py - p.basePoints[j][1],
-            ]);
-            return { ...kf, deltas };
-          }),
-        }));
+        updateSelectedPolygon((p) => {
+          if (p.group !== "outline") return p;
+          return {
+            ...p,
+            yawPitchKeyframes: p.yawPitchKeyframes.map((kf, i) => {
+              if (i !== kfIndex) return kf;
+              const deltas: Point2D[] = newPoints.map(([px, py], j) => [
+                px - p.basePoints[j][0],
+                py - p.basePoints[j][1],
+              ]);
+              return { ...kf, deltas };
+            }),
+          };
+        });
+      }
+
+      if (selectedPolygon.group === "feature") {
+        // Dragging in keyframe mode moves position
+        const kfIndex = editMode.index;
+        const baseCenter: Point2D = [
+          selectedPolygon.basePoints.reduce((s, p) => s + p[0], 0) /
+            selectedPolygon.basePoints.length,
+          selectedPolygon.basePoints.reduce((s, p) => s + p[1], 0) /
+            selectedPolygon.basePoints.length,
+        ];
+        const newCenter: Point2D = [
+          newPoints.reduce((s, p) => s + p[0], 0) / newPoints.length,
+          newPoints.reduce((s, p) => s + p[1], 0) / newPoints.length,
+        ];
+        updateSelectedPolygon((p) => {
+          if (p.group !== "feature") return p;
+          return {
+            ...p,
+            yawPitchKeyframes: p.yawPitchKeyframes.map((kf, i) => {
+              if (i !== kfIndex) return kf;
+              return {
+                ...kf,
+                position: [
+                  newCenter[0] - baseCenter[0],
+                  newCenter[1] - baseCenter[1],
+                ] as Point2D,
+              };
+            }),
+          };
+        });
       }
     },
-    [editMode, updateSelectedPolygon],
+    [editMode, selectedPolygon, updateSelectedPolygon],
   );
 
   const addKeyframe = useCallback(() => {
     if (!selectedPolygon) return;
-    const deltas: Point2D[] = selectedPolygon.basePoints.map(() => [0, 0]);
-    const newKf: OutlineKeyframe = {
-      angle: { yaw: angle.yaw, pitch: angle.pitch },
-      deltas,
-    };
-    updateSelectedPolygon((p) => ({
-      ...p,
-      yawPitchKeyframes: [...p.yawPitchKeyframes, newKf],
-    }));
+
+    if (selectedPolygon.group === "outline") {
+      const deltas: Point2D[] = selectedPolygon.basePoints.map(() => [0, 0]);
+      const newKf: OutlineKeyframe = {
+        angle: { yaw: angle.yaw, pitch: angle.pitch },
+        deltas,
+      };
+      updateSelectedPolygon((p) => {
+        if (p.group !== "outline") return p;
+        return { ...p, yawPitchKeyframes: [...p.yawPitchKeyframes, newKf] };
+      });
+    }
+
+    if (selectedPolygon.group === "feature") {
+      const newKf: FeatureKeyframe = {
+        angle: { yaw: angle.yaw, pitch: angle.pitch },
+        position: [0, 0],
+        matrix: MAT2_IDENTITY,
+        alpha: 1,
+      };
+      updateSelectedPolygon((p) => {
+        if (p.group !== "feature") return p;
+        return { ...p, yawPitchKeyframes: [...p.yawPitchKeyframes, newKf] };
+      });
+    }
+
     setEditMode({
       type: "keyframe",
       index: selectedPolygon.yawPitchKeyframes.length,
@@ -143,10 +232,15 @@ export function ModelingTool() {
 
   const deleteKeyframe = useCallback(
     (index: number) => {
-      updateSelectedPolygon((p) => ({
-        ...p,
-        yawPitchKeyframes: p.yawPitchKeyframes.filter((_, i) => i !== index),
-      }));
+      updateSelectedPolygon(
+        (p) =>
+          ({
+            ...p,
+            yawPitchKeyframes: (p.yawPitchKeyframes as unknown[]).filter(
+              (_, i) => i !== index,
+            ),
+          }) as Polygon,
+      );
       if (editMode.type === "keyframe") {
         if (editMode.index === index) {
           setEditMode({ type: "base" });
@@ -158,16 +252,23 @@ export function ModelingTool() {
     [editMode, updateSelectedPolygon],
   );
 
-  const addPolygon = useCallback(() => {
-    const id = `polygon_${Date.now()}`;
-    const maxLayer = polygons.reduce(
-      (max, p) => Math.max(max, p.layerIndex),
-      -1,
-    );
-    setPolygons((prev) => [...prev, createDefaultPolygon(id, maxLayer + 1)]);
-    setSelectedPolygonIndex(polygons.length);
-    setEditMode({ type: "base" });
-  }, [polygons]);
+  const addPolygon = useCallback(
+    (group: "outline" | "feature") => {
+      const id = `${group}_${Date.now()}`;
+      const maxLayer = polygons.reduce(
+        (max, p) => Math.max(max, p.layerIndex),
+        -1,
+      );
+      const newPoly =
+        group === "outline"
+          ? createOutlinePolygon(id, maxLayer + 1)
+          : createFeaturePolygon(id, maxLayer + 1);
+      setPolygons((prev) => [...prev, newPoly]);
+      setSelectedPolygonIndex(polygons.length);
+      setEditMode({ type: "base" });
+    },
+    [polygons],
+  );
 
   const deletePolygon = useCallback(
     (index: number) => {
@@ -182,6 +283,15 @@ export function ModelingTool() {
     },
     [polygons.length, selectedPolygonIndex],
   );
+
+  // Get keyframe angle label
+  const getKfAngleLabel = (kf: OutlineKeyframe | FeatureKeyframe) =>
+    `(${kf.angle.yaw.toFixed(0)}°, ${kf.angle.pitch.toFixed(0)}°)`;
+
+  const selectedFeatureKf =
+    selectedPolygon?.group === "feature" && editMode.type === "keyframe"
+      ? selectedPolygon.yawPitchKeyframes[editMode.index]
+      : null;
 
   const model: FaceModel = { polygons };
 
@@ -209,7 +319,10 @@ export function ModelingTool() {
                   className="mr-1 inline-block h-3 w-3 rounded-sm border"
                   style={{ backgroundColor: rgbaToHex(p.fillColor) }}
                 />
-                {p.id} (L{p.layerIndex})
+                {p.id}
+                <span className="ml-1 text-gray-500">
+                  {p.group === "outline" ? "輪郭" : "特徴"} L{p.layerIndex}
+                </span>
               </button>
               {polygons.length > 1 && (
                 <button
@@ -222,13 +335,22 @@ export function ModelingTool() {
               )}
             </div>
           ))}
-          <button
-            type="button"
-            onClick={addPolygon}
-            className="w-full rounded border border-gray-400 border-dashed px-2 py-0.5 text-gray-600 hover:bg-gray-50"
-          >
-            + ポリゴン追加
-          </button>
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => addPolygon("outline")}
+              className="flex-1 rounded border border-gray-400 border-dashed px-2 py-0.5 text-gray-600 hover:bg-gray-50"
+            >
+              + 輪郭
+            </button>
+            <button
+              type="button"
+              onClick={() => addPolygon("feature")}
+              className="flex-1 rounded border border-gray-400 border-dashed px-2 py-0.5 text-gray-600 hover:bg-gray-50"
+            >
+              + 特徴
+            </button>
+          </div>
         </div>
 
         {/* Polygon properties */}
@@ -272,6 +394,28 @@ export function ModelingTool() {
                 }
               />
             </label>
+            {selectedPolygon.group === "feature" && (
+              <label className="flex items-center gap-2">
+                <span className="w-16 shrink-0">基本α</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={selectedPolygon.baseAlpha}
+                  onChange={(e) =>
+                    updateSelectedPolygon((p) => ({
+                      ...p,
+                      baseAlpha: Number(e.target.value),
+                    }))
+                  }
+                  className="flex-1"
+                />
+                <span className="w-10 text-right tabular-nums">
+                  {selectedPolygon.baseAlpha.toFixed(2)}
+                </span>
+              </label>
+            )}
           </div>
         )}
 
@@ -279,7 +423,7 @@ export function ModelingTool() {
         <div className="border-b px-4 py-1 font-semibold text-sm">
           {editMode.type === "base"
             ? "正面ベース点列"
-            : `KF ${editMode.index + 1} (${selectedPolygon?.yawPitchKeyframes[editMode.index]?.angle.yaw.toFixed(0)}°, ${selectedPolygon?.yawPitchKeyframes[editMode.index]?.angle.pitch.toFixed(0)}°)`}
+            : `KF ${editMode.index + 1} ${getKfAngleLabel(selectedPolygon?.yawPitchKeyframes[editMode.index] as OutlineKeyframe | FeatureKeyframe)}`}
         </div>
         <div className="min-h-0 flex-1">
           <PointEditor
@@ -288,6 +432,42 @@ export function ModelingTool() {
             onChange={handleEditorChange}
           />
         </div>
+
+        {/* Feature keyframe alpha */}
+        {selectedFeatureKf && (
+          <div className="shrink-0 border-t px-4 py-2 text-sm">
+            <label className="flex items-center gap-2">
+              <span className="w-16 shrink-0">KF α</span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={selectedFeatureKf.alpha}
+                onChange={(e) => {
+                  const kfIndex =
+                    editMode.type === "keyframe" ? editMode.index : -1;
+                  if (kfIndex < 0) return;
+                  updateSelectedPolygon((p) => {
+                    if (p.group !== "feature") return p;
+                    return {
+                      ...p,
+                      yawPitchKeyframes: p.yawPitchKeyframes.map((kf, i) =>
+                        i === kfIndex
+                          ? { ...kf, alpha: Number(e.target.value) }
+                          : kf,
+                      ),
+                    };
+                  });
+                }}
+                className="flex-1"
+              />
+              <span className="w-10 text-right tabular-nums">
+                {selectedFeatureKf.alpha.toFixed(2)}
+              </span>
+            </label>
+          </div>
+        )}
 
         {/* Keyframes */}
         <div className="max-h-48 shrink-0 space-y-1 overflow-y-auto border-t px-4 py-2 text-sm">
@@ -317,7 +497,7 @@ export function ModelingTool() {
                     : "hover:bg-gray-100"
                 }`}
               >
-                ({kf.angle.yaw.toFixed(0)}°, {kf.angle.pitch.toFixed(0)}°)
+                {getKfAngleLabel(kf)}
               </button>
               <button
                 type="button"
