@@ -385,6 +385,12 @@ export function ModelingTool() {
   const addKeyframe = useCallback(() => {
     if (!selectedPolygon) return;
     if (selectedPolygon.group === "outline") {
+      if (selectedPolygon.mirrorSymmetric && angle.yaw < 0) {
+        alert(
+          "左右対称モード中は yaw<0 側にキーフレームを作成できません。yaw>=0 側で編集してください。",
+        );
+        return;
+      }
       const deltas: Point2D[] = selectedPolygon.basePoints.map(() => [0, 0]);
       const newKf: OutlineKeyframe = {
         angle: { yaw: angle.yaw, pitch: angle.pitch },
@@ -1365,6 +1371,39 @@ export function ModelingTool() {
                   className="w-16 rounded border px-1"
                 />
               </label>
+              {selectedPolygon.group === "outline" && (
+                <label className="flex items-center gap-2">
+                  <span className="w-14 shrink-0">左右対称</span>
+                  <input
+                    type="checkbox"
+                    checked={selectedPolygon.mirrorSymmetric === true}
+                    onChange={(e) => {
+                      const enable = e.target.checked;
+                      updateSelectedPolygon((p) => {
+                        if (p.group !== "outline") return p;
+                        if (!enable) {
+                          return { ...p, mirrorSymmetric: false };
+                        }
+                        const hasNegKf = p.yawPitchKeyframes.some(
+                          (kf) => kf.angle.yaw < 0,
+                        );
+                        if (
+                          hasNegKf &&
+                          !window.confirm(
+                            "yaw<0 側のキーフレームがあります。左右対称モードを有効にすると無視されます。続行しますか？",
+                          )
+                        ) {
+                          return p;
+                        }
+                        return { ...p, mirrorSymmetric: true };
+                      });
+                    }}
+                  />
+                  <span className="text-gray-500 text-xs">
+                    yaw{"<"}0 を yaw{">"}=0 の鏡像で表示
+                  </span>
+                </label>
+              )}
               {selectedPolygon.group === "feature" && (
                 <>
                   <label className="flex items-center gap-2">

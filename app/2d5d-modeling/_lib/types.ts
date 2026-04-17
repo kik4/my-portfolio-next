@@ -34,6 +34,9 @@ export interface OutlinePolygon {
   layerIndex: number;
   yawPitchKeyframes: OutlineKeyframe[];
   blendShapes: OutlineBlendShape[];
+  // When true, yaw<0 views are rendered by mirroring the yaw>=0 side along x.
+  // yaw>=0 is authoritative — KFs on yaw<0 are not allowed.
+  mirrorSymmetric?: boolean;
 }
 
 // Feature polygon

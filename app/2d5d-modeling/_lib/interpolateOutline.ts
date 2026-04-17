@@ -5,6 +5,11 @@ import type { OutlinePolygon, Point2D, YawPitch } from "./types";
 /**
  * Apply blend shapes then yaw/pitch keyframe interpolation to an OutlinePolygon.
  * Flow: basePoints → blend shapes → + RBF-interpolated deltas
+ *
+ * When mirrorSymmetric is true and yaw is negative, the yaw>=0 side is sampled
+ * (by flipping the sign of yaw for the interpolation lookup) and the resulting
+ * points are mirrored along x. basePoints themselves are not mirrored so the
+ * frontal (yaw=0) shape is preserved as authored.
  */
 export function interpolateOutlinePoints(
   polygon: OutlinePolygon,
@@ -18,9 +23,12 @@ export function interpolateOutlinePoints(
     weights,
   );
 
+  const mirror = polygon.mirrorSymmetric === true && angle.yaw < 0;
+  const lookupYaw = mirror ? -angle.yaw : angle.yaw;
+
   // 2. Apply yaw/pitch keyframe deltas
   if (polygon.yawPitchKeyframes.length === 0) {
-    return blended;
+    return mirror ? blended.map(([x, y]) => [-x, y] as Point2D) : blended;
   }
 
   const numPoints = blended.length;
@@ -32,14 +40,13 @@ export function interpolateOutlinePoints(
     })),
   );
 
-  const flatDeltas = interpolator.interpolate(angle.yaw, angle.pitch);
+  const flatDeltas = interpolator.interpolate(lookupYaw, angle.pitch);
 
   const result: Point2D[] = [];
   for (let i = 0; i < numPoints; i++) {
-    result.push([
-      blended[i][0] + (flatDeltas[i * 2] ?? 0),
-      blended[i][1] + (flatDeltas[i * 2 + 1] ?? 0),
-    ]);
+    const x = blended[i][0] + (flatDeltas[i * 2] ?? 0);
+    const y = blended[i][1] + (flatDeltas[i * 2 + 1] ?? 0);
+    result.push(mirror ? [-x, y] : [x, y]);
   }
   return result;
 }
