@@ -191,6 +191,7 @@ export function ModelingTool() {
   }, [history]);
 
   const [referenceVisible, setReferenceVisible] = useState(true);
+  const [showAxes, setShowAxes] = useState(false);
   const [referenceOpacity, setReferenceOpacity] = useState(0.5);
   const [faceOpacity, setFaceOpacity] = useState(1);
   const [editorBgColor, setEditorBgColor] = useState("#ffffff");
@@ -686,6 +687,14 @@ export function ModelingTool() {
               onChange={(e) => setReferenceVisible(e.target.checked)}
             />
             <span>参考3D</span>
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={showAxes}
+              onChange={(e) => setShowAxes(e.target.checked)}
+            />
+            <span>座標軸</span>
           </label>
           <label className="flex items-center gap-1">
             <span className="w-12 shrink-0 text-xs">参考</span>
@@ -1854,6 +1863,7 @@ export function ModelingTool() {
                 ? selectedPolygon.id
                 : undefined
             }
+            showAxes={showAxes}
             onAngleChange={handleAngleChange}
             onZoomChange={handleZoomChange}
           />

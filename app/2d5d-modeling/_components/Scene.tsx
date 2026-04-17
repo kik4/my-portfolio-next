@@ -15,6 +15,7 @@ interface SceneProps {
   faceOpacity: number;
   zoom: number;
   selectedPolygonId?: string;
+  showAxes?: boolean;
   onAngleChange: (yaw: number, pitch: number) => void;
   onZoomChange: (zoom: number) => void;
 }
@@ -63,6 +64,7 @@ export function Scene({
   faceOpacity,
   zoom,
   selectedPolygonId,
+  showAxes = false,
   onAngleChange,
   onZoomChange,
 }: SceneProps) {
@@ -104,6 +106,7 @@ export function Scene({
         }}
       />
       <ambientLight intensity={2.5} />
+      {showAxes && <axesHelper args={[0.5]} />}
       <FaceMesh
         model={model}
         angle={angle}
