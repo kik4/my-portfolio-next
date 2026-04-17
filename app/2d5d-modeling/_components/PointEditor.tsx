@@ -45,6 +45,12 @@ type DragState =
       startSy: number;
       center: Point2D;
       startPoints: Point2D[];
+    }
+  | {
+      type: "rotate";
+      startAngle: number;
+      center: Point2D;
+      startPoints: Point2D[];
     };
 
 /** Distance from point (px,py) to line segment (ax,ay)-(bx,by) in SVG coords */
@@ -163,6 +169,23 @@ export function PointEditor({
         setDrag({ type: "move", lastSx: sx, lastSy: sy });
       }
 
+      if (drag.type === "rotate") {
+        const [wx, wy] = toWorld(sx, sy);
+        const cx = drag.center[0];
+        const cy = drag.center[1];
+        const currentAngle = Math.atan2(wy - cy, wx - cx);
+        const deltaRad = currentAngle - drag.startAngle;
+        const cos = Math.cos(deltaRad);
+        const sin = Math.sin(deltaRad);
+        onChange(
+          drag.startPoints.map(([px, py]) => {
+            const dx = px - cx;
+            const dy = py - cy;
+            return [cx + cos * dx - sin * dy, cy + sin * dx + cos * dy];
+          }),
+        );
+      }
+
       if (drag.type === "scale") {
         const [wx, wy] = toWorld(sx, sy);
         const [swx, swy] = toWorld(drag.startSx, drag.startSy);
@@ -263,6 +286,21 @@ export function PointEditor({
       axis,
       startSx: sx,
       startSy: sy,
+      center: [cx, cy],
+      startPoints: points.map(([x, y]) => [x, y]),
+    });
+  };
+
+  const startRotate = (e: React.PointerEvent) => {
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const [sx, sy] = getSvgPos(e);
+    const cx = bbox ? (bbox.minX + bbox.maxX) / 2 : 0;
+    const cy = bbox ? (bbox.minY + bbox.maxY) / 2 : 0;
+    const [wx, wy] = toWorld(sx, sy);
+    setDrag({
+      type: "rotate",
+      startAngle: Math.atan2(wy - cy, wx - cx),
       center: [cx, cy],
       startPoints: points.map(([x, y]) => [x, y]),
     });
@@ -388,6 +426,33 @@ export function PointEditor({
             strokeWidth={0.5}
             strokeDasharray="3 2"
           />
+          {/* Rotate handle (above top edge, separated from scaleY handle) */}
+          {(() => {
+            const tx = (bboxScreen.tl[0] + bboxScreen.tr[0]) / 2;
+            const ty = bboxScreen.tl[1] - 32;
+            return (
+              <>
+                <line
+                  x1={(bboxScreen.tl[0] + bboxScreen.tr[0]) / 2}
+                  y1={bboxScreen.tl[1]}
+                  x2={tx}
+                  y2={ty}
+                  stroke="#f59e0b"
+                  strokeWidth={1}
+                />
+                <circle
+                  cx={tx}
+                  cy={ty}
+                  r={HANDLE_SIZE / 2 + 1}
+                  fill="#f59e0b"
+                  stroke="white"
+                  strokeWidth={1.5}
+                  className="cursor-grab"
+                  onPointerDown={startRotate}
+                />
+              </>
+            );
+          })()}
           {/* Right (scaleX) */}
           <rect
             x={bboxScreen.tr[0] - HANDLE_SIZE / 2}
