@@ -18,6 +18,7 @@ import type {
   YawPitch,
 } from "../_lib/types";
 import { MAT2_IDENTITY } from "../_lib/types";
+import { useDebouncedCommit, useHistory } from "../_lib/useHistory";
 import { GroupGizmo } from "./GroupGizmo";
 import { PointEditor } from "./PointEditor";
 import { PolygonTree } from "./PolygonTree";
@@ -128,12 +129,50 @@ export function ModelingTool() {
     null,
   );
 
+  // Undo/redo: snapshot of all core model state.
+  const historySuppressRef = useRef(false);
+  const snapshot = useMemo(
+    () => ({
+      polygons,
+      featureGroups,
+      blendShapeWeights,
+      outlineFillColor,
+      outlineStroke,
+    }),
+    [
+      polygons,
+      featureGroups,
+      blendShapeWeights,
+      outlineFillColor,
+      outlineStroke,
+    ],
+  );
+  const history = useHistory(snapshot);
+  const applySnapshot = useCallback((snap: typeof snapshot) => {
+    historySuppressRef.current = true;
+    setPolygons(snap.polygons);
+    setFeatureGroups(snap.featureGroups);
+    setBlendShapeWeights(snap.blendShapeWeights);
+    setOutlineFillColor(snap.outlineFillColor);
+    setOutlineStroke(snap.outlineStroke);
+  }, []);
+  useDebouncedCommit(snapshot, history.commit, 300, historySuppressRef);
+  const handleUndo = useCallback(() => {
+    const snap = history.undo();
+    if (snap) applySnapshot(snap);
+  }, [history, applySnapshot]);
+  const handleRedo = useCallback(() => {
+    const snap = history.redo();
+    if (snap) applySnapshot(snap);
+  }, [history, applySnapshot]);
+
   const restoredRef = useRef(false);
   useEffect(() => {
     if (restoredRef.current) return;
     restoredRef.current = true;
     const saved = loadFromLocalStorage();
     if (saved) {
+      historySuppressRef.current = true;
       setPolygons(saved.polygons);
       setFeatureGroups(saved.featureGroups);
       setBlendShapeWeights(saved.blendShapeWeights);
@@ -141,8 +180,15 @@ export function ModelingTool() {
       setOutlineStroke(saved.outlineStroke);
       setSelectedPolygonIndex(null);
       setEditMode({ type: "base" });
+      history.reset({
+        polygons: saved.polygons,
+        featureGroups: saved.featureGroups,
+        blendShapeWeights: saved.blendShapeWeights,
+        outlineFillColor: saved.outlineFillColor,
+        outlineStroke: saved.outlineStroke,
+      });
     }
-  }, []);
+  }, [history]);
 
   const [referenceVisible, setReferenceVisible] = useState(true);
   const [referenceOpacity, setReferenceOpacity] = useState(0.5);
@@ -180,6 +226,17 @@ export function ModelingTool() {
         e.target instanceof HTMLTextAreaElement
       )
         return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        if (e.shiftKey) handleRedo();
+        else handleUndo();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
+        e.preventDefault();
+        handleRedo();
+        return;
+      }
       const preset = presets[e.key];
       if (preset) {
         angleSourceRef.current = "slider";
@@ -188,7 +245,7 @@ export function ModelingTool() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [handleUndo, handleRedo]);
 
   const selectedPolygon =
     selectedPolygonIndex !== null ? polygons[selectedPolygonIndex] : null;
@@ -746,6 +803,28 @@ export function ModelingTool() {
           </label>
         </div>
 
+        {/* Undo/Redo */}
+        <div className="flex gap-1 border-t px-3 py-2">
+          <button
+            type="button"
+            onClick={handleUndo}
+            disabled={!history.canUndo}
+            className="flex-1 rounded bg-gray-200 px-2 py-1 text-xs hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
+            title="元に戻す (Ctrl+Z)"
+          >
+            ← Undo
+          </button>
+          <button
+            type="button"
+            onClick={handleRedo}
+            disabled={!history.canRedo}
+            className="flex-1 rounded bg-gray-200 px-2 py-1 text-xs hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-40"
+            title="やり直し (Ctrl+Shift+Z / Ctrl+Y)"
+          >
+            Redo →
+          </button>
+        </div>
+
         {/* JSON IO */}
         <div className="flex gap-1 border-t px-3 py-2">
           <button
@@ -771,6 +850,7 @@ export function ModelingTool() {
                 reader.onload = () => {
                   try {
                     const imported = importFaceModel(reader.result as string);
+                    historySuppressRef.current = true;
                     setPolygons(imported.polygons);
                     setFeatureGroups(imported.featureGroups);
                     setBlendShapeWeights(imported.blendShapeWeights);
@@ -779,6 +859,13 @@ export function ModelingTool() {
                     setSelectedPolygonIndex(null);
                     setSelectedGroupIndex(null);
                     setEditMode({ type: "base" });
+                    history.reset({
+                      polygons: imported.polygons,
+                      featureGroups: imported.featureGroups,
+                      blendShapeWeights: imported.blendShapeWeights,
+                      outlineFillColor: imported.outlineFillColor,
+                      outlineStroke: imported.outlineStroke,
+                    });
                   } catch (err) {
                     alert(`Import failed: ${err}`);
                   }
