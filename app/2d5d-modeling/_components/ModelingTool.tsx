@@ -60,6 +60,7 @@ function createFeaturePolygon(layerIndex: number): FeaturePolygon {
     fillEnabled: true,
     strokeColor: null,
     strokeWidth: 2,
+    strokeRanges: null,
     baseAlpha: 1,
     yawPitchKeyframes: [],
     blendShapes: [],
@@ -111,6 +112,7 @@ export function ModelingTool() {
     number | null
   >(null);
   const [editMode, setEditMode] = useState<EditMode>({ type: "base" });
+  const [strokeRangesEditMode, setStrokeRangesEditMode] = useState(false);
 
   const [featureGroups, setFeatureGroups] = useState<FeatureGroup[]>([]);
   const [selectedGroupIndex, setSelectedGroupIndex] = useState<number | null>(
@@ -1363,6 +1365,95 @@ export function ModelingTool() {
                     />
                   </label>
                 )}
+              {selectedPolygon.group === "feature" &&
+                selectedPolygon.strokeColor && (
+                  <div className="flex flex-col gap-1 border-t pt-1">
+                    <div className="flex items-center gap-2">
+                      <span className="w-14 shrink-0">線範囲</span>
+                      <label className="flex items-center gap-1">
+                        <input
+                          type="radio"
+                          name="stroke-range-mode"
+                          checked={selectedPolygon.strokeRanges === null}
+                          onChange={() => {
+                            setStrokeRangesEditMode(false);
+                            updateSelectedPolygon((p) => {
+                              if (p.group !== "feature") return p;
+                              return { ...p, strokeRanges: null };
+                            });
+                          }}
+                        />
+                        全周
+                      </label>
+                      <label className="flex items-center gap-1">
+                        <input
+                          type="radio"
+                          name="stroke-range-mode"
+                          checked={selectedPolygon.strokeRanges !== null}
+                          onChange={() => {
+                            updateSelectedPolygon((p) => {
+                              if (p.group !== "feature") return p;
+                              return { ...p, strokeRanges: [] };
+                            });
+                          }}
+                        />
+                        部分
+                      </label>
+                    </div>
+                    {selectedPolygon.strokeRanges !== null && (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            className={`rounded border px-2 py-0.5 text-xs ${
+                              strokeRangesEditMode
+                                ? "bg-orange-500 text-white"
+                                : "bg-white"
+                            }`}
+                            onClick={() => setStrokeRangesEditMode((v) => !v)}
+                          >
+                            {strokeRangesEditMode ? "編集中(終了)" : "範囲追加"}
+                          </button>
+                          <span className="text-gray-500 text-xs">
+                            {strokeRangesEditMode
+                              ? "制御点を2回クリック: 始点→終点"
+                              : ""}
+                          </span>
+                        </div>
+                        <ul className="flex flex-col gap-0.5 text-xs">
+                          {selectedPolygon.strokeRanges.map((r, i) => (
+                            <li key={r.id} className="flex items-center gap-2">
+                              <span className="tabular-nums">
+                                {r.start} → {r.end}
+                              </span>
+                              <button
+                                type="button"
+                                className="rounded border px-1 text-red-600 text-xs"
+                                onClick={() =>
+                                  updateSelectedPolygon((p) => {
+                                    if (
+                                      p.group !== "feature" ||
+                                      p.strokeRanges === null
+                                    )
+                                      return p;
+                                    return {
+                                      ...p,
+                                      strokeRanges: p.strokeRanges.filter(
+                                        (_, j) => j !== i,
+                                      ),
+                                    };
+                                  })
+                                }
+                              >
+                                削除
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </div>
+                )}
               {selectedPolygon.group === "feature" && (
                 <label className="flex items-center gap-2">
                   <span className="w-14 shrink-0">基本α</span>
@@ -1422,6 +1513,22 @@ export function ModelingTool() {
                 backgroundColor={editorBgColor}
                 allowAddRemove={editMode.type === "base"}
                 onChange={handleEditorChange}
+                strokeRanges={
+                  selectedPolygon.group === "feature"
+                    ? selectedPolygon.strokeRanges
+                    : null
+                }
+                strokeRangesEditMode={
+                  selectedPolygon.group === "feature" &&
+                  editMode.type === "base" &&
+                  strokeRangesEditMode
+                }
+                onStrokeRangesChange={(ranges) =>
+                  updateSelectedPolygon((p) => {
+                    if (p.group !== "feature") return p;
+                    return { ...p, strokeRanges: ranges };
+                  })
+                }
               />
             </div>
 

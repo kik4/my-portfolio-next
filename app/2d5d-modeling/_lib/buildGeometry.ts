@@ -17,11 +17,40 @@ const SUBDIVISION_SEGMENTS = 8;
 const LAYER_Z_STEP = 0.001;
 const STROKE_Z_OFFSET = 0.0005; // slightly in front of fill
 
+// Extract an open polyline from subdivided vertices spanning control point
+// indices [start, end]. Walks forward and wraps past the last control point
+// when start > end. start === end yields an empty array.
+function extractSubdividedRange(
+  subdivided: Point2D[],
+  start: number,
+  end: number,
+  nControlPoints: number,
+  segmentsPerCp: number,
+): Point2D[] {
+  if (nControlPoints <= 0 || subdivided.length === 0) return [];
+  const total = subdivided.length;
+  const a = ((start % nControlPoints) + nControlPoints) % nControlPoints;
+  const b = ((end % nControlPoints) + nControlPoints) % nControlPoints;
+  if (a === b) return [];
+  const startVertex = a * segmentsPerCp;
+  const endVertex = b * segmentsPerCp; // inclusive endpoint (control point b)
+  const out: Point2D[] = [];
+  let i = startVertex;
+  // Always include at least one hop; wrap naturally when endVertex <= startVertex.
+  for (let step = 0; step <= total; step++) {
+    out.push(subdivided[i % total]);
+    if (i % total === endVertex % total && step > 0) break;
+    i++;
+  }
+  return out;
+}
+
 export interface StrokeLine {
   points: Point2D[];
   color: ColorRGBA;
   width: number;
   z: number;
+  closed: boolean;
 }
 
 export interface TransparentFill {
@@ -179,18 +208,44 @@ export function buildFaceGeometry(
         };
       }
     } else if (polygon.strokeColor) {
-      // Feature polygons: individual stroke
-      strokes.push({
-        points: subdivided,
-        color: [
-          polygon.strokeColor[0] * alpha,
-          polygon.strokeColor[1] * alpha,
-          polygon.strokeColor[2] * alpha,
-          polygon.strokeColor[3],
-        ],
-        width: polygon.strokeWidth,
-        z: z + STROKE_Z_OFFSET,
-      });
+      // Feature polygons: individual stroke (full loop or partial ranges)
+      const color: ColorRGBA = [
+        polygon.strokeColor[0] * alpha,
+        polygon.strokeColor[1] * alpha,
+        polygon.strokeColor[2] * alpha,
+        polygon.strokeColor[3],
+      ];
+      const width = polygon.strokeWidth;
+      const strokeZ = z + STROKE_Z_OFFSET;
+      const ranges = polygon.strokeRanges;
+      if (ranges === null) {
+        strokes.push({
+          points: subdivided,
+          color,
+          width,
+          z: strokeZ,
+          closed: true,
+        });
+      } else {
+        const nCp = points.length;
+        for (const r of ranges) {
+          const seg = extractSubdividedRange(
+            subdivided,
+            r.start,
+            r.end,
+            nCp,
+            SUBDIVISION_SEGMENTS,
+          );
+          if (seg.length < 2) continue;
+          strokes.push({
+            points: seg,
+            color,
+            width,
+            z: strokeZ,
+            closed: false,
+          });
+        }
+      }
     }
   }
 
@@ -222,6 +277,7 @@ export function buildFaceGeometry(
             color: outlineStroke.color,
             width: outlineStroke.width,
             z: maxZ,
+            closed: true,
           });
         }
       }
@@ -233,6 +289,7 @@ export function buildFaceGeometry(
           color: outlineStroke.color,
           width: outlineStroke.width,
           z: o.z,
+          closed: true,
         });
       }
     }

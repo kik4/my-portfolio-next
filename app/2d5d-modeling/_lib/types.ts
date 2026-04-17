@@ -44,6 +44,16 @@ export interface FeatureKeyframe {
   alpha: number;
 }
 
+// Partial-stroke range over control points.
+// start/end are control point indices. Walks forward (start -> end) along the
+// polygon, wrapping past the last control point back to 0 when start > end.
+// start === end produces a single empty segment (no stroke drawn).
+export interface StrokeRange {
+  id: string;
+  start: number;
+  end: number;
+}
+
 export interface FeaturePolygon {
   id: string;
   name: string;
@@ -54,6 +64,9 @@ export interface FeaturePolygon {
   fillEnabled: boolean;
   strokeColor: ColorRGBA | null;
   strokeWidth: number;
+  // null = stroke full perimeter (closed loop).
+  // [] = no stroke. [{start,end}, ...] = stroke only specified ranges (open polylines).
+  strokeRanges: StrokeRange[] | null;
   baseAlpha: number;
   yawPitchKeyframes: FeatureKeyframe[];
   blendShapes: FeatureBlendShape[];

@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { subdivideClosed } from "../_lib/catmullRom";
-import type { ColorRGBA, Point2D } from "../_lib/types";
+import type { ColorRGBA, Point2D, StrokeRange } from "../_lib/types";
 
 interface BackgroundPolygon {
   points: Point2D[];
@@ -20,6 +20,11 @@ interface PointEditorProps {
   allowAddRemove?: boolean;
   onChange: (points: Point2D[]) => void;
   viewSize?: number;
+  // Stroke range editing (feature polygons only). When editMode is true,
+  // clicking control points sets start then end to form a new range.
+  strokeRanges?: StrokeRange[] | null;
+  strokeRangesEditMode?: boolean;
+  onStrokeRangesChange?: (ranges: StrokeRange[] | null) => void;
 }
 
 function rgbaToCss(c: ColorRGBA): string {
@@ -27,6 +32,7 @@ function rgbaToCss(c: ColorRGBA): string {
 }
 
 const CANVAS_PX = 480;
+const SUBDIV_SEGMENTS = 8;
 
 type DragState =
   | null
@@ -74,10 +80,14 @@ export function PointEditor({
   allowAddRemove = true,
   onChange,
   viewSize: initialViewSize = 0.5,
+  strokeRanges = null,
+  strokeRangesEditMode = false,
+  onStrokeRangesChange,
 }: PointEditorProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [drag, setDrag] = useState<DragState>(null);
   const [viewSize, setViewSize] = useState(initialViewSize);
+  const [pendingStart, setPendingStart] = useState<number | null>(null);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -191,8 +201,6 @@ export function PointEditor({
     setDrag(null);
   }, []);
 
-  const SUBDIV_SEGMENTS = 8;
-
   const smoothPoints = useMemo(
     () =>
       points.length >= 3 ? subdivideClosed(points, SUBDIV_SEGMENTS) : points,
@@ -205,6 +213,34 @@ export function PointEditor({
       return `${i === 0 ? "M" : "L"}${sx},${sy}`;
     })
     .join(" ")} Z`;
+
+  // Stroke range highlight paths (for feature polygons with partial strokes)
+  const strokeRangePaths = useMemo(() => {
+    if (!strokeRanges || strokeRanges.length === 0) return [];
+    const nCp = points.length;
+    if (nCp < 3) return [];
+    const total = smoothPoints.length;
+    if (total === 0) return [];
+    const paths: string[] = [];
+    for (const r of strokeRanges) {
+      const a = ((r.start % nCp) + nCp) % nCp;
+      const b = ((r.end % nCp) + nCp) % nCp;
+      if (a === b) continue;
+      const startV = a * SUBDIV_SEGMENTS;
+      const endV = b * SUBDIV_SEGMENTS;
+      const parts: string[] = [];
+      let i = startV;
+      for (let step = 0; step <= total; step++) {
+        const p = smoothPoints[i % total];
+        const [sx, sy] = toScreen(p);
+        parts.push(`${step === 0 ? "M" : "L"}${sx},${sy}`);
+        if (i % total === endV % total && step > 0) break;
+        i++;
+      }
+      paths.push(parts.join(" "));
+    }
+    return paths;
+  }, [strokeRanges, smoothPoints, points.length, toScreen]);
 
   // Bbox screen coords for scale handles
   const bboxScreen = bbox
@@ -297,8 +333,10 @@ export function PointEditor({
       <path
         d={pathD}
         fill={fillEnabled ? rgbaToCss(fillColor) : "transparent"}
-        stroke={strokeColor ? rgbaToCss(strokeColor) : "none"}
-        strokeWidth={strokeColor ? strokeWidth : 0}
+        stroke={
+          strokeColor && strokeRanges === null ? rgbaToCss(strokeColor) : "none"
+        }
+        strokeWidth={strokeColor && strokeRanges === null ? strokeWidth : 0}
         className="cursor-move"
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
@@ -306,6 +344,35 @@ export function PointEditor({
           setDrag({ type: "move", lastSx: sx, lastSy: sy });
         }}
       />
+
+      {/* Partial stroke highlight */}
+      {strokeColor &&
+        strokeRangePaths.map((d) => (
+          <path
+            key={`sr-${d}`}
+            d={d}
+            fill="none"
+            stroke={rgbaToCss(strokeColor)}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            pointerEvents="none"
+          />
+        ))}
+
+      {/* Stroke range edit mode overlay highlight (pending start) */}
+      {strokeRangesEditMode &&
+        pendingStart !== null &&
+        points[pendingStart] && (
+          <circle
+            cx={toScreen(points[pendingStart])[0]}
+            cy={toScreen(points[pendingStart])[1]}
+            r={10}
+            fill="none"
+            stroke="#f97316"
+            strokeWidth={2}
+            pointerEvents="none"
+          />
+        )}
 
       {/* Scale handles on bbox edges */}
       {bboxScreen && (
@@ -453,6 +520,14 @@ export function PointEditor({
       {/* Point handles */}
       {points.map((p, i) => {
         const [sx, sy] = toScreen(p);
+        const inEditMode = strokeRangesEditMode;
+        const fill = inEditMode
+          ? pendingStart === i
+            ? "#f97316"
+            : "#8b5cf6"
+          : drag?.type === "point" && drag.index === i
+            ? "#ef4444"
+            : "#2563eb";
         return (
           // biome-ignore lint/a11y/useSemanticElements: SVG circle used as interactive handle
           <circle
@@ -460,22 +535,39 @@ export function PointEditor({
             cx={sx}
             cy={sy}
             r={6}
-            fill={
-              drag?.type === "point" && drag.index === i ? "#ef4444" : "#2563eb"
-            }
+            fill={fill}
             stroke="white"
             strokeWidth={2}
-            className="cursor-grab"
+            className={inEditMode ? "cursor-pointer" : "cursor-grab"}
             role="button"
             tabIndex={-1}
             onPointerDown={(e) => {
               e.stopPropagation();
+              if (inEditMode) {
+                if (pendingStart === null) {
+                  setPendingStart(i);
+                } else {
+                  const next: StrokeRange = {
+                    id: `sr_${Date.now().toString(36)}_${Math.floor(Math.random() * 1e6).toString(36)}`,
+                    start: pendingStart,
+                    end: i,
+                  };
+                  const existing = strokeRanges ?? [];
+                  onStrokeRangesChange?.([...existing, next]);
+                  setPendingStart(null);
+                }
+                return;
+              }
               e.currentTarget.setPointerCapture(e.pointerId);
               setDrag({ type: "point", index: i });
             }}
             onContextMenu={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              if (inEditMode) {
+                setPendingStart(null);
+                return;
+              }
               if (!allowAddRemove) return;
               if (points.length <= 3) return;
               const newPoints = points.filter((_, j) => j !== i);

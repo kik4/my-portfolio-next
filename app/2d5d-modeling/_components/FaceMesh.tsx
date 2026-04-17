@@ -37,11 +37,17 @@ export function FaceMesh({ model, angle, selectedPolygonId }: FaceMeshProps) {
   const strokeData = useMemo(() => {
     return strokes.map((stroke) => {
       const pts = stroke.points;
-      // Line2 requires closed loop: append first point
       const posArr: number[] = [];
-      for (let i = 0; i <= pts.length; i++) {
-        const p = pts[i % pts.length];
-        posArr.push(p[0], p[1], stroke.z);
+      if (stroke.closed) {
+        // Close loop: append first point at end
+        for (let i = 0; i <= pts.length; i++) {
+          const p = pts[i % pts.length];
+          posArr.push(p[0], p[1], stroke.z);
+        }
+      } else {
+        for (const p of pts) {
+          posArr.push(p[0], p[1], stroke.z);
+        }
       }
 
       const geo = new LineGeometry();
