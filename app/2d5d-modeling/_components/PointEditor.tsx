@@ -586,13 +586,16 @@ export function PointEditor({
       {points.map((p, i) => {
         const [sx, sy] = toScreen(p);
         const inEditMode = strokeRangesEditMode;
+        // Hue cycles with index so adjacent points differ yet stay readable.
+        const hue = points.length > 0 ? (i / points.length) * 360 : 0;
+        const indexColor = `hsl(${hue.toFixed(0)}, 70%, 45%)`;
         const fill = inEditMode
           ? pendingStart === i
             ? "#f97316"
             : "#8b5cf6"
           : drag?.type === "point" && drag.index === i
             ? "#ef4444"
-            : "#2563eb";
+            : indexColor;
         return (
           // biome-ignore lint/a11y/useSemanticElements: SVG circle used as interactive handle
           <circle
