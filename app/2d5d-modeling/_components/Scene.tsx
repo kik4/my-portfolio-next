@@ -1,6 +1,10 @@
 "use client";
 
-import { OrbitControls, OrthographicCamera } from "@react-three/drei";
+import {
+  Billboard,
+  OrbitControls,
+  OrthographicCamera,
+} from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
@@ -16,6 +20,7 @@ interface SceneProps {
   zoom: number;
   selectedPolygonId?: string;
   showAxes?: boolean;
+  showGrid?: boolean;
   onAngleChange: (yaw: number, pitch: number) => void;
   onZoomChange: (zoom: number) => void;
 }
@@ -65,6 +70,7 @@ export function Scene({
   zoom,
   selectedPolygonId,
   showAxes = false,
+  showGrid = false,
   onAngleChange,
   onZoomChange,
 }: SceneProps) {
@@ -107,6 +113,16 @@ export function Scene({
       />
       <ambientLight intensity={2.5} />
       {showAxes && <axesHelper args={[0.5]} />}
+      {showGrid && (
+        <Billboard>
+          {/* gridHelper defaults to the XZ plane; rotate to face the camera. */}
+          <gridHelper
+            args={[1, 20, "#6b7280", "#d1d5db"]}
+            rotation={[Math.PI / 2, 0, 0]}
+            position={[0, 0, -0.01]}
+          />
+        </Billboard>
+      )}
       <FaceMesh
         model={model}
         angle={angle}

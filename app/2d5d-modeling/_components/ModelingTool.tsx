@@ -192,6 +192,7 @@ export function ModelingTool() {
 
   const [referenceVisible, setReferenceVisible] = useState(true);
   const [showAxes, setShowAxes] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
   const [referenceOpacity, setReferenceOpacity] = useState(0.5);
   const [faceOpacity, setFaceOpacity] = useState(1);
   const [editorBgColor, setEditorBgColor] = useState("#ffffff");
@@ -695,6 +696,14 @@ export function ModelingTool() {
               onChange={(e) => setShowAxes(e.target.checked)}
             />
             <span>座標軸</span>
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={showGrid}
+              onChange={(e) => setShowGrid(e.target.checked)}
+            />
+            <span>グリッド</span>
           </label>
           <label className="flex items-center gap-1">
             <span className="w-12 shrink-0 text-xs">参考</span>
@@ -1864,6 +1873,7 @@ export function ModelingTool() {
                 : undefined
             }
             showAxes={showAxes}
+            showGrid={showGrid}
             onAngleChange={handleAngleChange}
             onZoomChange={handleZoomChange}
           />
