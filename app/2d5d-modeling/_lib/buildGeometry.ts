@@ -123,10 +123,37 @@ export function buildFaceGeometry(
   // Collect outline subdivided shapes for merged stroke
   const outlineSubdivided: { points: Point2D[]; z: number }[] = [];
 
+  // Queue shadow polygons for a second pass — they need the full outline union
+  // before they can be clipped.
+  const shadowQueue: {
+    points: Point2D[];
+    z: number;
+    fillColor: ColorRGBA;
+    alpha: number;
+  }[] = [];
+
   for (const polygon of sorted) {
     let points = polygon.basePoints;
     let alpha = 1;
     let effectiveLayerIndex = polygon.layerIndex;
+
+    if (polygon.group === "outlineShadow") {
+      const shadowPoints = interpolateOutlinePoints(
+        polygon,
+        angle,
+        blendShapeWeights,
+        mode,
+      );
+      const subdivided = subdivideClosed(shadowPoints, SUBDIVISION_SEGMENTS);
+      const z = polygon.layerIndex * LAYER_Z_STEP;
+      shadowQueue.push({
+        points: subdivided,
+        z,
+        fillColor: polygon.fillColor,
+        alpha: Math.max(0, Math.min(1, polygon.baseAlpha)),
+      });
+      continue;
+    }
 
     if (polygon.group === "outline") {
       points = interpolateOutlinePoints(
@@ -264,19 +291,29 @@ export function buildFaceGeometry(
     }
   }
 
-  // Merged outline stroke using polygon union
-  if (outlineStroke && outlineSubdivided.length > 0) {
-    const maxZ = Math.max(...outlineSubdivided.map((o) => o.z));
-    const clipPolygons: [number, number][][][] = outlineSubdivided.map((o) => [
+  // Union of all outline regions (used for merged stroke and shadow clipping).
+  type PolyGeom = [number, number][][][];
+  let outlineUnion: PolyGeom | null = null;
+  if (outlineSubdivided.length > 0) {
+    const clipPolygons: PolyGeom = outlineSubdivided.map((o) => [
       o.points.map(([x, y]) => [x, y] as [number, number]),
     ]);
-
     try {
-      let merged = [clipPolygons[0]];
+      let merged: PolyGeom = [clipPolygons[0]];
       for (let i = 1; i < clipPolygons.length; i++) {
         merged = polygonClipping.union(merged, [clipPolygons[i]]);
       }
-      for (const poly of merged) {
+      outlineUnion = merged;
+    } catch {
+      outlineUnion = null;
+    }
+  }
+
+  // Merged outline stroke using the union
+  if (outlineStroke && outlineSubdivided.length > 0) {
+    const maxZ = Math.max(...outlineSubdivided.map((o) => o.z));
+    if (outlineUnion) {
+      for (const poly of outlineUnion) {
         for (const ring of poly) {
           const pts: Point2D[] = ring.map(([x, y]) => [x, y]);
           // Remove duplicate closing point if present
@@ -296,7 +333,7 @@ export function buildFaceGeometry(
           });
         }
       }
-    } catch {
+    } else {
       // Fallback: draw individual strokes
       for (const o of outlineSubdivided) {
         strokes.push({
@@ -306,6 +343,52 @@ export function buildFaceGeometry(
           z: o.z,
           closed: true,
         });
+      }
+    }
+  }
+
+  // Shadow polygons: clip against outline union, then emit as transparent fills.
+  if (outlineUnion && shadowQueue.length > 0) {
+    for (const shadow of shadowQueue) {
+      if (shadow.alpha <= 0) continue;
+      const shadowRing: [number, number][][][] = [
+        [shadow.points.map(([x, y]) => [x, y] as [number, number])],
+      ];
+      let clipped: PolyGeom;
+      try {
+        clipped = polygonClipping.intersection(outlineUnion, shadowRing);
+      } catch {
+        continue;
+      }
+      for (const poly of clipped) {
+        for (const ring of poly) {
+          const pts: Point2D[] = ring.map(([x, y]) => [x, y]);
+          if (
+            pts.length > 1 &&
+            pts[0][0] === pts[pts.length - 1][0] &&
+            pts[0][1] === pts[pts.length - 1][1]
+          ) {
+            pts.pop();
+          }
+          if (pts.length < 3) continue;
+          const tris = triangulate(pts);
+          const [r, g, b] = shadow.fillColor;
+          const tfPos = new Float32Array(pts.length * 3);
+          for (let i = 0; i < pts.length; i++) {
+            tfPos[i * 3] = pts[i][0];
+            tfPos[i * 3 + 1] = pts[i][1];
+            tfPos[i * 3 + 2] = shadow.z;
+          }
+          const tfGeo = new THREE.BufferGeometry();
+          tfGeo.setAttribute("position", new THREE.BufferAttribute(tfPos, 3));
+          tfGeo.setIndex(tris);
+          tfGeo.computeBoundingSphere();
+          transparentFills.push({
+            geometry: tfGeo,
+            color: [r, g, b],
+            alpha: shadow.alpha,
+          });
+        }
       }
     }
   }

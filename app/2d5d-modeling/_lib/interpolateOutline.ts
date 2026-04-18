@@ -3,6 +3,7 @@ import { buildInterpolator } from "./buildInterpolator";
 import type {
   InterpolationMode,
   OutlinePolygon,
+  OutlineShadowPolygon,
   Point2D,
   YawPitch,
 } from "./types";
@@ -17,7 +18,7 @@ import type {
  * frontal (yaw=0) shape is preserved as authored.
  */
 export function interpolateOutlinePoints(
-  polygon: OutlinePolygon,
+  polygon: OutlinePolygon | OutlineShadowPolygon,
   angle: YawPitch,
   weights: Record<string, number>,
   mode: InterpolationMode,

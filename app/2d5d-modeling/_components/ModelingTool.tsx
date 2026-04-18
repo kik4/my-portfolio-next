@@ -14,6 +14,7 @@ import type {
   InterpolationMode,
   OutlineKeyframe,
   OutlinePolygon,
+  OutlineShadowPolygon,
   OutlineStroke,
   Point2D,
   Polygon,
@@ -47,6 +48,20 @@ function createOutlinePolygon(layerIndex: number): OutlinePolygon {
     group: "outline",
     basePoints: createEllipsePoints(0.3, 0.4, 16),
     layerIndex,
+    yawPitchKeyframes: [],
+    blendShapes: [],
+  };
+}
+
+function createOutlineShadowPolygon(layerIndex: number): OutlineShadowPolygon {
+  return {
+    id: genId("shadow"),
+    name: "新しい輪郭影",
+    group: "outlineShadow",
+    basePoints: createEllipsePoints(0.2, 0.2, 12),
+    layerIndex,
+    fillColor: [0, 0, 0, 1],
+    baseAlpha: 0.3,
     yawPitchKeyframes: [],
     blendShapes: [],
   };
@@ -302,7 +317,10 @@ export function ModelingTool() {
           ] as Point2D,
       );
     }
-    if (selectedPolygon.group === "outline") {
+    if (
+      selectedPolygon.group === "outline" ||
+      selectedPolygon.group === "outlineShadow"
+    ) {
       const kf = selectedPolygon.yawPitchKeyframes[editMode.index];
       if (!kf) return basePoints;
       return basePoints.map(
@@ -358,10 +376,13 @@ export function ModelingTool() {
         }
         return;
       }
-      if (selectedPolygon.group === "outline") {
+      if (
+        selectedPolygon.group === "outline" ||
+        selectedPolygon.group === "outlineShadow"
+      ) {
         const kfIndex = editMode.index;
         updateSelectedPolygon((p) => {
-          if (p.group !== "outline") return p;
+          if (p.group !== "outline" && p.group !== "outlineShadow") return p;
           return {
             ...p,
             yawPitchKeyframes: p.yawPitchKeyframes.map((kf, i) => {
@@ -411,7 +432,10 @@ export function ModelingTool() {
 
   const addKeyframe = useCallback(() => {
     if (!selectedPolygon) return;
-    if (selectedPolygon.group === "outline") {
+    if (
+      selectedPolygon.group === "outline" ||
+      selectedPolygon.group === "outlineShadow"
+    ) {
       if (selectedPolygon.mirrorSymmetric && angle.yaw < 0) {
         alert(
           "左右対称モード中は yaw<0 側にキーフレームを作成できません。yaw>=0 側で編集してください。",
@@ -435,7 +459,7 @@ export function ModelingTool() {
         deltas,
       };
       updateSelectedPolygon((p) => {
-        if (p.group !== "outline") return p;
+        if (p.group !== "outline" && p.group !== "outlineShadow") return p;
         return { ...p, yawPitchKeyframes: [...p.yawPitchKeyframes, newKf] };
       });
     }
@@ -484,17 +508,18 @@ export function ModelingTool() {
   );
 
   const addPolygon = useCallback(
-    (group: "outline" | "feature") => {
+    (group: "outline" | "feature" | "outlineShadow") => {
       const maxLayer = polygons.reduce(
         (max, p) => Math.max(max, p.layerIndex),
         -1,
       );
-      setPolygons((prev) => [
-        ...prev,
+      const next =
         group === "outline"
           ? createOutlinePolygon(maxLayer + 1)
-          : createFeaturePolygon(maxLayer + 1),
-      ]);
+          : group === "outlineShadow"
+            ? createOutlineShadowPolygon(maxLayer + 1)
+            : createFeaturePolygon(maxLayer + 1);
+      setPolygons((prev) => [...prev, next]);
       setSelectedPolygonIndex(polygons.length);
       setEditMode({ type: "base" });
     },
@@ -1532,7 +1557,8 @@ export function ModelingTool() {
                   className="w-16 rounded border px-1"
                 />
               </label>
-              {selectedPolygon.group === "outline" && (
+              {(selectedPolygon.group === "outline" ||
+                selectedPolygon.group === "outlineShadow") && (
                 <label className="flex items-center gap-2">
                   <span className="w-14 shrink-0">左右対称</span>
                   <input
@@ -1541,7 +1567,11 @@ export function ModelingTool() {
                     onChange={(e) => {
                       const enable = e.target.checked;
                       updateSelectedPolygon((p) => {
-                        if (p.group !== "outline") return p;
+                        if (
+                          p.group !== "outline" &&
+                          p.group !== "outlineShadow"
+                        )
+                          return p;
                         if (!enable) {
                           return { ...p, mirrorSymmetric: false };
                         }
@@ -1564,6 +1594,45 @@ export function ModelingTool() {
                     yaw{"<"}0 を yaw{">"}=0 の鏡像で表示
                   </span>
                 </label>
+              )}
+              {selectedPolygon.group === "outlineShadow" && (
+                <>
+                  <label className="flex items-center gap-2">
+                    <span className="w-14 shrink-0">色</span>
+                    <input
+                      type="color"
+                      value={rgbaToHex(selectedPolygon.fillColor)}
+                      onChange={(e) =>
+                        updateSelectedPolygon((p) =>
+                          p.group === "outlineShadow"
+                            ? { ...p, fillColor: hexToRgba(e.target.value) }
+                            : p,
+                        )
+                      }
+                    />
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <span className="w-14 shrink-0">α</span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      value={selectedPolygon.baseAlpha}
+                      onChange={(e) =>
+                        updateSelectedPolygon((p) =>
+                          p.group === "outlineShadow"
+                            ? { ...p, baseAlpha: Number(e.target.value) }
+                            : p,
+                        )
+                      }
+                      className="flex-1"
+                    />
+                    <span className="w-8 text-right tabular-nums">
+                      {selectedPolygon.baseAlpha.toFixed(2)}
+                    </span>
+                  </label>
+                </>
               )}
               {selectedPolygon.group === "feature" && (
                 <>
@@ -1779,22 +1848,29 @@ export function ModelingTool() {
                 fillColor={
                   selectedPolygon.group === "outline"
                     ? outlineFillColor
-                    : selectedPolygon.fillColor
+                    : selectedPolygon.group === "outlineShadow"
+                      ? selectedPolygon.fillColor
+                      : selectedPolygon.fillColor
                 }
                 fillEnabled={
-                  selectedPolygon.group === "outline"
+                  selectedPolygon.group === "outline" ||
+                  selectedPolygon.group === "outlineShadow"
                     ? true
                     : selectedPolygon.fillEnabled
                 }
                 strokeColor={
                   selectedPolygon.group === "outline"
                     ? (outlineStroke?.color ?? null)
-                    : selectedPolygon.strokeColor
+                    : selectedPolygon.group === "outlineShadow"
+                      ? null
+                      : selectedPolygon.strokeColor
                 }
                 strokeWidth={
                   selectedPolygon.group === "outline"
                     ? (outlineStroke?.width ?? 2)
-                    : selectedPolygon.strokeWidth
+                    : selectedPolygon.group === "outlineShadow"
+                      ? 2
+                      : selectedPolygon.strokeWidth
                 }
                 backgroundPolygons={siblingPolygons}
                 backgroundColor={editorBgColor}
@@ -1820,7 +1896,8 @@ export function ModelingTool() {
             </div>
 
             {/* Outline KF: zero-out deltas (reset to base shape) */}
-            {selectedPolygon.group === "outline" &&
+            {(selectedPolygon.group === "outline" ||
+              selectedPolygon.group === "outlineShadow") &&
               editMode.type === "keyframe" && (
                 <div className="border-t px-3 py-1">
                   <button
@@ -1830,7 +1907,11 @@ export function ModelingTool() {
                     onClick={() => {
                       const kfIndex = editMode.index;
                       updateSelectedPolygon((p) => {
-                        if (p.group !== "outline") return p;
+                        if (
+                          p.group !== "outline" &&
+                          p.group !== "outlineShadow"
+                        )
+                          return p;
                         return {
                           ...p,
                           yawPitchKeyframes: p.yawPitchKeyframes.map((kf, i) =>

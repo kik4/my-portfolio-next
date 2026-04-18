@@ -15,7 +15,7 @@ interface PolygonTreeProps {
   onDeletePolygon: (index: number) => void;
   onDeleteGroup: (index: number) => void;
   onAssignGroup: (polygonIndex: number, groupId: string | undefined) => void;
-  onAddPolygon: (group: "outline" | "feature") => void;
+  onAddPolygon: (group: "outline" | "feature" | "outlineShadow") => void;
   onAddGroup: () => void;
 }
 
@@ -56,6 +56,7 @@ export function PolygonTree({
     .filter(
       ({ polygon }) =>
         polygon.group === "outline" ||
+        polygon.group === "outlineShadow" ||
         (polygon.group === "feature" && !polygon.groupId),
     );
 
@@ -136,16 +137,20 @@ export function PolygonTree({
             className="mr-1 inline-block h-2.5 w-2.5 rounded-sm border"
             style={{
               backgroundColor: rgbaToHex(
-                polygon.group === "feature"
-                  ? polygon.fillColor
-                  : outlineFillColor,
+                polygon.group === "outline"
+                  ? outlineFillColor
+                  : polygon.fillColor,
               ),
             }}
           />
           {polygon.name}
           <span className="ml-1 text-gray-400 text-xs">
-            {polygon.group === "outline" ? "輪郭" : "特徴"} L
-            {polygon.layerIndex}
+            {polygon.group === "outline"
+              ? "輪郭"
+              : polygon.group === "outlineShadow"
+                ? "輪郭影"
+                : "特徴"}{" "}
+            L{polygon.layerIndex}
           </span>
         </button>
         {polygons.length > 1 && (
@@ -252,13 +257,20 @@ export function PolygonTree({
       })}
 
       {/* Add buttons */}
-      <div className="flex gap-1 pt-1">
+      <div className="flex flex-wrap gap-1 pt-1">
         <button
           type="button"
           onClick={() => onAddPolygon("outline")}
           className="flex-1 rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
         >
           + 輪郭
+        </button>
+        <button
+          type="button"
+          onClick={() => onAddPolygon("outlineShadow")}
+          className="flex-1 rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
+        >
+          + 輪郭影
         </button>
         <button
           type="button"

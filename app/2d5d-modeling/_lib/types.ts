@@ -39,6 +39,22 @@ export interface OutlinePolygon {
   mirrorSymmetric?: boolean;
 }
 
+// Outline shadow: shape identical to OutlinePolygon, but rendered only where
+// it overlaps the union of all OutlinePolygon regions. Parts outside the face
+// outline are clipped away.
+export interface OutlineShadowPolygon {
+  id: string;
+  name: string;
+  group: "outlineShadow";
+  basePoints: Point2D[];
+  layerIndex: number;
+  fillColor: ColorRGBA;
+  baseAlpha: number;
+  yawPitchKeyframes: OutlineKeyframe[];
+  blendShapes: OutlineBlendShape[];
+  mirrorSymmetric?: boolean;
+}
+
 // Feature polygon
 export interface FeatureKeyframe {
   angle: YawPitch;
@@ -98,7 +114,7 @@ export interface FeatureGroup {
   }[];
 }
 
-export type Polygon = OutlinePolygon | FeaturePolygon;
+export type Polygon = OutlinePolygon | OutlineShadowPolygon | FeaturePolygon;
 
 export interface OutlineStroke {
   color: ColorRGBA;
