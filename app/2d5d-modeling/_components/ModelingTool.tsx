@@ -1162,11 +1162,67 @@ export function ModelingTool() {
                               pitch: kf.angle.pitch,
                             });
                           }}
-                          className="flex-1 rounded px-1 text-left text-xs hover:bg-gray-100"
+                          title="このKFの角度に移動"
+                          className="shrink-0 rounded px-1 text-xs hover:bg-gray-100"
                         >
-                          ({kf.angle.yaw.toFixed(0)}°,{" "}
-                          {kf.angle.pitch.toFixed(0)}°)
+                          →
                         </button>
+                        <input
+                          type="number"
+                          value={kf.angle.yaw}
+                          onChange={(e) => {
+                            const idx = selectedGroupIndex!;
+                            const v = Number(e.target.value);
+                            setFeatureGroups((prev) =>
+                              prev.map((g, i) =>
+                                i === idx
+                                  ? {
+                                      ...g,
+                                      yawPitchKeyframes:
+                                        g.yawPitchKeyframes.map((k, j) =>
+                                          j === ki
+                                            ? {
+                                                ...k,
+                                                angle: { ...k.angle, yaw: v },
+                                              }
+                                            : k,
+                                        ),
+                                    }
+                                  : g,
+                              ),
+                            );
+                          }}
+                          className="w-14 rounded border px-1 text-xs"
+                          title="yaw"
+                        />
+                        <input
+                          type="number"
+                          value={kf.angle.pitch}
+                          onChange={(e) => {
+                            const idx = selectedGroupIndex!;
+                            const v = Number(e.target.value);
+                            setFeatureGroups((prev) =>
+                              prev.map((g, i) =>
+                                i === idx
+                                  ? {
+                                      ...g,
+                                      yawPitchKeyframes:
+                                        g.yawPitchKeyframes.map((k, j) =>
+                                          j === ki
+                                            ? {
+                                                ...k,
+                                                angle: { ...k.angle, pitch: v },
+                                              }
+                                            : k,
+                                        ),
+                                    }
+                                  : g,
+                              ),
+                            );
+                          }}
+                          className="w-14 rounded border px-1 text-xs"
+                          title="pitch"
+                        />
                         <button
                           type="button"
                           onClick={() => {
@@ -1845,11 +1901,26 @@ export function ModelingTool() {
               {sortedKeyframeIndices(selectedPolygon.yawPitchKeyframes).map(
                 (i) => {
                   const kf = selectedPolygon.yawPitchKeyframes[i];
+                  const setKfAngle = (patch: Partial<YawPitch>) => {
+                    updateSelectedPolygon(
+                      (p) =>
+                        ({
+                          ...p,
+                          yawPitchKeyframes: (
+                            p.yawPitchKeyframes as (
+                              | OutlineKeyframe
+                              | FeatureKeyframe
+                            )[]
+                          ).map((k, j) =>
+                            j === i
+                              ? { ...k, angle: { ...k.angle, ...patch } }
+                              : k,
+                          ),
+                        }) as Polygon,
+                    );
+                  };
                   return (
-                    <div
-                      key={`${kf.angle.yaw},${kf.angle.pitch}`}
-                      className="flex items-center gap-1"
-                    >
+                    <div key={i} className="flex items-center gap-1">
                       <button
                         type="button"
                         onClick={() => {
@@ -1860,10 +1931,29 @@ export function ModelingTool() {
                             pitch: kf.angle.pitch,
                           });
                         }}
-                        className={`flex-1 rounded px-2 py-0.5 text-left ${editMode.type === "keyframe" && editMode.index === i ? "bg-blue-100 font-semibold text-blue-800" : "hover:bg-gray-100"}`}
+                        title="このKFの角度に移動"
+                        className={`shrink-0 rounded px-1 ${editMode.type === "keyframe" && editMode.index === i ? "bg-blue-100 font-semibold text-blue-800" : "hover:bg-gray-100"}`}
                       >
-                        {getKfAngleLabel(kf)}
+                        →
                       </button>
+                      <input
+                        type="number"
+                        value={kf.angle.yaw}
+                        onChange={(e) =>
+                          setKfAngle({ yaw: Number(e.target.value) })
+                        }
+                        className="w-14 rounded border px-1 text-xs"
+                        title="yaw"
+                      />
+                      <input
+                        type="number"
+                        value={kf.angle.pitch}
+                        onChange={(e) =>
+                          setKfAngle({ pitch: Number(e.target.value) })
+                        }
+                        className="w-14 rounded border px-1 text-xs"
+                        title="pitch"
+                      />
                       <button
                         type="button"
                         onClick={() => deleteKeyframe(i)}
