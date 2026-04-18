@@ -10,6 +10,7 @@ import type {
   FeatureGroupKeyframe,
   FeatureKeyframe,
   FeaturePolygon,
+  InterpolationMode,
   OutlineKeyframe,
   OutlinePolygon,
   OutlineStroke,
@@ -128,6 +129,8 @@ export function ModelingTool() {
   const [outlineStroke, setOutlineStroke] = useState<OutlineStroke | null>(
     null,
   );
+  const [interpolationMode, setInterpolationMode] =
+    useState<InterpolationMode>("rbf-gaussian");
 
   // Undo/redo: snapshot of all core model state.
   const historySuppressRef = useRef(false);
@@ -138,6 +141,7 @@ export function ModelingTool() {
       blendShapeWeights,
       outlineFillColor,
       outlineStroke,
+      interpolationMode,
     }),
     [
       polygons,
@@ -145,6 +149,7 @@ export function ModelingTool() {
       blendShapeWeights,
       outlineFillColor,
       outlineStroke,
+      interpolationMode,
     ],
   );
   const history = useHistory(snapshot);
@@ -155,6 +160,7 @@ export function ModelingTool() {
     setBlendShapeWeights(snap.blendShapeWeights);
     setOutlineFillColor(snap.outlineFillColor);
     setOutlineStroke(snap.outlineStroke);
+    setInterpolationMode(snap.interpolationMode);
   }, []);
   useDebouncedCommit(snapshot, history.commit, 300, historySuppressRef);
   const handleUndo = useCallback(() => {
@@ -178,6 +184,7 @@ export function ModelingTool() {
       setBlendShapeWeights(saved.blendShapeWeights);
       setOutlineFillColor(saved.outlineFillColor);
       setOutlineStroke(saved.outlineStroke);
+      setInterpolationMode(saved.interpolationMode);
       setSelectedPolygonIndex(null);
       setEditMode({ type: "base" });
       history.reset({
@@ -186,6 +193,7 @@ export function ModelingTool() {
         blendShapeWeights: saved.blendShapeWeights,
         outlineFillColor: saved.outlineFillColor,
         outlineStroke: saved.outlineStroke,
+        interpolationMode: saved.interpolationMode,
       });
     }
   }, [history]);
@@ -563,6 +571,7 @@ export function ModelingTool() {
       blendShapeWeights,
       outlineFillColor,
       outlineStroke,
+      interpolationMode,
     }),
     [
       polygons,
@@ -570,6 +579,7 @@ export function ModelingTool() {
       blendShapeWeights,
       outlineFillColor,
       outlineStroke,
+      interpolationMode,
     ],
   );
 
@@ -678,6 +688,26 @@ export function ModelingTool() {
             ))}
           </div>
         )}
+
+        {/* Interpolation mode */}
+        <div className="space-y-1 border-t px-3 py-2">
+          <label className="flex items-center gap-2">
+            <span className="shrink-0 text-xs">補間</span>
+            <select
+              value={interpolationMode}
+              onChange={(e) =>
+                setInterpolationMode(e.target.value as InterpolationMode)
+              }
+              className="flex-1 rounded border px-1 py-0.5 text-xs"
+            >
+              <option value="rbf-gaussian">RBF Gaussian</option>
+              <option value="rbf-gaussian-regularized">
+                RBF Gaussian (正則化)
+              </option>
+              <option value="linear-delaunay">Linear (Delaunay)</option>
+            </select>
+          </label>
+        </div>
 
         {/* Display settings */}
         <div className="space-y-2 px-3 py-2">
@@ -880,6 +910,7 @@ export function ModelingTool() {
                     setBlendShapeWeights(imported.blendShapeWeights);
                     setOutlineFillColor(imported.outlineFillColor);
                     setOutlineStroke(imported.outlineStroke);
+                    setInterpolationMode(imported.interpolationMode);
                     setSelectedPolygonIndex(null);
                     setSelectedGroupIndex(null);
                     setEditMode({ type: "base" });
@@ -889,6 +920,7 @@ export function ModelingTool() {
                       blendShapeWeights: imported.blendShapeWeights,
                       outlineFillColor: imported.outlineFillColor,
                       outlineStroke: imported.outlineStroke,
+                      interpolationMode: imported.interpolationMode,
                     });
                   } catch (err) {
                     alert(`Import failed: ${err}`);
@@ -909,6 +941,7 @@ export function ModelingTool() {
               setBlendShapeWeights({});
               setOutlineFillColor([0.99, 0.88, 0.78, 1]);
               setOutlineStroke(null);
+              setInterpolationMode("rbf-gaussian");
               setSelectedPolygonIndex(null);
               setSelectedGroupIndex(null);
               setEditMode({ type: "base" });

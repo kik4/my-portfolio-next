@@ -78,8 +78,13 @@ export function buildFaceGeometry(
   const strokes: StrokeLine[] = [];
   const transparentFills: TransparentFill[] = [];
   let selectedOutlineStroke: { points: Point2D[]; z: number } | null = null;
-  const { blendShapeWeights, featureGroups, outlineFillColor, outlineStroke } =
-    model;
+  const {
+    blendShapeWeights,
+    featureGroups,
+    outlineFillColor,
+    outlineStroke,
+    interpolationMode: mode,
+  } = model;
 
   // Pre-compute group transforms, visibility, layerIndex
   const groupTransforms = new Map<
@@ -102,7 +107,7 @@ export function buildFaceGeometry(
       });
       continue;
     }
-    const transform = interpolateGroupTransform(g, angle);
+    const transform = interpolateGroupTransform(g, angle, mode);
     const layerIndex = resolveGroupLayerIndex(g, angle);
     groupTransforms.set(g.id, {
       visible: true,
@@ -124,14 +129,24 @@ export function buildFaceGeometry(
     let effectiveLayerIndex = polygon.layerIndex;
 
     if (polygon.group === "outline") {
-      points = interpolateOutlinePoints(polygon, angle, blendShapeWeights);
+      points = interpolateOutlinePoints(
+        polygon,
+        angle,
+        blendShapeWeights,
+        mode,
+      );
     } else if (polygon.group === "feature") {
       if (polygon.groupId) {
         const gt = groupTransforms.get(polygon.groupId);
         if (gt && !gt.visible) continue;
       }
 
-      const result = interpolateFeature(polygon, angle, blendShapeWeights);
+      const result = interpolateFeature(
+        polygon,
+        angle,
+        blendShapeWeights,
+        mode,
+      );
       let localPos = result.position;
       let localMat = result.matrix;
 

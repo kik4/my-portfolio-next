@@ -1,5 +1,11 @@
-import { buildRBFInterpolator } from "./rbf";
-import type { FeatureGroup, Mat2, Point2D, YawPitch } from "./types";
+import { buildInterpolator } from "./buildInterpolator";
+import type {
+  FeatureGroup,
+  InterpolationMode,
+  Mat2,
+  Point2D,
+  YawPitch,
+} from "./types";
 import { MAT2_IDENTITY } from "./types";
 
 interface GroupTransform {
@@ -27,13 +33,14 @@ export function isGroupVisible(group: FeatureGroup, angle: YawPitch): boolean {
 export function interpolateGroupTransform(
   group: FeatureGroup,
   angle: YawPitch,
+  mode: InterpolationMode,
 ): GroupTransform {
   if (group.yawPitchKeyframes.length === 0) {
     return { position: [0, 0], matrix: MAT2_IDENTITY };
   }
 
   // Interpolate deltas from identity to avoid Gaussian decay shrinking the matrix
-  const interpolator = buildRBFInterpolator(
+  const interpolator = buildInterpolator(
     group.yawPitchKeyframes.map((kf) => ({
       yaw: kf.angle.yaw,
       pitch: kf.angle.pitch,
@@ -46,6 +53,7 @@ export function interpolateGroupTransform(
         kf.matrix[3] - 1, // delta from identity
       ],
     })),
+    mode,
   );
 
   const v = interpolator.interpolate(angle.yaw, angle.pitch);

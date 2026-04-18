@@ -1,4 +1,15 @@
-import type { FaceModel, FeaturePolygon, Polygon } from "./types";
+import type {
+  FaceModel,
+  FeaturePolygon,
+  InterpolationMode,
+  Polygon,
+} from "./types";
+
+const VALID_MODES: InterpolationMode[] = [
+  "rbf-gaussian",
+  "rbf-gaussian-regularized",
+  "linear-delaunay",
+];
 
 export function exportFaceModel(model: FaceModel): string {
   return JSON.stringify(model, null, 2);
@@ -30,12 +41,18 @@ export function importFaceModel(json: string): FaceModel {
     }));
     return { ...(feature as FeaturePolygon), strokeRanges: ranges };
   });
+  const interpolationMode: InterpolationMode = VALID_MODES.includes(
+    data.interpolationMode,
+  )
+    ? data.interpolationMode
+    : "rbf-gaussian";
   return {
     polygons,
     featureGroups: data.featureGroups ?? [],
     blendShapeWeights: data.blendShapeWeights ?? {},
     outlineFillColor: data.outlineFillColor ?? [0.99, 0.88, 0.78, 1],
     outlineStroke: data.outlineStroke ?? null,
+    interpolationMode,
   };
 }
 

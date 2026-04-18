@@ -94,9 +94,14 @@ function solveLinear(A: number[][], b: number[][]): number[][] {
 /**
  * Build an RBF interpolator from keyframes.
  * If no keyframes, returns zero vector.
+ *
+ * `lambda` adds a Tikhonov regularization term to the diagonal of Φ.
+ * lambda=0 is the unregularized interpolator (passes through every KF exactly).
+ * Small positive λ trades exact interpolation for reduced overshoot between KFs.
  */
 export function buildRBFInterpolator(
   keyframes: RBFKeyframe[],
+  lambda = 0,
 ): RBFInterpolator {
   const n = keyframes.length;
 
@@ -115,7 +120,7 @@ export function buildRBFInterpolator(
     };
   }
 
-  // Build kernel matrix Φ (n×n)
+  // Build kernel matrix Φ (n×n) with optional Tikhonov regularization.
   const Phi: number[][] = [];
   for (let i = 0; i < n; i++) {
     Phi[i] = [];
@@ -126,7 +131,7 @@ export function buildRBFInterpolator(
         keyframes[j].yaw,
         keyframes[j].pitch,
       );
-      Phi[i][j] = gaussian(r);
+      Phi[i][j] = gaussian(r) + (i === j ? lambda : 0);
     }
   }
 

@@ -2,8 +2,14 @@ import {
   applyBlendShapePoints,
   computeBlendShapeAlpha,
 } from "./applyBlendShapes";
-import { buildRBFInterpolator } from "./rbf";
-import type { FeaturePolygon, Mat2, Point2D, YawPitch } from "./types";
+import { buildInterpolator } from "./buildInterpolator";
+import type {
+  FeaturePolygon,
+  InterpolationMode,
+  Mat2,
+  Point2D,
+  YawPitch,
+} from "./types";
 import { MAT2_IDENTITY } from "./types";
 
 export interface FeatureInterpolationResult {
@@ -21,6 +27,7 @@ export function interpolateFeature(
   polygon: FeaturePolygon,
   angle: YawPitch,
   weights: Record<string, number>,
+  mode: InterpolationMode,
 ): FeatureInterpolationResult {
   // 1. Apply blend shapes to base
   const blendedPoints = applyBlendShapePoints(
@@ -40,7 +47,7 @@ export function interpolateFeature(
   if (polygon.yawPitchKeyframes.length > 0) {
     // Interpolate deltas from defaults to avoid Gaussian decay
     // position default=0, matrix default=identity, alpha default=1
-    const interpolator = buildRBFInterpolator(
+    const interpolator = buildInterpolator(
       polygon.yawPitchKeyframes.map((kf) => ({
         yaw: kf.angle.yaw,
         pitch: kf.angle.pitch,
@@ -54,6 +61,7 @@ export function interpolateFeature(
           kf.alpha - 1, // delta from 1
         ],
       })),
+      mode,
     );
 
     const v = interpolator.interpolate(angle.yaw, angle.pitch);

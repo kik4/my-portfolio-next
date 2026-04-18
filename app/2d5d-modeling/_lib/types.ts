@@ -105,12 +105,18 @@ export interface OutlineStroke {
   width: number;
 }
 
+export type InterpolationMode =
+  | "rbf-gaussian"
+  | "rbf-gaussian-regularized"
+  | "linear-delaunay";
+
 export interface FaceModel {
   polygons: Polygon[];
   featureGroups: FeatureGroup[];
   blendShapeWeights: Record<string, number>;
   outlineFillColor: ColorRGBA;
   outlineStroke: OutlineStroke | null;
+  interpolationMode: InterpolationMode;
 }
 
 // Identity matrix for Mat2

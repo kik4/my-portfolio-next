@@ -1,6 +1,11 @@
 import { applyBlendShapePoints } from "./applyBlendShapes";
-import { buildRBFInterpolator } from "./rbf";
-import type { OutlinePolygon, Point2D, YawPitch } from "./types";
+import { buildInterpolator } from "./buildInterpolator";
+import type {
+  InterpolationMode,
+  OutlinePolygon,
+  Point2D,
+  YawPitch,
+} from "./types";
 
 /**
  * Apply blend shapes then yaw/pitch keyframe interpolation to an OutlinePolygon.
@@ -15,6 +20,7 @@ export function interpolateOutlinePoints(
   polygon: OutlinePolygon,
   angle: YawPitch,
   weights: Record<string, number>,
+  mode: InterpolationMode,
 ): Point2D[] {
   // 1. Apply blend shapes to base
   const blended = applyBlendShapePoints(
@@ -32,12 +38,13 @@ export function interpolateOutlinePoints(
   }
 
   const numPoints = blended.length;
-  const interpolator = buildRBFInterpolator(
+  const interpolator = buildInterpolator(
     polygon.yawPitchKeyframes.map((kf) => ({
       yaw: kf.angle.yaw,
       pitch: kf.angle.pitch,
       values: kf.deltas.flat(),
     })),
+    mode,
   );
 
   const flatDeltas = interpolator.interpolate(lookupYaw, angle.pitch);
