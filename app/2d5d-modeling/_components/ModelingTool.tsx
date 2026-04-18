@@ -95,6 +95,22 @@ function rgbaToHex(c: [number, number, number, number]): string {
   return `#${r}${g}${b}`;
 }
 
+/**
+ * Display order for keyframe lists. Returns indices into the original array
+ * in the desired display order (does not mutate the source).
+ * Order: pitch ascending, then yaw ascending as a tiebreaker.
+ */
+function sortedKeyframeIndices(
+  keyframes: readonly { angle: YawPitch }[],
+): number[] {
+  return keyframes
+    .map((v, i) => ({ index: i, angle: v.angle }))
+    .toSorted(
+      (a, b) => a.angle.pitch - b.angle.pitch || a.angle.yaw - b.angle.yaw,
+    )
+    .map((v) => v.index);
+}
+
 const LS_KEY = "2d5d-modeling-data";
 
 function loadFromLocalStorage(): FaceModel | null {
@@ -1128,181 +1144,201 @@ export function ModelingTool() {
             </div>
             <div className="space-y-1">
               <div className="text-gray-600 text-xs">グループKF</div>
-              {selectedGroup.yawPitchKeyframes.map((kf, ki) => (
-                <div
-                  key={`gkf-${kf.angle.yaw},${kf.angle.pitch}`}
-                  className="space-y-1 rounded border p-1"
-                >
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        angleSourceRef.current = "slider";
-                        setAngle({ yaw: kf.angle.yaw, pitch: kf.angle.pitch });
-                      }}
-                      className="flex-1 rounded px-1 text-left text-xs hover:bg-gray-100"
+              {sortedKeyframeIndices(selectedGroup.yawPitchKeyframes).map(
+                (ki) => {
+                  const kf = selectedGroup.yawPitchKeyframes[ki];
+                  return (
+                    <div
+                      key={`gkf-${kf.angle.yaw},${kf.angle.pitch}`}
+                      className="space-y-1 rounded border p-1"
                     >
-                      ({kf.angle.yaw.toFixed(0)}°, {kf.angle.pitch.toFixed(0)}°)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const idx = selectedGroupIndex!;
-                        setFeatureGroups((prev) =>
-                          prev.map((g, i) =>
-                            i === idx
-                              ? {
-                                  ...g,
-                                  yawPitchKeyframes: g.yawPitchKeyframes.filter(
-                                    (_, j) => j !== ki,
-                                  ),
-                                }
-                              : g,
-                          ),
-                        );
-                      }}
-                      className="rounded px-1 text-red-500 hover:bg-red-50"
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs">
-                    <span className="w-6">X</span>
-                    <input
-                      type="number"
-                      step={0.01}
-                      value={kf.position[0]}
-                      onChange={(e) => {
-                        const idx = selectedGroupIndex!;
-                        setFeatureGroups((prev) =>
-                          prev.map((g, i) =>
-                            i === idx
-                              ? {
-                                  ...g,
-                                  yawPitchKeyframes: g.yawPitchKeyframes.map(
-                                    (k, j) =>
-                                      j === ki
-                                        ? {
-                                            ...k,
-                                            position: [
-                                              Number(e.target.value),
-                                              k.position[1],
-                                            ] as Point2D,
-                                          }
-                                        : k,
-                                  ),
-                                }
-                              : g,
-                          ),
-                        );
-                      }}
-                      className="w-20 rounded border px-1"
-                    />
-                    <span className="w-6">Y</span>
-                    <input
-                      type="number"
-                      step={0.01}
-                      value={kf.position[1]}
-                      onChange={(e) => {
-                        const idx = selectedGroupIndex!;
-                        setFeatureGroups((prev) =>
-                          prev.map((g, i) =>
-                            i === idx
-                              ? {
-                                  ...g,
-                                  yawPitchKeyframes: g.yawPitchKeyframes.map(
-                                    (k, j) =>
-                                      j === ki
-                                        ? {
-                                            ...k,
-                                            position: [
-                                              k.position[0],
-                                              Number(e.target.value),
-                                            ] as Point2D,
-                                          }
-                                        : k,
-                                  ),
-                                }
-                              : g,
-                          ),
-                        );
-                      }}
-                      className="w-20 rounded border px-1"
-                    />
-                  </div>
-                  {(() => {
-                    const p = decomposeMat2(kf.matrix);
-                    const updateMatrix = (patch: Partial<typeof p>) => {
-                      const idx = selectedGroupIndex!;
-                      const newMatrix = composeMat2({ ...p, ...patch });
-                      setFeatureGroups((prev) =>
-                        prev.map((g, i) =>
-                          i === idx
-                            ? {
-                                ...g,
-                                yawPitchKeyframes: g.yawPitchKeyframes.map(
-                                  (k, j) =>
-                                    j === ki ? { ...k, matrix: newMatrix } : k,
-                                ),
-                              }
-                            : g,
-                        ),
-                      );
-                    };
-                    return (
-                      <div className="space-y-0.5 text-xs">
-                        <div className="flex items-center gap-1">
-                          <span className="w-10">回転</span>
-                          <input
-                            type="number"
-                            step={1}
-                            value={Number(p.rotation.toFixed(1))}
-                            onChange={(e) =>
-                              updateMatrix({ rotation: Number(e.target.value) })
-                            }
-                            className="w-16 rounded border px-1"
-                          />
-                          <span>°</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span>拡縮X</span>
-                          <input
-                            type="number"
-                            step={0.01}
-                            value={Number(p.scaleX.toFixed(3))}
-                            onChange={(e) =>
-                              updateMatrix({ scaleX: Number(e.target.value) })
-                            }
-                            className="w-14 rounded border px-1"
-                          />
-                          <span>拡縮Y</span>
-                          <input
-                            type="number"
-                            step={0.01}
-                            value={Number(p.scaleY.toFixed(3))}
-                            onChange={(e) =>
-                              updateMatrix({ scaleY: Number(e.target.value) })
-                            }
-                            className="w-14 rounded border px-1"
-                          />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="w-10">剪断</span>
-                          <input
-                            type="number"
-                            step={0.01}
-                            value={Number(p.shear.toFixed(3))}
-                            onChange={(e) =>
-                              updateMatrix({ shear: Number(e.target.value) })
-                            }
-                            className="w-16 rounded border px-1"
-                          />
-                        </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            angleSourceRef.current = "slider";
+                            setAngle({
+                              yaw: kf.angle.yaw,
+                              pitch: kf.angle.pitch,
+                            });
+                          }}
+                          className="flex-1 rounded px-1 text-left text-xs hover:bg-gray-100"
+                        >
+                          ({kf.angle.yaw.toFixed(0)}°,{" "}
+                          {kf.angle.pitch.toFixed(0)}°)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const idx = selectedGroupIndex!;
+                            setFeatureGroups((prev) =>
+                              prev.map((g, i) =>
+                                i === idx
+                                  ? {
+                                      ...g,
+                                      yawPitchKeyframes:
+                                        g.yawPitchKeyframes.filter(
+                                          (_, j) => j !== ki,
+                                        ),
+                                    }
+                                  : g,
+                              ),
+                            );
+                          }}
+                          className="rounded px-1 text-red-500 hover:bg-red-50"
+                        >
+                          ×
+                        </button>
                       </div>
-                    );
-                  })()}
-                </div>
-              ))}
+                      <div className="flex items-center gap-1 text-xs">
+                        <span className="w-6">X</span>
+                        <input
+                          type="number"
+                          step={0.01}
+                          value={kf.position[0]}
+                          onChange={(e) => {
+                            const idx = selectedGroupIndex!;
+                            setFeatureGroups((prev) =>
+                              prev.map((g, i) =>
+                                i === idx
+                                  ? {
+                                      ...g,
+                                      yawPitchKeyframes:
+                                        g.yawPitchKeyframes.map((k, j) =>
+                                          j === ki
+                                            ? {
+                                                ...k,
+                                                position: [
+                                                  Number(e.target.value),
+                                                  k.position[1],
+                                                ] as Point2D,
+                                              }
+                                            : k,
+                                        ),
+                                    }
+                                  : g,
+                              ),
+                            );
+                          }}
+                          className="w-20 rounded border px-1"
+                        />
+                        <span className="w-6">Y</span>
+                        <input
+                          type="number"
+                          step={0.01}
+                          value={kf.position[1]}
+                          onChange={(e) => {
+                            const idx = selectedGroupIndex!;
+                            setFeatureGroups((prev) =>
+                              prev.map((g, i) =>
+                                i === idx
+                                  ? {
+                                      ...g,
+                                      yawPitchKeyframes:
+                                        g.yawPitchKeyframes.map((k, j) =>
+                                          j === ki
+                                            ? {
+                                                ...k,
+                                                position: [
+                                                  k.position[0],
+                                                  Number(e.target.value),
+                                                ] as Point2D,
+                                              }
+                                            : k,
+                                        ),
+                                    }
+                                  : g,
+                              ),
+                            );
+                          }}
+                          className="w-20 rounded border px-1"
+                        />
+                      </div>
+                      {(() => {
+                        const p = decomposeMat2(kf.matrix);
+                        const updateMatrix = (patch: Partial<typeof p>) => {
+                          const idx = selectedGroupIndex!;
+                          const newMatrix = composeMat2({ ...p, ...patch });
+                          setFeatureGroups((prev) =>
+                            prev.map((g, i) =>
+                              i === idx
+                                ? {
+                                    ...g,
+                                    yawPitchKeyframes: g.yawPitchKeyframes.map(
+                                      (k, j) =>
+                                        j === ki
+                                          ? { ...k, matrix: newMatrix }
+                                          : k,
+                                    ),
+                                  }
+                                : g,
+                            ),
+                          );
+                        };
+                        return (
+                          <div className="space-y-0.5 text-xs">
+                            <div className="flex items-center gap-1">
+                              <span className="w-10">回転</span>
+                              <input
+                                type="number"
+                                step={1}
+                                value={Number(p.rotation.toFixed(1))}
+                                onChange={(e) =>
+                                  updateMatrix({
+                                    rotation: Number(e.target.value),
+                                  })
+                                }
+                                className="w-16 rounded border px-1"
+                              />
+                              <span>°</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span>拡縮X</span>
+                              <input
+                                type="number"
+                                step={0.01}
+                                value={Number(p.scaleX.toFixed(3))}
+                                onChange={(e) =>
+                                  updateMatrix({
+                                    scaleX: Number(e.target.value),
+                                  })
+                                }
+                                className="w-14 rounded border px-1"
+                              />
+                              <span>拡縮Y</span>
+                              <input
+                                type="number"
+                                step={0.01}
+                                value={Number(p.scaleY.toFixed(3))}
+                                onChange={(e) =>
+                                  updateMatrix({
+                                    scaleY: Number(e.target.value),
+                                  })
+                                }
+                                className="w-14 rounded border px-1"
+                              />
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="w-10">剪断</span>
+                              <input
+                                type="number"
+                                step={0.01}
+                                value={Number(p.shear.toFixed(3))}
+                                onChange={(e) =>
+                                  updateMatrix({
+                                    shear: Number(e.target.value),
+                                  })
+                                }
+                                className="w-16 rounded border px-1"
+                              />
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  );
+                },
+              )}
               <button
                 type="button"
                 onClick={() => {
@@ -1806,34 +1842,39 @@ export function ModelingTool() {
               >
                 正面 (ベース)
               </button>
-              {selectedPolygon.yawPitchKeyframes.map((kf, i) => (
-                <div
-                  key={`${kf.angle.yaw},${kf.angle.pitch}`}
-                  className="flex items-center gap-1"
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditMode({ type: "keyframe", index: i });
-                      angleSourceRef.current = "slider";
-                      setAngle({
-                        yaw: kf.angle.yaw,
-                        pitch: kf.angle.pitch,
-                      });
-                    }}
-                    className={`flex-1 rounded px-2 py-0.5 text-left ${editMode.type === "keyframe" && editMode.index === i ? "bg-blue-100 font-semibold text-blue-800" : "hover:bg-gray-100"}`}
-                  >
-                    {getKfAngleLabel(kf)}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => deleteKeyframe(i)}
-                    className="rounded px-1 text-red-500 hover:bg-red-50"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+              {sortedKeyframeIndices(selectedPolygon.yawPitchKeyframes).map(
+                (i) => {
+                  const kf = selectedPolygon.yawPitchKeyframes[i];
+                  return (
+                    <div
+                      key={`${kf.angle.yaw},${kf.angle.pitch}`}
+                      className="flex items-center gap-1"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditMode({ type: "keyframe", index: i });
+                          angleSourceRef.current = "slider";
+                          setAngle({
+                            yaw: kf.angle.yaw,
+                            pitch: kf.angle.pitch,
+                          });
+                        }}
+                        className={`flex-1 rounded px-2 py-0.5 text-left ${editMode.type === "keyframe" && editMode.index === i ? "bg-blue-100 font-semibold text-blue-800" : "hover:bg-gray-100"}`}
+                      >
+                        {getKfAngleLabel(kf)}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteKeyframe(i)}
+                        className="rounded px-1 text-red-500 hover:bg-red-50"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                },
+              )}
               <button
                 type="button"
                 onClick={addKeyframe}
