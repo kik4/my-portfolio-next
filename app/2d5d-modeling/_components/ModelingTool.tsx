@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { interpolateOutlinePoints } from "../_lib/interpolateOutline";
 import { downloadJson, exportFaceModel, importFaceModel } from "../_lib/jsonIO";
 import { composeMat2, decomposeMat2 } from "../_lib/mat2utils";
 import type {
@@ -401,7 +402,18 @@ export function ModelingTool() {
         );
         return;
       }
-      const deltas: Point2D[] = selectedPolygon.basePoints.map(() => [0, 0]);
+      // Initialize new KF deltas so the polygon's appearance at the current
+      // angle is preserved (current interpolated points − basePoints).
+      const current = interpolateOutlinePoints(
+        selectedPolygon,
+        angle,
+        blendShapeWeights,
+        interpolationMode,
+      );
+      const deltas: Point2D[] = selectedPolygon.basePoints.map((bp, i) => {
+        const c = current[i] ?? bp;
+        return [c[0] - bp[0], c[1] - bp[1]];
+      });
       const newKf: OutlineKeyframe = {
         angle: { yaw: angle.yaw, pitch: angle.pitch },
         deltas,
@@ -427,7 +439,13 @@ export function ModelingTool() {
       type: "keyframe",
       index: selectedPolygon.yawPitchKeyframes.length,
     });
-  }, [angle, selectedPolygon, updateSelectedPolygon]);
+  }, [
+    angle,
+    selectedPolygon,
+    updateSelectedPolygon,
+    blendShapeWeights,
+    interpolationMode,
+  ]);
 
   const deleteKeyframe = useCallback(
     (index: number) => {
@@ -1708,6 +1726,39 @@ export function ModelingTool() {
                 }
               />
             </div>
+
+            {/* Outline KF: zero-out deltas (reset to base shape) */}
+            {selectedPolygon.group === "outline" &&
+              editMode.type === "keyframe" && (
+                <div className="border-t px-3 py-1">
+                  <button
+                    type="button"
+                    className="rounded border px-2 py-0.5 text-xs hover:bg-gray-50"
+                    title="このKFの形状をベース（正面）と同じにします"
+                    onClick={() => {
+                      const kfIndex = editMode.index;
+                      updateSelectedPolygon((p) => {
+                        if (p.group !== "outline") return p;
+                        return {
+                          ...p,
+                          yawPitchKeyframes: p.yawPitchKeyframes.map((kf, i) =>
+                            i === kfIndex
+                              ? {
+                                  ...kf,
+                                  deltas: p.basePoints.map(
+                                    () => [0, 0] as Point2D,
+                                  ),
+                                }
+                              : kf,
+                          ),
+                        };
+                      });
+                    }}
+                  >
+                    KF をベースで初期化（差分ゼロ）
+                  </button>
+                </div>
+              )}
 
             {/* Feature KF alpha */}
             {selectedFeatureKf && (
