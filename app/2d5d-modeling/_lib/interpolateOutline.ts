@@ -35,15 +35,16 @@ export function interpolateOutlinePoints(
 
   // 2. Apply yaw/pitch keyframe deltas
   if (polygon.yawPitchKeyframes.length === 0) {
-    return mirror ? blended.map(([x, y]) => [-x, y] as Point2D) : blended;
+    return mirror ? blended.map(([x, y, s]) => [-x, y, s] as Point2D) : blended;
   }
 
   const numPoints = blended.length;
+  // Each delta is [dx, dy, dSharpness]; pack 3 floats per point.
   const interpolator = buildInterpolator(
     polygon.yawPitchKeyframes.map((kf) => ({
       yaw: kf.angle.yaw,
       pitch: kf.angle.pitch,
-      values: kf.deltas.flat(),
+      values: kf.deltas.flatMap((d) => [d[0], d[1], d[2] ?? 0]),
     })),
     mode,
   );
@@ -52,9 +53,10 @@ export function interpolateOutlinePoints(
 
   const result: Point2D[] = [];
   for (let i = 0; i < numPoints; i++) {
-    const x = blended[i][0] + (flatDeltas[i * 2] ?? 0);
-    const y = blended[i][1] + (flatDeltas[i * 2 + 1] ?? 0);
-    result.push(mirror ? [-x, y] : [x, y]);
+    const x = blended[i][0] + (flatDeltas[i * 3] ?? 0);
+    const y = blended[i][1] + (flatDeltas[i * 3 + 1] ?? 0);
+    const s = blended[i][2] + (flatDeltas[i * 3 + 2] ?? 0);
+    result.push(mirror ? [-x, y, s] : [x, y, s]);
   }
   return result;
 }

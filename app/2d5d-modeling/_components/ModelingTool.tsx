@@ -32,7 +32,7 @@ function createEllipsePoints(rx: number, ry: number, n: number): Point2D[] {
   const points: Point2D[] = [];
   for (let i = 0; i < n; i++) {
     const t = (i / n) * Math.PI * 2;
-    points.push([Math.sin(t) * rx, Math.cos(t) * ry]);
+    points.push([Math.sin(t) * rx, Math.cos(t) * ry, 1]);
   }
   return points;
 }
@@ -310,10 +310,11 @@ export function ModelingTool() {
       const bs = selectedPolygon.blendShapes[editMode.index];
       if (!bs) return basePoints;
       return basePoints.map(
-        ([bx, by], i) =>
+        ([bx, by, bs_], i) =>
           [
             bx + (bs.deltas[i]?.[0] ?? 0),
             by + (bs.deltas[i]?.[1] ?? 0),
+            (bs_ ?? 1) + (bs.deltas[i]?.[2] ?? 0),
           ] as Point2D,
       );
     }
@@ -324,10 +325,11 @@ export function ModelingTool() {
       const kf = selectedPolygon.yawPitchKeyframes[editMode.index];
       if (!kf) return basePoints;
       return basePoints.map(
-        ([bx, by], i) =>
+        ([bx, by, bs_], i) =>
           [
             bx + (kf.deltas[i]?.[0] ?? 0),
             by + (kf.deltas[i]?.[1] ?? 0),
+            (bs_ ?? 1) + (kf.deltas[i]?.[2] ?? 0),
           ] as Point2D,
       );
     }
@@ -335,7 +337,9 @@ export function ModelingTool() {
       const kf = selectedPolygon.yawPitchKeyframes[editMode.index];
       if (!kf) return basePoints;
       const [tx, ty] = kf.position;
-      return basePoints.map(([bx, by]) => [bx + tx, by + ty] as Point2D);
+      return basePoints.map(
+        ([bx, by, bs_]) => [bx + tx, by + ty, bs_ ?? 1] as Point2D,
+      );
     }
     return basePoints;
   }, [editMode, selectedPolygon]);
@@ -349,9 +353,10 @@ export function ModelingTool() {
       }
       if (editMode.type === "blendshape") {
         const bsIndex = editMode.index;
-        const deltas: Point2D[] = newPoints.map(([px, py], j) => [
+        const deltas: Point2D[] = newPoints.map(([px, py, ps], j) => [
           px - selectedPolygon.basePoints[j][0],
           py - selectedPolygon.basePoints[j][1],
+          (ps ?? 1) - (selectedPolygon.basePoints[j][2] ?? 1),
         ]);
         if (selectedPolygon.group === "outline") {
           updateSelectedPolygon((p) => {
@@ -387,9 +392,10 @@ export function ModelingTool() {
             ...p,
             yawPitchKeyframes: p.yawPitchKeyframes.map((kf, i) => {
               if (i !== kfIndex) return kf;
-              const deltas: Point2D[] = newPoints.map(([px, py], j) => [
+              const deltas: Point2D[] = newPoints.map(([px, py, ps], j) => [
                 px - p.basePoints[j][0],
                 py - p.basePoints[j][1],
+                (ps ?? 1) - (p.basePoints[j][2] ?? 1),
               ]);
               return { ...kf, deltas };
             }),
@@ -398,13 +404,13 @@ export function ModelingTool() {
       }
       if (selectedPolygon.group === "feature") {
         const kfIndex = editMode.index;
-        const baseCenter: Point2D = [
+        const baseCenter: [number, number] = [
           selectedPolygon.basePoints.reduce((s, p) => s + p[0], 0) /
             selectedPolygon.basePoints.length,
           selectedPolygon.basePoints.reduce((s, p) => s + p[1], 0) /
             selectedPolygon.basePoints.length,
         ];
-        const newCenter: Point2D = [
+        const newCenter: [number, number] = [
           newPoints.reduce((s, p) => s + p[0], 0) / newPoints.length,
           newPoints.reduce((s, p) => s + p[1], 0) / newPoints.length,
         ];
@@ -420,6 +426,7 @@ export function ModelingTool() {
                     position: [
                       newCenter[0] - baseCenter[0],
                       newCenter[1] - baseCenter[1],
+                      0,
                     ] as Point2D,
                   },
             ),
@@ -452,7 +459,7 @@ export function ModelingTool() {
       );
       const deltas: Point2D[] = selectedPolygon.basePoints.map((bp, i) => {
         const c = current[i] ?? bp;
-        return [c[0] - bp[0], c[1] - bp[1]];
+        return [c[0] - bp[0], c[1] - bp[1], (c[2] ?? 1) - (bp[2] ?? 1)];
       });
       const newKf: OutlineKeyframe = {
         angle: { yaw: angle.yaw, pitch: angle.pitch },
@@ -466,7 +473,7 @@ export function ModelingTool() {
     if (selectedPolygon.group === "feature") {
       const newKf: FeatureKeyframe = {
         angle: { yaw: angle.yaw, pitch: angle.pitch },
-        position: [0, 0],
+        position: [0, 0, 0],
         matrix: MAT2_IDENTITY,
         alpha: 1,
       };
@@ -1292,6 +1299,7 @@ export function ModelingTool() {
                                                 position: [
                                                   Number(e.target.value),
                                                   k.position[1],
+                                                  0,
                                                 ] as Point2D,
                                               }
                                             : k,
@@ -1323,6 +1331,7 @@ export function ModelingTool() {
                                                 position: [
                                                   k.position[0],
                                                   Number(e.target.value),
+                                                  0,
                                                 ] as Point2D,
                                               }
                                             : k,
@@ -1433,7 +1442,7 @@ export function ModelingTool() {
                               ...g.yawPitchKeyframes,
                               {
                                 angle: { yaw: angle.yaw, pitch: angle.pitch },
-                                position: [0, 0] as Point2D,
+                                position: [0, 0, 0] as Point2D,
                                 matrix: MAT2_IDENTITY,
                               },
                             ],
@@ -1919,7 +1928,7 @@ export function ModelingTool() {
                               ? {
                                   ...kf,
                                   deltas: p.basePoints.map(
-                                    () => [0, 0] as Point2D,
+                                    () => [0, 0, 0] as Point2D,
                                   ),
                                 }
                               : kf,
@@ -2110,7 +2119,7 @@ export function ModelingTool() {
                   const id = prompt("ブレンドシェイプ ID");
                   if (!id) return;
                   const deltas: Point2D[] = selectedPolygon.basePoints.map(
-                    () => [0, 0],
+                    () => [0, 0, 0],
                   );
                   if (selectedPolygon.group === "outline")
                     updateSelectedPolygon((p) => {

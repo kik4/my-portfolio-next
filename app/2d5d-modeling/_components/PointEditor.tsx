@@ -94,6 +94,9 @@ export function PointEditor({
   const [drag, setDrag] = useState<DragState>(null);
   const [viewSize, setViewSize] = useState(initialViewSize);
   const [pendingStart, setPendingStart] = useState<number | null>(null);
+  const [selectedPointIndex, setSelectedPointIndex] = useState<number | null>(
+    null,
+  );
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -104,7 +107,7 @@ export function PointEditor({
   }, []);
 
   const toScreen = useCallback(
-    (p: Point2D): [number, number] => {
+    (p: Point2D | [number, number]): [number, number] => {
       const sx = ((p[0] + viewSize) / (viewSize * 2)) * CANVAS_PX;
       const sy = ((viewSize - p[1]) / (viewSize * 2)) * CANVAS_PX;
       return [sx, sy];
@@ -113,7 +116,7 @@ export function PointEditor({
   );
 
   const toWorld = useCallback(
-    (sx: number, sy: number): Point2D => {
+    (sx: number, sy: number): [number, number] => {
       const x = (sx / CANVAS_PX) * (viewSize * 2) - viewSize;
       const y = viewSize - (sy / CANVAS_PX) * (viewSize * 2);
       return [x, y];
@@ -156,7 +159,9 @@ export function PointEditor({
 
       if (drag.type === "point") {
         const next = points.slice();
-        next[drag.index] = toWorld(sx, sy);
+        const prev = points[drag.index];
+        const [nx, ny] = toWorld(sx, sy);
+        next[drag.index] = [nx, ny, prev[2] ?? 1];
         onChange(next);
       }
 
@@ -165,7 +170,7 @@ export function PointEditor({
         const [lwx, lwy] = toWorld(drag.lastSx, drag.lastSy);
         const dx = wx - lwx;
         const dy = wy - lwy;
-        onChange(points.map(([px, py]) => [px + dx, py + dy]));
+        onChange(points.map(([px, py, ps]) => [px + dx, py + dy, ps ?? 1]));
         setDrag({ type: "move", lastSx: sx, lastSy: sy });
       }
 
@@ -178,10 +183,14 @@ export function PointEditor({
         const cos = Math.cos(deltaRad);
         const sin = Math.sin(deltaRad);
         onChange(
-          drag.startPoints.map(([px, py]) => {
+          drag.startPoints.map(([px, py, ps]) => {
             const dx = px - cx;
             const dy = py - cy;
-            return [cx + cos * dx - sin * dy, cy + sin * dx + cos * dy];
+            return [
+              cx + cos * dx - sin * dy,
+              cy + sin * dx + cos * dy,
+              ps ?? 1,
+            ];
           }),
         );
       }
@@ -210,9 +219,10 @@ export function PointEditor({
               : 1;
 
         onChange(
-          drag.startPoints.map(([px, py]) => [
+          drag.startPoints.map(([px, py, ps]) => [
             cx + (px - cx) * scaleX,
             cy + (py - cy) * scaleY,
+            ps ?? 1,
           ]),
         );
       }
@@ -286,8 +296,8 @@ export function PointEditor({
       axis,
       startSx: sx,
       startSy: sy,
-      center: [cx, cy],
-      startPoints: points.map(([x, y]) => [x, y]),
+      center: [cx, cy, 0],
+      startPoints: points.map(([x, y, s]) => [x, y, s ?? 1]),
     });
   };
 
@@ -301,349 +311,394 @@ export function PointEditor({
     setDrag({
       type: "rotate",
       startAngle: Math.atan2(wy - cy, wx - cx),
-      center: [cx, cy],
-      startPoints: points.map(([x, y]) => [x, y]),
+      center: [cx, cy, 0],
+      startPoints: points.map(([x, y, s]) => [x, y, s ?? 1]),
     });
   };
 
   const HANDLE_SIZE = 6;
 
+  const selectedSharpness =
+    selectedPointIndex !== null && points[selectedPointIndex]
+      ? (points[selectedPointIndex][2] ?? 1)
+      : 1;
+
   return (
-    <svg
-      ref={svgRef}
-      viewBox={`0 0 ${CANVAS_PX} ${CANVAS_PX}`}
-      className="h-full w-full touch-none select-none"
-      style={{ backgroundColor }}
-      onWheel={handleWheel}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerUp}
-      role="img"
-      aria-label="正面ベース点列エディタ"
-    >
-      <line
-        x1={CANVAS_PX / 2}
-        y1={0}
-        x2={CANVAS_PX / 2}
-        y2={CANVAS_PX}
-        stroke="#e5e7eb"
-        strokeWidth={1}
-      />
-      <line
-        x1={0}
-        y1={CANVAS_PX / 2}
-        x2={CANVAS_PX}
-        y2={CANVAS_PX / 2}
-        stroke="#e5e7eb"
-        strokeWidth={1}
-      />
-      {backgroundPolygons.map((bg) => {
-        const bgSmooth =
-          bg.points.length >= 3
-            ? subdivideClosed(bg.points, SUBDIV_SEGMENTS)
-            : bg.points;
-        const bgD = `${bgSmooth
-          .map((p, i) => {
-            const [sx, sy] = toScreen(p);
-            return `${i === 0 ? "M" : "L"}${sx},${sy}`;
-          })
-          .join(" ")} Z`;
-        return (
-          <path
-            key={`bg-${bg.fillColor.join(",")}-${bg.points.length}`}
-            d={bgD}
-            fill={rgbaToCss([
-              bg.fillColor[0],
-              bg.fillColor[1],
-              bg.fillColor[2],
-              0.25,
-            ])}
-            stroke={rgbaToCss([
-              bg.fillColor[0],
-              bg.fillColor[1],
-              bg.fillColor[2],
-              0.4,
-            ])}
-            strokeWidth={1}
-          />
-        );
-      })}
-      <path
-        d={pathD}
-        fill={fillEnabled ? rgbaToCss(fillColor) : "transparent"}
-        stroke={
-          strokeColor && strokeRanges === null ? rgbaToCss(strokeColor) : "none"
-        }
-        strokeWidth={strokeColor && strokeRanges === null ? strokeWidth : 0}
-        className="cursor-move"
-        onPointerDown={(e) => {
-          e.currentTarget.setPointerCapture(e.pointerId);
-          const [sx, sy] = getSvgPos(e);
-          setDrag({ type: "move", lastSx: sx, lastSy: sy });
-        }}
-      />
+    <div className="flex h-full w-full flex-col">
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${CANVAS_PX} ${CANVAS_PX}`}
+        className="min-h-0 w-full flex-1 touch-none select-none"
+        style={{ backgroundColor }}
+        onWheel={handleWheel}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+        role="img"
+        aria-label="正面ベース点列エディタ"
+      >
+        <line
+          x1={CANVAS_PX / 2}
+          y1={0}
+          x2={CANVAS_PX / 2}
+          y2={CANVAS_PX}
+          stroke="#e5e7eb"
+          strokeWidth={1}
+        />
+        <line
+          x1={0}
+          y1={CANVAS_PX / 2}
+          x2={CANVAS_PX}
+          y2={CANVAS_PX / 2}
+          stroke="#e5e7eb"
+          strokeWidth={1}
+        />
+        {backgroundPolygons.map((bg) => {
+          const bgSmooth =
+            bg.points.length >= 3
+              ? subdivideClosed(bg.points, SUBDIV_SEGMENTS)
+              : bg.points;
+          const bgD = `${bgSmooth
+            .map((p, i) => {
+              const [sx, sy] = toScreen(p);
+              return `${i === 0 ? "M" : "L"}${sx},${sy}`;
+            })
+            .join(" ")} Z`;
+          return (
+            <path
+              key={`bg-${bg.fillColor.join(",")}-${bg.points.length}`}
+              d={bgD}
+              fill={rgbaToCss([
+                bg.fillColor[0],
+                bg.fillColor[1],
+                bg.fillColor[2],
+                0.25,
+              ])}
+              stroke={rgbaToCss([
+                bg.fillColor[0],
+                bg.fillColor[1],
+                bg.fillColor[2],
+                0.4,
+              ])}
+              strokeWidth={1}
+            />
+          );
+        })}
+        <path
+          d={pathD}
+          fill={fillEnabled ? rgbaToCss(fillColor) : "transparent"}
+          stroke={
+            strokeColor && strokeRanges === null
+              ? rgbaToCss(strokeColor)
+              : "none"
+          }
+          strokeWidth={strokeColor && strokeRanges === null ? strokeWidth : 0}
+          className="cursor-move"
+          onPointerDown={(e) => {
+            e.currentTarget.setPointerCapture(e.pointerId);
+            const [sx, sy] = getSvgPos(e);
+            setDrag({ type: "move", lastSx: sx, lastSy: sy });
+          }}
+        />
 
-      {/* Partial stroke highlight */}
-      {strokeColor &&
-        strokeRangePaths.map((d) => (
-          <path
-            key={`sr-${d}`}
-            d={d}
-            fill="none"
-            stroke={rgbaToCss(strokeColor)}
-            strokeWidth={strokeWidth}
-            strokeLinecap="round"
-            pointerEvents="none"
-          />
-        ))}
+        {/* Partial stroke highlight */}
+        {strokeColor &&
+          strokeRangePaths.map((d) => (
+            <path
+              key={`sr-${d}`}
+              d={d}
+              fill="none"
+              stroke={rgbaToCss(strokeColor)}
+              strokeWidth={strokeWidth}
+              strokeLinecap="round"
+              pointerEvents="none"
+            />
+          ))}
 
-      {/* Stroke range edit mode overlay highlight (pending start) */}
-      {strokeRangesEditMode &&
-        pendingStart !== null &&
-        points[pendingStart] && (
-          <circle
-            cx={toScreen(points[pendingStart])[0]}
-            cy={toScreen(points[pendingStart])[1]}
-            r={10}
-            fill="none"
-            stroke="#f97316"
-            strokeWidth={2}
-            pointerEvents="none"
-          />
+        {/* Stroke range edit mode overlay highlight (pending start) */}
+        {strokeRangesEditMode &&
+          pendingStart !== null &&
+          points[pendingStart] && (
+            <circle
+              cx={toScreen(points[pendingStart])[0]}
+              cy={toScreen(points[pendingStart])[1]}
+              r={10}
+              fill="none"
+              stroke="#f97316"
+              strokeWidth={2}
+              pointerEvents="none"
+            />
+          )}
+
+        {/* Scale handles on bbox edges */}
+        {bboxScreen && (
+          <>
+            {/* Bbox outline */}
+            <rect
+              x={bboxScreen.tl[0]}
+              y={bboxScreen.tl[1]}
+              width={bboxScreen.tr[0] - bboxScreen.tl[0]}
+              height={bboxScreen.bl[1] - bboxScreen.tl[1]}
+              fill="none"
+              stroke="#9ca3af"
+              strokeWidth={0.5}
+              strokeDasharray="3 2"
+            />
+            {/* Rotate handle (above top edge, separated from scaleY handle) */}
+            {(() => {
+              const tx = (bboxScreen.tl[0] + bboxScreen.tr[0]) / 2;
+              const ty = bboxScreen.tl[1] - 32;
+              return (
+                <>
+                  <line
+                    x1={(bboxScreen.tl[0] + bboxScreen.tr[0]) / 2}
+                    y1={bboxScreen.tl[1]}
+                    x2={tx}
+                    y2={ty}
+                    stroke="#f59e0b"
+                    strokeWidth={1}
+                  />
+                  <circle
+                    cx={tx}
+                    cy={ty}
+                    r={HANDLE_SIZE / 2 + 1}
+                    fill="#f59e0b"
+                    stroke="white"
+                    strokeWidth={1.5}
+                    className="cursor-grab"
+                    onPointerDown={startRotate}
+                  />
+                </>
+              );
+            })()}
+            {/* Right (scaleX) */}
+            <rect
+              x={bboxScreen.tr[0] - HANDLE_SIZE / 2}
+              y={(bboxScreen.tr[1] + bboxScreen.br[1]) / 2 - HANDLE_SIZE / 2}
+              width={HANDLE_SIZE}
+              height={HANDLE_SIZE}
+              fill="#10b981"
+              stroke="white"
+              strokeWidth={1}
+              className="cursor-ew-resize"
+              onPointerDown={(e) => startScale(e, "x")}
+            />
+            {/* Left (scaleX) */}
+            <rect
+              x={bboxScreen.tl[0] - HANDLE_SIZE / 2}
+              y={(bboxScreen.tl[1] + bboxScreen.bl[1]) / 2 - HANDLE_SIZE / 2}
+              width={HANDLE_SIZE}
+              height={HANDLE_SIZE}
+              fill="#10b981"
+              stroke="white"
+              strokeWidth={1}
+              className="cursor-ew-resize"
+              onPointerDown={(e) => startScale(e, "x")}
+            />
+            {/* Top (scaleY) */}
+            <rect
+              x={(bboxScreen.tl[0] + bboxScreen.tr[0]) / 2 - HANDLE_SIZE / 2}
+              y={bboxScreen.tl[1] - HANDLE_SIZE / 2}
+              width={HANDLE_SIZE}
+              height={HANDLE_SIZE}
+              fill="#10b981"
+              stroke="white"
+              strokeWidth={1}
+              className="cursor-ns-resize"
+              onPointerDown={(e) => startScale(e, "y")}
+            />
+            {/* Bottom (scaleY) */}
+            <rect
+              x={(bboxScreen.bl[0] + bboxScreen.br[0]) / 2 - HANDLE_SIZE / 2}
+              y={bboxScreen.bl[1] - HANDLE_SIZE / 2}
+              width={HANDLE_SIZE}
+              height={HANDLE_SIZE}
+              fill="#10b981"
+              stroke="white"
+              strokeWidth={1}
+              className="cursor-ns-resize"
+              onPointerDown={(e) => startScale(e, "y")}
+            />
+            {/* Corners (scaleXY) */}
+            <rect
+              x={bboxScreen.tr[0] - HANDLE_SIZE / 2}
+              y={bboxScreen.tr[1] - HANDLE_SIZE / 2}
+              width={HANDLE_SIZE}
+              height={HANDLE_SIZE}
+              fill="#f59e0b"
+              stroke="white"
+              strokeWidth={1}
+              className="cursor-nwse-resize"
+              onPointerDown={(e) => startScale(e, "xy")}
+            />
+            <rect
+              x={bboxScreen.bl[0] - HANDLE_SIZE / 2}
+              y={bboxScreen.bl[1] - HANDLE_SIZE / 2}
+              width={HANDLE_SIZE}
+              height={HANDLE_SIZE}
+              fill="#f59e0b"
+              stroke="white"
+              strokeWidth={1}
+              className="cursor-nwse-resize"
+              onPointerDown={(e) => startScale(e, "xy")}
+            />
+            <rect
+              x={bboxScreen.tl[0] - HANDLE_SIZE / 2}
+              y={bboxScreen.tl[1] - HANDLE_SIZE / 2}
+              width={HANDLE_SIZE}
+              height={HANDLE_SIZE}
+              fill="#f59e0b"
+              stroke="white"
+              strokeWidth={1}
+              className="cursor-nesw-resize"
+              onPointerDown={(e) => startScale(e, "xy")}
+            />
+            <rect
+              x={bboxScreen.br[0] - HANDLE_SIZE / 2}
+              y={bboxScreen.br[1] - HANDLE_SIZE / 2}
+              width={HANDLE_SIZE}
+              height={HANDLE_SIZE}
+              fill="#f59e0b"
+              stroke="white"
+              strokeWidth={1}
+              className="cursor-nesw-resize"
+              onPointerDown={(e) => startScale(e, "xy")}
+            />
+          </>
         )}
 
-      {/* Scale handles on bbox edges */}
-      {bboxScreen && (
-        <>
-          {/* Bbox outline */}
-          <rect
-            x={bboxScreen.tl[0]}
-            y={bboxScreen.tl[1]}
-            width={bboxScreen.tr[0] - bboxScreen.tl[0]}
-            height={bboxScreen.bl[1] - bboxScreen.tl[1]}
-            fill="none"
-            stroke="#9ca3af"
-            strokeWidth={0.5}
-            strokeDasharray="3 2"
-          />
-          {/* Rotate handle (above top edge, separated from scaleY handle) */}
-          {(() => {
-            const tx = (bboxScreen.tl[0] + bboxScreen.tr[0]) / 2;
-            const ty = bboxScreen.tl[1] - 32;
+        {/* Edge hit areas for inserting points */}
+        {allowAddRemove &&
+          points.length >= 2 &&
+          points.map((p, i) => {
+            const next = points[(i + 1) % points.length];
+            const [sx1, sy1] = toScreen(p);
+            const [sx2, sy2] = toScreen(next);
             return (
-              <>
-                <line
-                  x1={(bboxScreen.tl[0] + bboxScreen.tr[0]) / 2}
-                  y1={bboxScreen.tl[1]}
-                  x2={tx}
-                  y2={ty}
-                  stroke="#f59e0b"
-                  strokeWidth={1}
-                />
-                <circle
-                  cx={tx}
-                  cy={ty}
-                  r={HANDLE_SIZE / 2 + 1}
-                  fill="#f59e0b"
-                  stroke="white"
-                  strokeWidth={1.5}
-                  className="cursor-grab"
-                  onPointerDown={startRotate}
-                />
-              </>
+              <line
+                key={`edge-${p[0]},${p[1]}-${next[0]},${next[1]}`}
+                x1={sx1}
+                y1={sy1}
+                x2={sx2}
+                y2={sy2}
+                stroke="transparent"
+                strokeWidth={12}
+                className="cursor-copy"
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  const [sx, sy] = getSvgPos(e);
+                  const [ax, ay] = toScreen(p);
+                  const [bx, by] = toScreen(next);
+                  const { t } = distToSegment(sx, sy, ax, ay, bx, by);
+                  const wx = p[0] + t * (next[0] - p[0]);
+                  const wy = p[1] + t * (next[1] - p[1]);
+                  // Interpolate sharpness between adjacent points.
+                  const ws = (p[2] ?? 1) + t * ((next[2] ?? 1) - (p[2] ?? 1));
+                  const newPoints = [...points];
+                  newPoints.splice(i + 1, 0, [wx, wy, ws]);
+                  onChange(newPoints);
+                }}
+              />
             );
-          })()}
-          {/* Right (scaleX) */}
-          <rect
-            x={bboxScreen.tr[0] - HANDLE_SIZE / 2}
-            y={(bboxScreen.tr[1] + bboxScreen.br[1]) / 2 - HANDLE_SIZE / 2}
-            width={HANDLE_SIZE}
-            height={HANDLE_SIZE}
-            fill="#10b981"
-            stroke="white"
-            strokeWidth={1}
-            className="cursor-ew-resize"
-            onPointerDown={(e) => startScale(e, "x")}
-          />
-          {/* Left (scaleX) */}
-          <rect
-            x={bboxScreen.tl[0] - HANDLE_SIZE / 2}
-            y={(bboxScreen.tl[1] + bboxScreen.bl[1]) / 2 - HANDLE_SIZE / 2}
-            width={HANDLE_SIZE}
-            height={HANDLE_SIZE}
-            fill="#10b981"
-            stroke="white"
-            strokeWidth={1}
-            className="cursor-ew-resize"
-            onPointerDown={(e) => startScale(e, "x")}
-          />
-          {/* Top (scaleY) */}
-          <rect
-            x={(bboxScreen.tl[0] + bboxScreen.tr[0]) / 2 - HANDLE_SIZE / 2}
-            y={bboxScreen.tl[1] - HANDLE_SIZE / 2}
-            width={HANDLE_SIZE}
-            height={HANDLE_SIZE}
-            fill="#10b981"
-            stroke="white"
-            strokeWidth={1}
-            className="cursor-ns-resize"
-            onPointerDown={(e) => startScale(e, "y")}
-          />
-          {/* Bottom (scaleY) */}
-          <rect
-            x={(bboxScreen.bl[0] + bboxScreen.br[0]) / 2 - HANDLE_SIZE / 2}
-            y={bboxScreen.bl[1] - HANDLE_SIZE / 2}
-            width={HANDLE_SIZE}
-            height={HANDLE_SIZE}
-            fill="#10b981"
-            stroke="white"
-            strokeWidth={1}
-            className="cursor-ns-resize"
-            onPointerDown={(e) => startScale(e, "y")}
-          />
-          {/* Corners (scaleXY) */}
-          <rect
-            x={bboxScreen.tr[0] - HANDLE_SIZE / 2}
-            y={bboxScreen.tr[1] - HANDLE_SIZE / 2}
-            width={HANDLE_SIZE}
-            height={HANDLE_SIZE}
-            fill="#f59e0b"
-            stroke="white"
-            strokeWidth={1}
-            className="cursor-nwse-resize"
-            onPointerDown={(e) => startScale(e, "xy")}
-          />
-          <rect
-            x={bboxScreen.bl[0] - HANDLE_SIZE / 2}
-            y={bboxScreen.bl[1] - HANDLE_SIZE / 2}
-            width={HANDLE_SIZE}
-            height={HANDLE_SIZE}
-            fill="#f59e0b"
-            stroke="white"
-            strokeWidth={1}
-            className="cursor-nwse-resize"
-            onPointerDown={(e) => startScale(e, "xy")}
-          />
-          <rect
-            x={bboxScreen.tl[0] - HANDLE_SIZE / 2}
-            y={bboxScreen.tl[1] - HANDLE_SIZE / 2}
-            width={HANDLE_SIZE}
-            height={HANDLE_SIZE}
-            fill="#f59e0b"
-            stroke="white"
-            strokeWidth={1}
-            className="cursor-nesw-resize"
-            onPointerDown={(e) => startScale(e, "xy")}
-          />
-          <rect
-            x={bboxScreen.br[0] - HANDLE_SIZE / 2}
-            y={bboxScreen.br[1] - HANDLE_SIZE / 2}
-            width={HANDLE_SIZE}
-            height={HANDLE_SIZE}
-            fill="#f59e0b"
-            stroke="white"
-            strokeWidth={1}
-            className="cursor-nesw-resize"
-            onPointerDown={(e) => startScale(e, "xy")}
-          />
-        </>
-      )}
+          })}
 
-      {/* Edge hit areas for inserting points */}
-      {allowAddRemove &&
-        points.length >= 2 &&
-        points.map((p, i) => {
-          const next = points[(i + 1) % points.length];
-          const [sx1, sy1] = toScreen(p);
-          const [sx2, sy2] = toScreen(next);
+        {/* Point handles */}
+        {points.map((p, i) => {
+          const [sx, sy] = toScreen(p);
+          const inEditMode = strokeRangesEditMode;
+          // Hue cycles with index so adjacent points differ yet stay readable.
+          const hue = points.length > 0 ? (i / points.length) * 360 : 0;
+          const indexColor = `hsl(${hue.toFixed(0)}, 70%, 45%)`;
+          const fill = inEditMode
+            ? pendingStart === i
+              ? "#f97316"
+              : "#8b5cf6"
+            : drag?.type === "point" && drag.index === i
+              ? "#ef4444"
+              : indexColor;
+          const isSelected = selectedPointIndex === i && !inEditMode;
           return (
-            <line
-              key={`edge-${p[0]},${p[1]}-${next[0]},${next[1]}`}
-              x1={sx1}
-              y1={sy1}
-              x2={sx2}
-              y2={sy2}
-              stroke="transparent"
-              strokeWidth={12}
-              className="cursor-copy"
+            // biome-ignore lint/a11y/useSemanticElements: SVG circle used as interactive handle
+            <circle
+              key={`${p[0]},${p[1]}`}
+              cx={sx}
+              cy={sy}
+              r={isSelected ? 8 : 6}
+              fill={fill}
+              stroke={isSelected ? "#2563eb" : "white"}
+              strokeWidth={isSelected ? 3 : 2}
+              className={inEditMode ? "cursor-pointer" : "cursor-grab"}
+              role="button"
+              tabIndex={-1}
               onPointerDown={(e) => {
                 e.stopPropagation();
-                const [sx, sy] = getSvgPos(e);
-                const [ax, ay] = toScreen(p);
-                const [bx, by] = toScreen(next);
-                const { t } = distToSegment(sx, sy, ax, ay, bx, by);
-                const wx = p[0] + t * (next[0] - p[0]);
-                const wy = p[1] + t * (next[1] - p[1]);
-                const newPoints = [...points];
-                newPoints.splice(i + 1, 0, [wx, wy]);
+                if (inEditMode) {
+                  if (pendingStart === null) {
+                    setPendingStart(i);
+                  } else {
+                    const next: StrokeRange = {
+                      id: `sr_${Date.now().toString(36)}_${Math.floor(Math.random() * 1e6).toString(36)}`,
+                      start: pendingStart,
+                      end: i,
+                    };
+                    const existing = strokeRanges ?? [];
+                    onStrokeRangesChange?.([...existing, next]);
+                    setPendingStart(null);
+                  }
+                  return;
+                }
+                e.currentTarget.setPointerCapture(e.pointerId);
+                setDrag({ type: "point", index: i });
+                setSelectedPointIndex(i);
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (inEditMode) {
+                  setPendingStart(null);
+                  return;
+                }
+                if (!allowAddRemove) return;
+                if (points.length <= 3) return;
+                const newPoints = points.filter((_, j) => j !== i);
                 onChange(newPoints);
+                setSelectedPointIndex(null);
               }}
             />
           );
         })}
-
-      {/* Point handles */}
-      {points.map((p, i) => {
-        const [sx, sy] = toScreen(p);
-        const inEditMode = strokeRangesEditMode;
-        // Hue cycles with index so adjacent points differ yet stay readable.
-        const hue = points.length > 0 ? (i / points.length) * 360 : 0;
-        const indexColor = `hsl(${hue.toFixed(0)}, 70%, 45%)`;
-        const fill = inEditMode
-          ? pendingStart === i
-            ? "#f97316"
-            : "#8b5cf6"
-          : drag?.type === "point" && drag.index === i
-            ? "#ef4444"
-            : indexColor;
-        return (
-          // biome-ignore lint/a11y/useSemanticElements: SVG circle used as interactive handle
-          <circle
-            key={`${p[0]},${p[1]}`}
-            cx={sx}
-            cy={sy}
-            r={6}
-            fill={fill}
-            stroke="white"
-            strokeWidth={2}
-            className={inEditMode ? "cursor-pointer" : "cursor-grab"}
-            role="button"
-            tabIndex={-1}
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              if (inEditMode) {
-                if (pendingStart === null) {
-                  setPendingStart(i);
-                } else {
-                  const next: StrokeRange = {
-                    id: `sr_${Date.now().toString(36)}_${Math.floor(Math.random() * 1e6).toString(36)}`,
-                    start: pendingStart,
-                    end: i,
-                  };
-                  const existing = strokeRanges ?? [];
-                  onStrokeRangesChange?.([...existing, next]);
-                  setPendingStart(null);
-                }
-                return;
-              }
-              e.currentTarget.setPointerCapture(e.pointerId);
-              setDrag({ type: "point", index: i });
+      </svg>
+      {selectedPointIndex !== null && points[selectedPointIndex] && (
+        <div className="flex items-center gap-2 border-t bg-white px-2 py-1 text-xs">
+          <span className="shrink-0">点 #{selectedPointIndex} sharpness</span>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={selectedSharpness}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              const next = points.map((p, j) =>
+                j === selectedPointIndex ? ([p[0], p[1], v] as Point2D) : p,
+              );
+              onChange(next);
             }}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (inEditMode) {
-                setPendingStart(null);
-                return;
-              }
-              if (!allowAddRemove) return;
-              if (points.length <= 3) return;
-              const newPoints = points.filter((_, j) => j !== i);
-              onChange(newPoints);
-            }}
+            className="flex-1"
           />
-        );
-      })}
-    </svg>
+          <span className="w-10 text-right tabular-nums">
+            {selectedSharpness.toFixed(2)}
+          </span>
+          <button
+            type="button"
+            onClick={() => setSelectedPointIndex(null)}
+            className="rounded border px-1 hover:bg-gray-50"
+            title="選択解除"
+          >
+            ×
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

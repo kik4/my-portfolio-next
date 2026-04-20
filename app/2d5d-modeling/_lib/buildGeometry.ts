@@ -91,7 +91,7 @@ export function buildFaceGeometry(
     string,
     {
       visible: boolean;
-      position: [number, number];
+      position: Point2D;
       matrix: [number, number, number, number];
       layerIndex: number;
     }
@@ -101,7 +101,7 @@ export function buildFaceGeometry(
     if (!visible) {
       groupTransforms.set(g.id, {
         visible: false,
-        position: [0, 0],
+        position: [0, 0, 0],
         matrix: MAT2_IDENTITY,
         layerIndex: g.baseLayerIndex,
       });
@@ -192,9 +192,10 @@ export function buildFaceGeometry(
         }
       }
 
-      points = result.blendedPoints.map(([x, y]) => [
+      points = result.blendedPoints.map(([x, y, s]) => [
         localMat[0] * x + localMat[1] * y + localPos[0],
         localMat[2] * x + localMat[3] * y + localPos[1],
+        s,
       ]);
       alpha = result.alpha;
     }
@@ -315,7 +316,7 @@ export function buildFaceGeometry(
     if (outlineUnion) {
       for (const poly of outlineUnion) {
         for (const ring of poly) {
-          const pts: Point2D[] = ring.map(([x, y]) => [x, y]);
+          const pts: Point2D[] = ring.map(([x, y]) => [x, y, 0]);
           // Remove duplicate closing point if present
           if (
             pts.length > 1 &&
@@ -362,7 +363,7 @@ export function buildFaceGeometry(
       }
       for (const poly of clipped) {
         for (const ring of poly) {
-          const pts: Point2D[] = ring.map(([x, y]) => [x, y]);
+          const pts: Point2D[] = ring.map(([x, y]) => [x, y, 0]);
           if (
             pts.length > 1 &&
             pts[0][0] === pts[pts.length - 1][0] &&

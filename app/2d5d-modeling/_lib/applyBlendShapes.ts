@@ -9,7 +9,7 @@ export function applyBlendShapePoints(
   blendShapes: (OutlineBlendShape | FeatureBlendShape)[],
   weights: Record<string, number>,
 ): Point2D[] {
-  const result: Point2D[] = basePoints.map(([x, y]) => [x, y]);
+  const result: Point2D[] = basePoints.map(([x, y, s]) => [x, y, s ?? 1]);
 
   for (const bs of blendShapes) {
     const w = weights[bs.id] ?? 0;
@@ -17,6 +17,7 @@ export function applyBlendShapePoints(
     for (let i = 0; i < result.length && i < bs.deltas.length; i++) {
       result[i][0] += bs.deltas[i][0] * w;
       result[i][1] += bs.deltas[i][1] * w;
+      result[i][2] += (bs.deltas[i][2] ?? 0) * w;
     }
   }
 

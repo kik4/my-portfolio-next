@@ -36,7 +36,7 @@ export function interpolateGroupTransform(
   mode: InterpolationMode,
 ): GroupTransform {
   if (group.yawPitchKeyframes.length === 0) {
-    return { position: [0, 0], matrix: MAT2_IDENTITY };
+    return { position: [0, 0, 0], matrix: MAT2_IDENTITY };
   }
 
   // Interpolate deltas from identity to avoid Gaussian decay shrinking the matrix
@@ -58,7 +58,7 @@ export function interpolateGroupTransform(
 
   const v = interpolator.interpolate(angle.yaw, angle.pitch);
   return {
-    position: [v[0], v[1]],
+    position: [v[0], v[1], 0],
     matrix: [v[2] + 1, v[3], v[4], v[5] + 1], // add identity back
   };
 }
@@ -113,6 +113,7 @@ export function composeTransforms(
   const position: Point2D = [
     g00 * localPos[0] + g01 * localPos[1] + groupPos[0],
     g10 * localPos[0] + g11 * localPos[1] + groupPos[1],
+    0,
   ];
 
   return { position, matrix };

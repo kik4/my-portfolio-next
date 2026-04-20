@@ -1,4 +1,10 @@
-export type Point2D = [number, number];
+// 3-tuple: [x, y, sharpness].
+// - basePoints: sharpness default 1.0 (fully smooth Catmull-Rom).
+//   0 = corner, 1 = full smooth.
+// - deltas (blend shape / keyframe): sharpness is additive delta, default 0.
+// - position / other non-point uses (translation vectors, etc): the third slot
+//   is ignored; conventionally 0.
+export type Point2D = [number, number, number];
 export type ColorRGBA = [number, number, number, number];
 // 2x2 matrix [m00, m01, m10, m11]
 export type Mat2 = [number, number, number, number];

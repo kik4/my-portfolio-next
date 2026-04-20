@@ -40,7 +40,7 @@ export function interpolateFeature(
   const blendAlpha = computeBlendShapeAlpha(polygon.blendShapes, weights);
 
   // 3. Interpolate affine transform from keyframes
-  let position: Point2D = [0, 0];
+  let position: Point2D = [0, 0, 0];
   let matrix: Mat2 = MAT2_IDENTITY;
   let kfAlpha = 1;
 
@@ -65,7 +65,7 @@ export function interpolateFeature(
     );
 
     const v = interpolator.interpolate(angle.yaw, angle.pitch);
-    position = [v[0], v[1]];
+    position = [v[0], v[1], 0];
     matrix = [v[2] + 1, v[3], v[4], v[5] + 1]; // add identity back
     kfAlpha = Math.max(0, Math.min(1, v[6] + 1)); // add 1 back
   }

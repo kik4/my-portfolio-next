@@ -39,7 +39,7 @@ function findOrCreateKf(
   // Create new
   return {
     angle: { yaw: angle.yaw, pitch: angle.pitch },
-    position: [0, 0],
+    position: [0, 0, 0],
     matrix: MAT2_IDENTITY,
   };
 }
@@ -90,7 +90,7 @@ export function GroupGizmo({
   const dragStart = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const kfRef = useRef<FeatureGroupKeyframe | null>(null);
   const startMatrixRef = useRef<Mat2>(MAT2_IDENTITY);
-  const startPositionRef = useRef<Point2D>([0, 0]);
+  const startPositionRef = useRef<Point2D>([0, 0, 0]);
 
   const bbox = useMemo(() => getGroupBBox(group, polygons), [group, polygons]);
 
@@ -185,7 +185,7 @@ export function GroupGizmo({
     dragStart.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     kfRef.current = { ...currentKf };
     startMatrixRef.current = [...currentKf.matrix] as Mat2;
-    startPositionRef.current = [...currentKf.position];
+    startPositionRef.current = [...currentKf.position] as Point2D;
     setDragMode(mode);
   };
 
@@ -205,6 +205,7 @@ export function GroupGizmo({
         position: [
           startPositionRef.current[0] + (wx - swx),
           startPositionRef.current[1] + (wy - swy),
+          0,
         ],
       };
       kfRef.current = newKf;
