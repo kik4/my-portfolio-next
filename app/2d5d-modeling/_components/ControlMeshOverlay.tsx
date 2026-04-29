@@ -68,8 +68,6 @@ export function ControlMeshOverlay({
     () =>
       new THREE.LineBasicMaterial({
         color: 0x9ca3af,
-        depthTest: false,
-        depthWrite: false,
         toneMapped: false,
         transparent: true,
         opacity: 0.6,
@@ -121,12 +119,7 @@ export function ControlMeshOverlay({
               }}
             >
               <sphereGeometry args={[VERTEX_RADIUS, 12, 8]} />
-              <meshBasicMaterial
-                color={color}
-                depthTest={false}
-                transparent
-                toneMapped={false}
-              />
+              <meshBasicMaterial color={color} toneMapped={false} />
             </mesh>
           );
         })}
