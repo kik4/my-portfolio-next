@@ -1,124 +1,102 @@
 "use client";
 
-import { Billboard } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { useMemo } from "react";
 import * as THREE from "three";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
-import { buildFaceGeometry } from "../_lib/buildGeometry";
+import { buildFaceGeometry, type PartRenderItem } from "../_lib/buildGeometry";
 import type { FaceModel, YawPitch } from "../_lib/types";
 
 interface FaceMeshProps {
   model: FaceModel;
   angle: YawPitch;
-  selectedPolygonId?: string;
 }
 
-export function FaceMesh({ model, angle, selectedPolygonId }: FaceMeshProps) {
-  const { size } = useThree();
-  const { fillGeometry, transparentFills, strokes, selectedOutlineStroke } =
-    useMemo(
-      () => buildFaceGeometry(model, angle, selectedPolygonId),
-      [model, angle, selectedPolygonId],
-    );
+function buildStrokeLine(
+  item: PartRenderItem,
+  resolution: THREE.Vector2,
+): Line2 | null {
+  if (!item.strokePoints2D || !item.strokeColor) return null;
+  const pts = item.strokePoints2D;
+  const positions: number[] = [];
+  for (let i = 0; i <= pts.length; i++) {
+    const p = pts[i % pts.length];
+    positions.push(p[0], p[1], 0);
+  }
+  const geo = new LineGeometry();
+  geo.setPositions(positions);
+  const color = new THREE.Color(
+    item.strokeColor[0] * item.alpha,
+    item.strokeColor[1] * item.alpha,
+    item.strokeColor[2] * item.alpha,
+  );
+  const mat = new LineMaterial({
+    color: color.getHex(),
+    linewidth: item.strokeWidth,
+    toneMapped: false,
+    resolution,
+  });
+  return new Line2(geo, mat);
+}
 
-  const fillMaterial = useMemo(
+export function FaceMesh({ model, angle }: FaceMeshProps) {
+  const { size } = useThree();
+
+  const built = useMemo(() => buildFaceGeometry(model, angle), [model, angle]);
+
+  const headMaterial = useMemo(
     () =>
       new THREE.MeshBasicMaterial({
-        vertexColors: true,
+        color: new THREE.Color(
+          model.headFillColor[0],
+          model.headFillColor[1],
+          model.headFillColor[2],
+        ),
         side: THREE.DoubleSide,
         toneMapped: false,
       }),
-    [],
+    [model.headFillColor],
   );
 
-  const strokeData = useMemo(() => {
-    return strokes.map((stroke) => {
-      const pts = stroke.points;
-      const posArr: number[] = [];
-      if (stroke.closed) {
-        // Close loop: append first point at end
-        for (let i = 0; i <= pts.length; i++) {
-          const p = pts[i % pts.length];
-          posArr.push(p[0], p[1], stroke.z);
-        }
-      } else {
-        for (const p of pts) {
-          posArr.push(p[0], p[1], stroke.z);
-        }
-      }
-
-      const geo = new LineGeometry();
-      geo.setPositions(posArr);
-
-      const mat = new LineMaterial({
+  const partMeshes = useMemo(() => {
+    return built.parts.map((item) => {
+      const transparent = item.alpha < 1;
+      const mat = new THREE.MeshBasicMaterial({
         color: new THREE.Color(
-          stroke.color[0],
-          stroke.color[1],
-          stroke.color[2],
-        ).getHex(),
-        linewidth: stroke.width,
+          item.fillColor[0],
+          item.fillColor[1],
+          item.fillColor[2],
+        ),
+        side: THREE.DoubleSide,
+        transparent,
+        opacity: item.alpha,
+        depthWrite: !transparent,
         toneMapped: false,
-        resolution: new THREE.Vector2(size.width, size.height),
       });
-
-      return { line: new Line2(geo, mat) };
+      const resolution = new THREE.Vector2(size.width, size.height);
+      const line = buildStrokeLine(item, resolution);
+      return { item, material: mat, line };
     });
-  }, [strokes, size.width, size.height]);
-
-  const selectionLine = useMemo(() => {
-    if (!selectedOutlineStroke) return null;
-    const pts = selectedOutlineStroke.points;
-    const posArr: number[] = [];
-    for (let i = 0; i <= pts.length; i++) {
-      const p = pts[i % pts.length];
-      posArr.push(p[0], p[1], selectedOutlineStroke.z);
-    }
-    const geo = new LineGeometry();
-    geo.setPositions(posArr);
-    const mat = new LineMaterial({
-      color: 0x3b82f6,
-      linewidth: 2,
-      toneMapped: false,
-      resolution: new THREE.Vector2(size.width, size.height),
-    });
-    return new Line2(geo, mat);
-  }, [selectedOutlineStroke, size.width, size.height]);
-
-  const transparentMeshes = useMemo(
-    () =>
-      transparentFills.map((tf) => {
-        const mat = new THREE.MeshBasicMaterial({
-          color: new THREE.Color(tf.color[0], tf.color[1], tf.color[2]),
-          transparent: true,
-          opacity: tf.alpha,
-          side: THREE.DoubleSide,
-          toneMapped: false,
-          depthWrite: false,
-        });
-        return { geometry: tf.geometry, material: mat };
-      }),
-    [transparentFills],
-  );
+  }, [built.parts, size.width, size.height]);
 
   return (
-    <Billboard>
-      <mesh geometry={fillGeometry} material={fillMaterial} />
-      {transparentMeshes.map((tm) => (
-        <mesh
-          key={`tf-${tm.geometry.id}`}
-          geometry={tm.geometry}
-          material={tm.material}
-        />
+    <>
+      <mesh geometry={built.headGeometry} material={headMaterial} />
+      {partMeshes.map(({ item, material, line }, idx) => (
+        <group
+          // biome-ignore lint/suspicious/noArrayIndexKey: stable per build
+          key={idx}
+          position={item.position}
+          quaternion={item.quaternion}
+        >
+          {item.fillEnabled && (
+            <mesh geometry={item.geometry} material={material} />
+          )}
+          {line && <primitive object={line} />}
+        </group>
       ))}
-      {strokeData.map((s) => (
-        <primitive key={`stroke-${s.line.id}`} object={s.line} />
-      ))}
-      {selectionLine && (
-        <primitive key={`sel-${selectionLine.id}`} object={selectionLine} />
-      )}
-    </Billboard>
+    </>
   );
 }

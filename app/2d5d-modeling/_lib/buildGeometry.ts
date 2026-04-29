@@ -1,421 +1,231 @@
-import polygonClipping from "polygon-clipping";
 import * as THREE from "three";
+import { controlMeshToBufferGeometry } from "./catmullClark";
 import { subdivideClosed } from "./catmullRom";
-import {
-  composeTransforms,
-  interpolateGroupTransform,
-  isGroupVisible,
-  resolveGroupLayerIndex,
-} from "./featureGroup";
-import { interpolateFeature } from "./interpolateFeature";
-import { interpolateOutlinePoints } from "./interpolateOutline";
+import { interpolatePart } from "./interpolatePart";
+import { interpolateGroupTransform, isGroupVisible } from "./partGroup";
+import { raycastAnchor, resolvePartPlacement } from "./placement";
 import { triangulate } from "./triangulate";
-import type { ColorRGBA, FaceModel, Point2D, YawPitch } from "./types";
-import { MAT2_IDENTITY } from "./types";
+import type {
+  ColorRGBA,
+  FaceModel,
+  Quaternion,
+  Vec2,
+  Vec3,
+  YawPitch,
+} from "./types";
 
 const SUBDIVISION_SEGMENTS = 8;
-const LAYER_Z_STEP = 0.001;
-const STROKE_Z_OFFSET = 0.0005; // slightly in front of fill
+// Small per-layerIndex offset along the normal to avoid Z-fighting between
+// stacked parts that share an anchor.
+const LAYER_NORMAL_STEP = 1e-3;
 
-// Extract an open polyline from subdivided vertices spanning control point
-// indices [start, end]. Walks forward and wraps past the last control point
-// when start > end. start === end yields an empty array.
-function extractSubdividedRange(
-  subdivided: Point2D[],
-  start: number,
-  end: number,
-  nControlPoints: number,
-  segmentsPerCp: number,
-): Point2D[] {
-  if (nControlPoints <= 0 || subdivided.length === 0) return [];
-  const total = subdivided.length;
-  const a = ((start % nControlPoints) + nControlPoints) % nControlPoints;
-  const b = ((end % nControlPoints) + nControlPoints) % nControlPoints;
-  if (a === b) return [];
-  const startVertex = a * segmentsPerCp;
-  const endVertex = b * segmentsPerCp; // inclusive endpoint (control point b)
-  const out: Point2D[] = [];
-  let i = startVertex;
-  // Always include at least one hop; wrap naturally when endVertex <= startVertex.
-  for (let step = 0; step <= total; step++) {
-    out.push(subdivided[i % total]);
-    if (i % total === endVertex % total && step > 0) break;
-    i++;
-  }
-  return out;
+function quatMul(a: Quaternion, b: Quaternion): Quaternion {
+  const [ax, ay, az, aw] = a;
+  const [bx, by, bz, bw] = b;
+  return [
+    aw * bx + ax * bw + ay * bz - az * by,
+    aw * by - ax * bz + ay * bw + az * bx,
+    aw * bz + ax * by - ay * bx + az * bw,
+    aw * bw - ax * bx - ay * by - az * bz,
+  ];
 }
 
-export interface StrokeLine {
-  points: Point2D[];
-  color: ColorRGBA;
-  width: number;
-  z: number;
-  closed: boolean;
+function quatNormalize(q: Quaternion): Quaternion {
+  const len = Math.hypot(q[0], q[1], q[2], q[3]);
+  if (len === 0) return [0, 0, 0, 1];
+  return [q[0] / len, q[1] / len, q[2] / len, q[3] / len];
 }
 
-export interface TransparentFill {
+function rotateVec3ByQuat(v: Vec3, q: Quaternion): Vec3 {
+  // r = q * v * q^-1, using the standard formula.
+  const [qx, qy, qz, qw] = q;
+  const [vx, vy, vz] = v;
+  const ix = qw * vx + qy * vz - qz * vy;
+  const iy = qw * vy + qz * vx - qx * vz;
+  const iz = qw * vz + qx * vy - qy * vx;
+  const iw = -qx * vx - qy * vy - qz * vz;
+  return [
+    ix * qw + iw * -qx + iy * -qz - iz * -qy,
+    iy * qw + iw * -qy + iz * -qx - ix * -qz,
+    iz * qw + iw * -qz + ix * -qy - iy * -qx,
+  ];
+}
+
+export interface PartRenderItem {
   geometry: THREE.BufferGeometry;
-  color: [number, number, number];
+  position: Vec3;
+  quaternion: Quaternion;
+  fillColor: ColorRGBA;
+  fillEnabled: boolean;
   alpha: number;
+  // Stroke as a closed loop in local 2D space (XY of the part's frame).
+  strokePoints2D: Vec2[] | null;
+  strokeColor: ColorRGBA | null;
+  strokeWidth: number;
 }
 
 export interface FaceGeometryResult {
-  fillGeometry: THREE.BufferGeometry;
-  transparentFills: TransparentFill[];
-  strokes: StrokeLine[];
-  selectedOutlineStroke: { points: Point2D[]; z: number } | null;
+  headGeometry: THREE.BufferGeometry;
+  parts: PartRenderItem[];
+}
+
+// Build a 2D filled BufferGeometry from a closed polygon in XY (z=0).
+function build2DFillGeometry(points: Vec2[]): THREE.BufferGeometry {
+  const tris = triangulate(points);
+  const arr = new Float32Array(points.length * 3);
+  for (let i = 0; i < points.length; i++) {
+    arr[i * 3] = points[i][0];
+    arr[i * 3 + 1] = points[i][1];
+    arr[i * 3 + 2] = 0;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(arr, 3));
+  geo.setIndex(tris);
+  geo.computeBoundingSphere();
+  return geo;
+}
+
+// Build a temporary mesh from the head model so we can raycast against it.
+// The mesh is created without a material since we only need the geometry.
+let cachedHeadMesh: THREE.Mesh | null = null;
+let cachedHeadKey = "";
+
+function ensureHeadMesh(model: FaceModel): {
+  mesh: THREE.Mesh;
+  geometry: THREE.BufferGeometry;
+} {
+  // Cache key: stringify the control mesh and subdivision level.
+  const key = JSON.stringify([
+    model.head.controlMesh,
+    model.head.subdivisionLevel,
+  ]);
+  if (key !== cachedHeadKey || !cachedHeadMesh) {
+    const geometry = controlMeshToBufferGeometry(
+      model.head.controlMesh,
+      model.head.subdivisionLevel,
+    );
+    cachedHeadMesh = new THREE.Mesh(geometry);
+    cachedHeadKey = key;
+  }
+  return {
+    mesh: cachedHeadMesh,
+    geometry: cachedHeadMesh.geometry as THREE.BufferGeometry,
+  };
 }
 
 export function buildFaceGeometry(
   model: FaceModel,
   angle: YawPitch,
-  selectedPolygonId?: string,
 ): FaceGeometryResult {
-  const positions: number[] = [];
-  const colors: number[] = [];
-  const indices: number[] = [];
-  let vertexOffset = 0;
-  const strokes: StrokeLine[] = [];
-  const transparentFills: TransparentFill[] = [];
-  let selectedOutlineStroke: { points: Point2D[]; z: number } | null = null;
-  const {
-    blendShapeWeights,
-    featureGroups,
-    outlineFillColor,
-    outlineStroke,
-    interpolationMode: mode,
-  } = model;
+  const { mesh: headMesh, geometry: headGeometry } = ensureHeadMesh(model);
 
-  // Pre-compute group transforms, visibility, layerIndex
+  // Pre-compute group transforms.
   const groupTransforms = new Map<
     string,
     {
       visible: boolean;
-      position: Point2D;
-      matrix: [number, number, number, number];
-      layerIndex: number;
+      positionDelta: Vec3;
+      orientationDelta: Quaternion;
     }
   >();
-  for (const g of featureGroups) {
+  for (const g of model.groups) {
     const visible = isGroupVisible(g, angle);
     if (!visible) {
       groupTransforms.set(g.id, {
         visible: false,
-        position: [0, 0, 0],
-        matrix: MAT2_IDENTITY,
-        layerIndex: g.baseLayerIndex,
+        positionDelta: [0, 0, 0],
+        orientationDelta: [0, 0, 0, 1],
       });
       continue;
     }
-    const transform = interpolateGroupTransform(g, angle, mode);
-    const layerIndex = resolveGroupLayerIndex(g, angle);
-    groupTransforms.set(g.id, {
-      visible: true,
-      ...transform,
-      layerIndex,
+    const t = interpolateGroupTransform(g, angle, model.interpolationMode);
+    groupTransforms.set(g.id, { visible: true, ...t });
+  }
+
+  const renderItems: PartRenderItem[] = [];
+  const sorted = [...model.parts].sort(
+    (a, b) => a.shape.layerIndex - b.shape.layerIndex,
+  );
+
+  for (const part of sorted) {
+    if (part.groupId) {
+      const gt = groupTransforms.get(part.groupId);
+      if (gt && !gt.visible) continue;
+    }
+
+    const interp = interpolatePart(
+      part,
+      angle,
+      model.blendShapeWeights,
+      model.interpolationMode,
+    );
+    if (interp.alpha <= 0) continue;
+
+    // Resolve surface placement.
+    const hit = raycastAnchor(part.placement.anchor, headMesh);
+    if (!hit) continue;
+    const placed = resolvePartPlacement(part.placement, hit);
+
+    // Compose group transform on top of the surface placement.
+    let position: Vec3 = placed.position;
+    let orientation: Quaternion = placed.orientation;
+    if (part.groupId) {
+      const gt = groupTransforms.get(part.groupId);
+      if (gt?.visible) {
+        // Group position delta is in world space; orientation is composed.
+        position = [
+          position[0] + gt.positionDelta[0],
+          position[1] + gt.positionDelta[1],
+          position[2] + gt.positionDelta[2],
+        ];
+        orientation = quatNormalize(quatMul(gt.orientationDelta, orientation));
+      }
+    }
+
+    // Apply the per-part KF/blend transform deltas. Position delta is in the
+    // part's local frame so it needs to be rotated by the current orientation.
+    const rotatedPos = rotateVec3ByQuat(interp.positionDelta, orientation);
+    position = [
+      position[0] + rotatedPos[0],
+      position[1] + rotatedPos[1],
+      position[2] + rotatedPos[2],
+    ];
+    orientation = quatNormalize(quatMul(interp.orientationDelta, orientation));
+
+    // Layer-index offset along the part's local +Z (the surface normal at
+    // anchor) to keep parts ordered when they share a frame.
+    const layerOffset = part.shape.layerIndex * LAYER_NORMAL_STEP;
+    const localZ: Vec3 = [0, 0, 1];
+    const layerVec = rotateVec3ByQuat(
+      [
+        localZ[0] * layerOffset,
+        localZ[1] * layerOffset,
+        localZ[2] * layerOffset,
+      ],
+      orientation,
+    );
+    position = [
+      position[0] + layerVec[0],
+      position[1] + layerVec[1],
+      position[2] + layerVec[2],
+    ];
+
+    // Subdivide the 2D shape and build the local-space fill geometry.
+    const subdivided = subdivideClosed(interp.shape, SUBDIVISION_SEGMENTS);
+    const geo = build2DFillGeometry(subdivided);
+
+    renderItems.push({
+      geometry: geo,
+      position,
+      quaternion: orientation,
+      fillColor: part.fillColor,
+      fillEnabled: part.fillEnabled,
+      alpha: interp.alpha,
+      strokePoints2D: part.strokeColor ? subdivided : null,
+      strokeColor: part.strokeColor,
+      strokeWidth: part.strokeWidth,
     });
   }
 
-  const sorted = [...model.polygons].sort(
-    (a, b) => a.layerIndex - b.layerIndex,
-  );
-
-  // Collect outline subdivided shapes for merged stroke
-  const outlineSubdivided: { points: Point2D[]; z: number }[] = [];
-
-  // Queue shadow polygons for a second pass — they need the full outline union
-  // before they can be clipped.
-  const shadowQueue: {
-    points: Point2D[];
-    z: number;
-    fillColor: ColorRGBA;
-    alpha: number;
-  }[] = [];
-
-  for (const polygon of sorted) {
-    let points = polygon.basePoints;
-    let alpha = 1;
-    let effectiveLayerIndex = polygon.layerIndex;
-
-    if (polygon.group === "outlineShadow") {
-      const shadowPoints = interpolateOutlinePoints(
-        polygon,
-        angle,
-        blendShapeWeights,
-        mode,
-      );
-      const subdivided = subdivideClosed(shadowPoints, SUBDIVISION_SEGMENTS);
-      const z = polygon.layerIndex * LAYER_Z_STEP;
-      shadowQueue.push({
-        points: subdivided,
-        z,
-        fillColor: polygon.fillColor,
-        alpha: Math.max(0, Math.min(1, polygon.baseAlpha)),
-      });
-      continue;
-    }
-
-    if (polygon.group === "outline") {
-      points = interpolateOutlinePoints(
-        polygon,
-        angle,
-        blendShapeWeights,
-        mode,
-      );
-    } else if (polygon.group === "feature") {
-      if (polygon.groupId) {
-        const gt = groupTransforms.get(polygon.groupId);
-        if (gt && !gt.visible) continue;
-      }
-
-      const result = interpolateFeature(
-        polygon,
-        angle,
-        blendShapeWeights,
-        mode,
-      );
-      let localPos = result.position;
-      let localMat = result.matrix;
-
-      if (polygon.groupId) {
-        const gt = groupTransforms.get(polygon.groupId);
-        if (gt?.visible) {
-          const composed = composeTransforms(
-            gt.position,
-            gt.matrix,
-            localPos,
-            localMat,
-          );
-          localPos = composed.position;
-          localMat = composed.matrix;
-          effectiveLayerIndex = gt.layerIndex + polygon.layerIndex;
-        }
-      }
-
-      points = result.blendedPoints.map(([x, y, s]) => [
-        localMat[0] * x + localMat[1] * y + localPos[0],
-        localMat[2] * x + localMat[3] * y + localPos[1],
-        s,
-      ]);
-      alpha = result.alpha;
-    }
-
-    if (alpha <= 0) continue;
-
-    const subdivided = subdivideClosed(points, SUBDIVISION_SEGMENTS);
-    const z = effectiveLayerIndex * LAYER_Z_STEP;
-
-    // Fill
-    const fillColor =
-      polygon.group === "outline" ? outlineFillColor : polygon.fillColor;
-    const fillEnabled =
-      polygon.group === "outline" ? true : polygon.fillEnabled;
-    if (fillEnabled) {
-      if (alpha < 1) {
-        // Transparent fill: separate geometry for individual opacity
-        const tris = triangulate(subdivided);
-        const [r, g, b] = fillColor;
-        const tfPos = new Float32Array(subdivided.length * 3);
-        for (let i = 0; i < subdivided.length; i++) {
-          tfPos[i * 3] = subdivided[i][0];
-          tfPos[i * 3 + 1] = subdivided[i][1];
-          tfPos[i * 3 + 2] = z;
-        }
-        const tfGeo = new THREE.BufferGeometry();
-        tfGeo.setAttribute("position", new THREE.BufferAttribute(tfPos, 3));
-        tfGeo.setIndex(tris);
-        tfGeo.computeBoundingSphere();
-        transparentFills.push({ geometry: tfGeo, color: [r, g, b], alpha });
-      } else {
-        const tris = triangulate(subdivided);
-        const [r, g, b] = fillColor;
-        for (const [x, y] of subdivided) {
-          positions.push(x, y, z);
-          colors.push(r, g, b);
-        }
-        for (const idx of tris) {
-          indices.push(idx + vertexOffset);
-        }
-        vertexOffset += subdivided.length;
-      }
-    }
-
-    if (polygon.group === "outline") {
-      // Collect for merged outline stroke
-      outlineSubdivided.push({ points: subdivided, z: z + STROKE_Z_OFFSET });
-      if (selectedPolygonId && polygon.id === selectedPolygonId) {
-        // z is set after the loop to ensure it's on top of everything
-        selectedOutlineStroke = {
-          points: subdivided,
-          z: 0,
-        };
-      }
-    } else if (polygon.strokeColor) {
-      // Feature polygons: individual stroke (full loop or partial ranges)
-      const color: ColorRGBA = [
-        polygon.strokeColor[0] * alpha,
-        polygon.strokeColor[1] * alpha,
-        polygon.strokeColor[2] * alpha,
-        polygon.strokeColor[3],
-      ];
-      const width = polygon.strokeWidth;
-      const strokeZ = z + STROKE_Z_OFFSET;
-      const ranges = polygon.strokeRanges;
-      if (ranges === null) {
-        strokes.push({
-          points: subdivided,
-          color,
-          width,
-          z: strokeZ,
-          closed: true,
-        });
-      } else {
-        const nCp = points.length;
-        for (const r of ranges) {
-          const seg = extractSubdividedRange(
-            subdivided,
-            r.start,
-            r.end,
-            nCp,
-            SUBDIVISION_SEGMENTS,
-          );
-          if (seg.length < 2) continue;
-          strokes.push({
-            points: seg,
-            color,
-            width,
-            z: strokeZ,
-            closed: false,
-          });
-        }
-      }
-    }
-  }
-
-  // Union of all outline regions (used for merged stroke and shadow clipping).
-  type PolyGeom = [number, number][][][];
-  let outlineUnion: PolyGeom | null = null;
-  if (outlineSubdivided.length > 0) {
-    const clipPolygons: PolyGeom = outlineSubdivided.map((o) => [
-      o.points.map(([x, y]) => [x, y] as [number, number]),
-    ]);
-    try {
-      let merged: PolyGeom = [clipPolygons[0]];
-      for (let i = 1; i < clipPolygons.length; i++) {
-        merged = polygonClipping.union(merged, [clipPolygons[i]]);
-      }
-      outlineUnion = merged;
-    } catch {
-      outlineUnion = null;
-    }
-  }
-
-  // Merged outline stroke using the union
-  if (outlineStroke && outlineSubdivided.length > 0) {
-    const maxZ = Math.max(...outlineSubdivided.map((o) => o.z));
-    if (outlineUnion) {
-      for (const poly of outlineUnion) {
-        for (const ring of poly) {
-          const pts: Point2D[] = ring.map(([x, y]) => [x, y, 0]);
-          // Remove duplicate closing point if present
-          if (
-            pts.length > 1 &&
-            pts[0][0] === pts[pts.length - 1][0] &&
-            pts[0][1] === pts[pts.length - 1][1]
-          ) {
-            pts.pop();
-          }
-          strokes.push({
-            points: pts,
-            color: outlineStroke.color,
-            width: outlineStroke.width,
-            z: maxZ,
-            closed: true,
-          });
-        }
-      }
-    } else {
-      // Fallback: draw individual strokes
-      for (const o of outlineSubdivided) {
-        strokes.push({
-          points: o.points,
-          color: outlineStroke.color,
-          width: outlineStroke.width,
-          z: o.z,
-          closed: true,
-        });
-      }
-    }
-  }
-
-  // Shadow polygons: clip against outline union, then emit as transparent fills.
-  if (outlineUnion && shadowQueue.length > 0) {
-    for (const shadow of shadowQueue) {
-      if (shadow.alpha <= 0) continue;
-      const shadowRing: [number, number][][][] = [
-        [shadow.points.map(([x, y]) => [x, y] as [number, number])],
-      ];
-      let clipped: PolyGeom;
-      try {
-        clipped = polygonClipping.intersection(outlineUnion, shadowRing);
-      } catch {
-        continue;
-      }
-      for (const poly of clipped) {
-        for (const ring of poly) {
-          const pts: Point2D[] = ring.map(([x, y]) => [x, y, 0]);
-          if (
-            pts.length > 1 &&
-            pts[0][0] === pts[pts.length - 1][0] &&
-            pts[0][1] === pts[pts.length - 1][1]
-          ) {
-            pts.pop();
-          }
-          if (pts.length < 3) continue;
-          const tris = triangulate(pts);
-          const [r, g, b] = shadow.fillColor;
-          const tfPos = new Float32Array(pts.length * 3);
-          for (let i = 0; i < pts.length; i++) {
-            tfPos[i * 3] = pts[i][0];
-            tfPos[i * 3 + 1] = pts[i][1];
-            tfPos[i * 3 + 2] = shadow.z;
-          }
-          const tfGeo = new THREE.BufferGeometry();
-          tfGeo.setAttribute("position", new THREE.BufferAttribute(tfPos, 3));
-          tfGeo.setIndex(tris);
-          tfGeo.computeBoundingSphere();
-          transparentFills.push({
-            geometry: tfGeo,
-            color: [r, g, b],
-            alpha: shadow.alpha,
-          });
-        }
-      }
-    }
-  }
-
-  // Place selection stroke above everything (all fills, strokes, and outlines)
-  if (selectedOutlineStroke) {
-    const allZ = [
-      ...sorted.map((p) => p.layerIndex * LAYER_Z_STEP + STROKE_Z_OFFSET),
-      ...strokes.map((s) => s.z),
-      ...outlineSubdivided.map((o) => o.z),
-    ];
-    const maxZ = allZ.length > 0 ? Math.max(...allZ) : 0;
-    selectedOutlineStroke.z = maxZ + LAYER_Z_STEP;
-  }
-
-  const fillGeometry = new THREE.BufferGeometry();
-  fillGeometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute(positions, 3),
-  );
-  fillGeometry.setAttribute(
-    "color",
-    new THREE.Float32BufferAttribute(colors, 3),
-  );
-  fillGeometry.setIndex(indices);
-  fillGeometry.computeBoundingSphere();
-
-  return { fillGeometry, transparentFills, strokes, selectedOutlineStroke };
+  return { headGeometry, parts: renderItems };
 }

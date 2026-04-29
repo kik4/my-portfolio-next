@@ -1,131 +1,115 @@
-// 3-tuple: [x, y, sharpness].
-// - basePoints: sharpness default 1.0 (fully smooth Catmull-Rom).
-//   0 = corner, 1 = full smooth.
-// - deltas (blend shape / keyframe): sharpness is additive delta, default 0.
-// - position / other non-point uses (translation vectors, etc): the third slot
-//   is ignored; conventionally 0.
-export type Point2D = [number, number, number];
+// Basic numeric types
+export type Vec2 = [number, number];
+export type Vec3 = [number, number, number];
+// Quaternion as [x, y, z, w]
+export type Quaternion = [number, number, number, number];
 export type ColorRGBA = [number, number, number, number];
-// 2x2 matrix [m00, m01, m10, m11]
-export type Mat2 = [number, number, number, number];
 
 export interface YawPitch {
   yaw: number;
   pitch: number;
 }
 
-// Blend shapes
-export interface OutlineBlendShape {
-  id: string; // e.g. "cheek_puff"
-  deltas: Point2D[]; // same length as basePoints
-}
+// ===== Head control mesh =====
 
-export interface FeatureBlendShape {
-  id: string; // e.g. "blink", "smile"
-  deltas: Point2D[]; // same length as basePoints
-  alphaDelta: number; // additive alpha change
-}
-
-// Outline polygon
-export interface OutlineKeyframe {
-  angle: YawPitch;
-  deltas: Point2D[];
-}
-
-export interface OutlinePolygon {
+export interface ControlVertex {
   id: string;
-  name: string;
-  group: "outline";
-  basePoints: Point2D[];
-  layerIndex: number;
-  yawPitchKeyframes: OutlineKeyframe[];
-  blendShapes: OutlineBlendShape[];
-  // When true, yaw<0 views are rendered by mirroring the yaw>=0 side along x.
-  // yaw>=0 is authoritative — KFs on yaw<0 are not allowed.
-  mirrorSymmetric?: boolean;
+  position: Vec3;
+  // Mirror partner along the X axis. Absent for vertices on the midplane.
+  mirrorPairId?: string;
+  // When true, X is locked to 0.
+  onMidplane: boolean;
 }
 
-// Outline shadow: shape identical to OutlinePolygon, but rendered only where
-// it overlaps the union of all OutlinePolygon regions. Parts outside the face
-// outline are clipped away.
-export interface OutlineShadowPolygon {
+export interface ControlFace {
   id: string;
-  name: string;
-  group: "outlineShadow";
-  basePoints: Point2D[];
-  layerIndex: number;
-  fillColor: ColorRGBA;
-  baseAlpha: number;
-  yawPitchKeyframes: OutlineKeyframe[];
-  blendShapes: OutlineBlendShape[];
-  mirrorSymmetric?: boolean;
+  // CCW vertex id list. Quads are the norm; n-gons are tolerated.
+  vertexIds: string[];
 }
 
-// Feature polygon
-export interface FeatureKeyframe {
+export interface ControlMesh {
+  vertices: ControlVertex[];
+  faces: ControlFace[];
+}
+
+export interface HeadModel {
+  controlMesh: ControlMesh;
+  // Catmull-Clark iterations. Default 2, capped around 4.
+  subdivisionLevel: number;
+}
+
+// ===== Part billboards (planar decoration only) =====
+
+export interface PartPlacement {
+  // Direction from the head center; expected to be normalized.
+  anchor: Vec3;
+  offsetNormal: number;
+  offsetTangent: Vec2;
+  // [pitch, yaw, roll] in degrees.
+  rotationOffset: Vec3;
+}
+
+export interface PartShape {
+  basePoints: Vec2[];
+  layerIndex: number;
+}
+
+export interface PartKeyframe {
   angle: YawPitch;
-  position: Point2D;
-  matrix: Mat2;
+  // Per-control-point shape delta. Same length as basePoints.
+  deltas: Vec2[];
+  positionDelta: Vec3;
+  orientationDelta: Quaternion;
   alpha: number;
 }
 
-// Partial-stroke range over control points.
-// start/end are control point indices. Walks forward (start -> end) along the
-// polygon, wrapping past the last control point back to 0 when start > end.
-// start === end produces a single empty segment (no stroke drawn).
-export interface StrokeRange {
+export interface PartBlendShape {
   id: string;
-  start: number;
-  end: number;
+  deltas: Vec2[];
+  positionDelta?: Vec3;
+  orientationDelta?: Quaternion;
+  alphaDelta?: number;
 }
 
-export interface FeaturePolygon {
+export interface Part {
   id: string;
   name: string;
-  group: "feature";
-  basePoints: Point2D[];
-  layerIndex: number;
+
+  placement: PartPlacement;
+  shape: PartShape;
+
   fillColor: ColorRGBA;
   fillEnabled: boolean;
   strokeColor: ColorRGBA | null;
   strokeWidth: number;
-  // null = stroke full perimeter (closed loop).
-  // [] = no stroke. [{start,end}, ...] = stroke only specified ranges (open polylines).
-  strokeRanges: StrokeRange[] | null;
+
   baseAlpha: number;
-  yawPitchKeyframes: FeatureKeyframe[];
-  blendShapes: FeatureBlendShape[];
+
+  yawPitchKeyframes: PartKeyframe[];
+  blendShapes: PartBlendShape[];
+
   groupId?: string;
 }
 
-// Feature group: bundles feature polygons with shared transform and visibility
-export interface FeatureGroupKeyframe {
+// ===== Part group =====
+
+export interface PartGroupKeyframe {
   angle: YawPitch;
-  position: Point2D;
-  matrix: Mat2;
+  positionDelta: Vec3;
+  orientationDelta: Quaternion;
 }
 
-export interface FeatureGroup {
+export interface PartGroup {
   id: string;
   name: string;
-  yawPitchKeyframes: FeatureGroupKeyframe[];
+  yawPitchKeyframes: PartGroupKeyframe[];
   visibility: {
     yawRange: [number, number];
     pitchRange: [number, number];
   };
-  baseLayerIndex: number;
-  layerIndexKeyframes?: {
-    angle: YawPitch;
-    layerIndex: number;
-  }[];
 }
 
-export type Polygon = OutlinePolygon | OutlineShadowPolygon | FeaturePolygon;
-
-export interface OutlineStroke {
-  color: ColorRGBA;
-  width: number;
-}
+// ===== Whole character =====
 
 export type InterpolationMode =
   | "rbf-gaussian"
@@ -133,13 +117,15 @@ export type InterpolationMode =
   | "linear-delaunay";
 
 export interface FaceModel {
-  polygons: Polygon[];
-  featureGroups: FeatureGroup[];
+  head: HeadModel;
+  headFillColor: ColorRGBA;
+
+  parts: Part[];
+  groups: PartGroup[];
+
   blendShapeWeights: Record<string, number>;
-  outlineFillColor: ColorRGBA;
-  outlineStroke: OutlineStroke | null;
   interpolationMode: InterpolationMode;
 }
 
-// Identity matrix for Mat2
-export const MAT2_IDENTITY: Mat2 = [1, 0, 0, 1];
+// Identity quaternion.
+export const QUAT_IDENTITY: Quaternion = [0, 0, 0, 1];
