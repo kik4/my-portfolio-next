@@ -19,6 +19,10 @@ export interface ControlVertex {
   mirrorPairId?: string;
   // When true, X is locked to 0.
   onMidplane: boolean;
+  // [0, 1]. 0 = fully smoothed (standard Catmull-Clark), 1 = the vertex is
+  // pinned to its position across subdivision (sharp corner). Optional;
+  // missing values default to 0.
+  sharpness?: number;
 }
 
 export interface ControlFace {

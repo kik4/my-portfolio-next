@@ -49,6 +49,12 @@ const LIP_PUSH_Z = 0.02;
 const NOSE_RING_INDEX = 2;
 const MOUTH_RING_INDEX = 3;
 
+// Initial sharpness seeds. Phase 1 ships with a slightly pointed nose tip,
+// chin, and a hint at the lips so the preset doesn't read as a balloon.
+const NOSE_TIP_SHARPNESS = 0.7;
+const CHIN_SHARPNESS = 0.6;
+const LIP_SHARPNESS = 0.3;
+
 function vertexId(ringIdx: number, thetaIdx: number): string {
   return `v_r${ringIdx}_t${thetaIdx}`;
 }
@@ -78,7 +84,12 @@ export function buildPresetHeadCage(): ControlMesh {
   const crownId = "v_crown";
   const chinId = "v_chin";
   vertices.push({ id: crownId, position: [0, CROWN_Y, 0], onMidplane: true });
-  vertices.push({ id: chinId, position: [0, CHIN_Y, 0], onMidplane: true });
+  vertices.push({
+    id: chinId,
+    position: [0, CHIN_Y, 0],
+    onMidplane: true,
+    sharpness: CHIN_SHARPNESS,
+  });
 
   // Ring vertices.
   for (let r = 0; r < RINGS.length; r++) {
@@ -86,13 +97,17 @@ export function buildPresetHeadCage(): ControlMesh {
     for (let t = 0; t < RING_THETA_COUNT; t++) {
       const id = vertexId(r, t);
       let pos = ringPosition(ring, t);
+      let sharpness = 0;
 
-      // Push the front-center vertex of the nose / mouth rings forward.
+      // Push the front-center vertex of the nose / mouth rings forward and
+      // seed sharpness so the bump survives subdivision.
       if (t === 0) {
         if (r === NOSE_RING_INDEX) {
           pos = [pos[0], pos[1], pos[2] + NOSE_PUSH_Z];
+          sharpness = NOSE_TIP_SHARPNESS;
         } else if (r === MOUTH_RING_INDEX) {
           pos = [pos[0], pos[1], pos[2] + LIP_PUSH_Z];
+          sharpness = LIP_SHARPNESS;
         }
       }
 
@@ -102,6 +117,7 @@ export function buildPresetHeadCage(): ControlMesh {
         position: pos,
         onMidplane,
       };
+      if (sharpness > 0) v.sharpness = sharpness;
       if (!onMidplane) {
         v.mirrorPairId = vertexId(r, mirrorThetaIdx(t));
       }

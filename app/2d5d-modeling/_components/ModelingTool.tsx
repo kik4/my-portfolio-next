@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { moveVertex } from "../_lib/headMeshEdit";
+import { moveVertex, setVertexSharpness } from "../_lib/headMeshEdit";
 import {
   buildDefaultFaceModel,
   downloadJson,
@@ -131,6 +131,24 @@ export function ModelingTool() {
         head: {
           ...prev.head,
           controlMesh: moveVertex(prev.head.controlMesh, id, newPos, symmetric),
+        },
+      }));
+    },
+    [symmetric],
+  );
+
+  const handleSetSharpness = useCallback(
+    (id: string, sharpness: number) => {
+      setModel((prev) => ({
+        ...prev,
+        head: {
+          ...prev.head,
+          controlMesh: setVertexSharpness(
+            prev.head.controlMesh,
+            id,
+            sharpness,
+            symmetric,
+          ),
         },
       }));
     },
@@ -362,6 +380,26 @@ export function ModelingTool() {
                     </label>
                   ))}
                 </div>
+                <label className="mt-2 flex items-center gap-2 text-xs">
+                  <span className="w-16 text-gray-500">尖り</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={selectedVertex.sharpness ?? 0}
+                    onChange={(e) =>
+                      handleSetSharpness(
+                        selectedVertex.id,
+                        Number(e.target.value),
+                      )
+                    }
+                    className="flex-1"
+                  />
+                  <span className="w-8 text-right">
+                    {(selectedVertex.sharpness ?? 0).toFixed(2)}
+                  </span>
+                </label>
               </>
             ) : (
               <div className="text-gray-400 text-xs">未選択</div>

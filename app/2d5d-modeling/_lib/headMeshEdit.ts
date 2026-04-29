@@ -41,3 +41,34 @@ export function findVertex(
 ): ControlVertex | undefined {
   return mesh.vertices.find((v) => v.id === id);
 }
+
+// Set sharpness on a vertex, mirroring to the symmetric partner when the
+// symmetric flag is on. Sharpness is clamped to [0, 1].
+export function setVertexSharpness(
+  mesh: ControlMesh,
+  vertexId: string,
+  sharpness: number,
+  symmetric: boolean,
+): ControlMesh {
+  const idx = mesh.vertices.findIndex((v) => v.id === vertexId);
+  if (idx < 0) return mesh;
+  const clamped = Math.max(0, Math.min(1, sharpness));
+  const next = mesh.vertices.slice();
+  const v = next[idx];
+  next[idx] =
+    clamped === 0
+      ? { ...v, sharpness: undefined }
+      : { ...v, sharpness: clamped };
+
+  if (symmetric && v.mirrorPairId) {
+    const partnerIdx = next.findIndex((p) => p.id === v.mirrorPairId);
+    if (partnerIdx >= 0) {
+      const partner = next[partnerIdx];
+      next[partnerIdx] =
+        clamped === 0
+          ? { ...partner, sharpness: undefined }
+          : { ...partner, sharpness: clamped };
+    }
+  }
+  return { vertices: next, faces: mesh.faces };
+}

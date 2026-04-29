@@ -6,6 +6,9 @@ import type { ControlMesh, Vec3 } from "./types";
 // subdivision because they'd no longer be meaningful.
 interface WorkingMesh {
   positions: Vec3[];
+  // Per-vertex sharpness in [0, 1]. 1 pins the vertex across subdivisions
+  // (corner). Newly introduced edge/face points start at 0.
+  sharpness: number[];
   // Each face is a list of vertex indices (CCW).
   faces: number[][];
 }
@@ -42,12 +45,18 @@ function dedupeFace(face: number[]): number[] {
   return out;
 }
 
+function clamp01(v: number): number {
+  return v < 0 ? 0 : v > 1 ? 1 : v;
+}
+
 function fromControlMesh(mesh: ControlMesh): WorkingMesh {
   const idIndex = new Map<string, number>();
   const positions: Vec3[] = [];
+  const sharpness: number[] = [];
   for (const v of mesh.vertices) {
     idIndex.set(v.id, positions.length);
     positions.push(v3clone(v.position));
+    sharpness.push(clamp01(v.sharpness ?? 0));
   }
   const faces: number[][] = [];
   for (const f of mesh.faces) {
@@ -62,7 +71,7 @@ function fromControlMesh(mesh: ControlMesh): WorkingMesh {
     const cleaned = dedupeFace(indices);
     if (cleaned.length >= 3) faces.push(cleaned);
   }
-  return { positions, faces };
+  return { positions, sharpness, faces };
 }
 
 // Standard Catmull-Clark single iteration.
@@ -76,7 +85,7 @@ function fromControlMesh(mesh: ControlMesh): WorkingMesh {
 //        P' = (F + 2R + (n-3)P) / n
 //   4. each n-gon splits into n quads using face point as the center.
 function subdivideOnce(mesh: WorkingMesh): WorkingMesh {
-  const { positions, faces } = mesh;
+  const { positions, sharpness, faces } = mesh;
   const vCount = positions.length;
   const fCount = faces.length;
 
@@ -199,11 +208,13 @@ function subdivideOnce(mesh: WorkingMesh): WorkingMesh {
     faceCursor += 1;
   }
 
-  // Moved original vertices.
+  // Moved original vertices. sharpness blends linearly between the
+  // Catmull-Clark moved position (0) and the original position P (1).
   for (let v = 0; v < vCount; v++) {
     const n = adjacentFacePointCount[v];
+    const P = positions[v];
     if (n === 0) {
-      finalPositions[v] = v3clone(positions[v]);
+      finalPositions[v] = v3clone(P);
       continue;
     }
     const F: Vec3 = v3clone(adjacentFacePointSum[v]);
@@ -217,13 +228,24 @@ function subdivideOnce(mesh: WorkingMesh): WorkingMesh {
             adjacentEdgeMidpointSum[v][2] / eN,
           ]
         : [0, 0, 0];
-    const P = positions[v];
-    // (F + 2R + (n-3)P) / n
-    finalPositions[v] = [
+    // Standard Catmull-Clark moved point.
+    const moved: Vec3 = [
       (F[0] + 2 * R[0] + (n - 3) * P[0]) / n,
       (F[1] + 2 * R[1] + (n - 3) * P[1]) / n,
       (F[2] + 2 * R[2] + (n - 3) * P[2]) / n,
     ];
+    const s = sharpness[v];
+    if (s <= 0) {
+      finalPositions[v] = moved;
+    } else if (s >= 1) {
+      finalPositions[v] = v3clone(P);
+    } else {
+      finalPositions[v] = [
+        moved[0] * (1 - s) + P[0] * s,
+        moved[1] * (1 - s) + P[1] * s,
+        moved[2] * (1 - s) + P[2] * s,
+      ];
+    }
   }
 
   // 4. Build new faces: split each n-gon into n quads.
@@ -244,7 +266,18 @@ function subdivideOnce(mesh: WorkingMesh): WorkingMesh {
     }
   }
 
-  return { positions: finalPositions, faces: newFaces };
+  // Carry sharpness forward: original vertices keep their value; newly
+  // introduced edge / face points start at 0.
+  const newSharpness: number[] = new Array(finalPositions.length).fill(0);
+  for (let v = 0; v < vCount; v++) {
+    newSharpness[v] = sharpness[v];
+  }
+
+  return {
+    positions: finalPositions,
+    sharpness: newSharpness,
+    faces: newFaces,
+  };
 }
 
 // Public: subdivide a control mesh `level` times. level=0 returns the input.
