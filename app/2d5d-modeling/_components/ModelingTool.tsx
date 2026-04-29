@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { moveVertex, setVertexSharpness } from "../_lib/headMeshEdit";
 import {
   buildDefaultFaceModel,
@@ -91,9 +91,15 @@ function normalizeVec3(v: Vec3): Vec3 {
 }
 
 export function ModelingTool() {
-  const [model, setModel] = useState<FaceModel>(
-    () => loadFromLocalStorage() ?? buildDefaultFaceModel(),
-  );
+  // Always start with the default model on the server so SSR HTML matches the
+  // initial client render. localStorage data is loaded after mount.
+  const [model, setModel] = useState<FaceModel>(() => buildDefaultFaceModel());
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    const stored = loadFromLocalStorage();
+    if (stored) setModel(stored);
+    setHydrated(true);
+  }, []);
   const [angle, setAngle] = useState<YawPitch>({ yaw: 0, pitch: 0 });
   const [angleSource, setAngleSource] = useState<"slider" | "controls">(
     "slider",
@@ -108,15 +114,16 @@ export function ModelingTool() {
   const [showAxes, setShowAxes] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
 
-  // Persist to localStorage on every model change.
-  useMemo(() => {
-    if (typeof window === "undefined") return;
+  // Persist to localStorage on every model change, but only after hydration so
+  // we don't clobber stored data with the default model on first render.
+  useEffect(() => {
+    if (!hydrated) return;
     try {
       localStorage.setItem(LS_KEY, exportFaceModel(model));
     } catch {
       // Ignore quota errors.
     }
-  }, [model]);
+  }, [model, hydrated]);
 
   const selectedVertex = selectedVertexId
     ? model.head.controlMesh.vertices.find((v) => v.id === selectedVertexId)
@@ -344,6 +351,66 @@ export function ModelingTool() {
               onChange={(e) => handleHeadFillColor(e.target.value)}
             />
           </label>
+          <div className="mb-2 rounded border border-gray-200 p-2">
+            <label className="mb-1 flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={model.headOutline.enabled}
+                onChange={(e) =>
+                  setModel((prev) => ({
+                    ...prev,
+                    headOutline: {
+                      ...prev.headOutline,
+                      enabled: e.target.checked,
+                    },
+                  }))
+                }
+              />
+              輪郭線
+            </label>
+            <label className="mb-1 flex items-center gap-2 text-xs">
+              <span className="w-12 text-gray-500">色</span>
+              <input
+                type="color"
+                value={rgbaToHex(model.headOutline.color)}
+                onChange={(e) =>
+                  setModel((prev) => ({
+                    ...prev,
+                    headOutline: {
+                      ...prev.headOutline,
+                      color: hexToRgba(
+                        e.target.value,
+                        prev.headOutline.color[3],
+                      ),
+                    },
+                  }))
+                }
+              />
+            </label>
+            <label className="flex items-center gap-2 text-xs">
+              <span className="w-12 text-gray-500">太さ</span>
+              <input
+                type="range"
+                min={0}
+                max={0.03}
+                step={0.001}
+                value={model.headOutline.thickness}
+                onChange={(e) =>
+                  setModel((prev) => ({
+                    ...prev,
+                    headOutline: {
+                      ...prev.headOutline,
+                      thickness: Number(e.target.value),
+                    },
+                  }))
+                }
+                className="flex-1"
+              />
+              <span className="w-12 text-right">
+                {model.headOutline.thickness.toFixed(3)}
+              </span>
+            </label>
+          </div>
           <button
             type="button"
             className="mb-2 rounded border border-red-300 px-2 py-1 text-red-700 text-xs hover:bg-red-50"

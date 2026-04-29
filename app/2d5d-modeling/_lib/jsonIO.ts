@@ -27,6 +27,11 @@ export function importFaceModel(json: string): FaceModel {
       subdivisionLevel: data.head.subdivisionLevel ?? 2,
     },
     headFillColor: data.headFillColor ?? [0.99, 0.88, 0.78, 1],
+    headOutline: data.headOutline ?? {
+      enabled: false,
+      color: [0, 0, 0, 1],
+      thickness: 0.005,
+    },
     parts: Array.isArray(data.parts) ? data.parts : [],
     groups: Array.isArray(data.groups) ? data.groups : [],
     blendShapeWeights: data.blendShapeWeights ?? {},
@@ -38,6 +43,11 @@ export function buildDefaultFaceModel(): FaceModel {
   return {
     head: buildPresetHeadModel(2),
     headFillColor: [0.99, 0.88, 0.78, 1],
+    headOutline: {
+      enabled: true,
+      color: [0, 0, 0, 1],
+      thickness: 0.005,
+    },
     parts: [],
     groups: [],
     blendShapeWeights: {},

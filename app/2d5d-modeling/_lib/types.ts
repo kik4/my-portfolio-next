@@ -120,9 +120,18 @@ export type InterpolationMode =
   | "rbf-gaussian-regularized"
   | "linear-delaunay";
 
+export interface HeadOutline {
+  enabled: boolean;
+  color: ColorRGBA;
+  // Push along the surface normal in world units. Roughly equal to the
+  // outline's apparent thickness on a head ~1 unit tall.
+  thickness: number;
+}
+
 export interface FaceModel {
   head: HeadModel;
   headFillColor: ColorRGBA;
+  headOutline: HeadOutline;
 
   parts: Part[];
   groups: PartGroup[];

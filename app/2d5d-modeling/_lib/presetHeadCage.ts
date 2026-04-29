@@ -126,42 +126,46 @@ export function buildPresetHeadCage(): ControlMesh {
   }
 
   // Quad faces between adjacent rings.
-  // Vertex order CCW seen from outside (so the normal points outward).
+  // θ increases clockwise when viewed from above, so the CCW-seen-from-outside
+  // winding for a quad on the upper ring r and lower ring r+1 is
+  // [r,t+1] → [r,t] → [r+1,t] → [r+1,t+1].
   for (let r = 0; r < RINGS.length - 1; r++) {
     for (let t = 0; t < RING_THETA_COUNT; t++) {
       const tNext = (t + 1) % RING_THETA_COUNT;
       faces.push({
         id: `f_r${r}_t${t}`,
         vertexIds: [
-          vertexId(r, t),
           vertexId(r, tNext),
-          vertexId(r + 1, tNext),
+          vertexId(r, t),
           vertexId(r + 1, t),
+          vertexId(r + 1, tNext),
         ],
       });
     }
   }
 
-  // Crown fan: degenerate quads (crown, ring0[t], ring0[t+1], crown).
-  // The duplicated crown id collapses one edge, behaving like a triangle.
+  // Crown fan: degenerate quads with the same outward winding as the upper
+  // ring rows above. crown sits above ring 0, so the quad is
+  // [crown, crown, ring0[t], ring0[t+1]] -- a triangle with the crown apex.
   for (let t = 0; t < RING_THETA_COUNT; t++) {
     const tNext = (t + 1) % RING_THETA_COUNT;
     faces.push({
       id: `f_crown_t${t}`,
-      vertexIds: [crownId, vertexId(0, t), vertexId(0, tNext), crownId],
+      vertexIds: [crownId, crownId, vertexId(0, t), vertexId(0, tNext)],
     });
   }
 
-  // Chin fan: degenerate quads in the opposite winding.
+  // Chin fan: chin sits below the last ring, so the outward winding is the
+  // mirror of the crown fan.
   const lastRing = RINGS.length - 1;
   for (let t = 0; t < RING_THETA_COUNT; t++) {
     const tNext = (t + 1) % RING_THETA_COUNT;
     faces.push({
       id: `f_chin_t${t}`,
       vertexIds: [
-        chinId,
         vertexId(lastRing, tNext),
         vertexId(lastRing, t),
+        chinId,
         chinId,
       ],
     });
