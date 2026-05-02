@@ -29,7 +29,7 @@ const paramDistanceSq = (
 // The convention we adopt: when currentParams exactly equals a keyframe's
 // paramValues, that keyframe contributes weight 1 (its full delta applies).
 export const animRbfWeights = (
-  keyframes: AnimKeyframe[],
+  keyframes: { paramValues: Record<string, number> }[],
   currentParams: Record<string, number>,
   sigma: number,
 ): number[] => {

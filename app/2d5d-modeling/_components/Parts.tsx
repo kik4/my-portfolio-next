@@ -111,8 +111,16 @@ const PartRenderer = ({
   // building or raycast resolution. Group transform is part of the part's
   // effective placement, not a separate stage.
   const placementWithGroup = useMemo(
-    () => applyGroupChainToPlacement(groups, part.groupId, kf.placement),
-    [groups, part.groupId, kf.placement],
+    () =>
+      applyGroupChainToPlacement(
+        groups,
+        part.groupId,
+        kf.placement,
+        yaw,
+        pitch,
+        animParams,
+      ),
+    [groups, part.groupId, kf.placement, yaw, pitch, animParams],
   );
 
   const fillGeometry = useMemo(

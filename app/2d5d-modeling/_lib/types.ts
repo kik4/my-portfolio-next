@@ -78,6 +78,35 @@ export interface Part {
   rbfSigmaAnim: number;
 }
 
+// The transform that a group contributes on top of its descendants'
+// placements. Anchor delta is added then re-normalized; rotation delta sums
+// in degrees; scale delta is multiplicative so [0,0] = identity, [0.5,0] =
+// 1.5x in X.
+export interface GroupTransformDelta {
+  anchorDelta: Vec3;
+  rotationOffsetDelta: Vec3;
+  scaleDelta: Vec2;
+}
+
+// Group-level view keyframe: at the given (yaw, pitch) the group contributes
+// this absolute transformDelta. Multiple keyframes are blended via the same
+// view RBF used by part shapes.
+export interface GroupViewKeyframe {
+  id: string;
+  yaw: number; // degrees
+  pitch: number; // degrees
+  transformDelta: GroupTransformDelta;
+}
+
+// Group-level anim keyframe: at the given paramValues, contributes this
+// *additional* transform delta on top of the view-interpolated base. Same
+// summation rules as part anim deltas.
+export interface GroupAnimKeyframe {
+  id: string;
+  paramValues: Record<string, number>;
+  transformDelta: GroupTransformDelta;
+}
+
 export interface PartGroup {
   id: string;
   name: string;
@@ -86,16 +115,12 @@ export interface PartGroup {
   // groups have no parentId. Cycles are not allowed (enforced by the editor /
   // resolver) — see groupAncestorChain in groupTransform.ts.
   parentId?: string;
-  // Static transform delta applied on top of every descendant's resolved
-  // placement. Anchor delta nudges the descendant's anchor direction (then
-  // re-normalized); rotation delta is degrees added to rotationOffset; scale
-  // delta is multiplicative (so [0,0] = identity, [0.5,0] = 1.5x in X).
-  // Phase 4 will add view/anim keyframes that interpolate this delta.
-  transformDelta: {
-    anchorDelta: Vec3;
-    rotationOffsetDelta: Vec3;
-    scaleDelta: Vec2;
-  };
+  // View / anim keyframes for the group's transformDelta. At minimum a single
+  // viewKeyframe must exist (the static state). animKeyframes are optional.
+  viewKeyframes: GroupViewKeyframe[];
+  animKeyframes: GroupAnimKeyframe[];
+  rbfSigmaView: number;
+  rbfSigmaAnim: number;
 }
 
 export interface AnimParamDef {

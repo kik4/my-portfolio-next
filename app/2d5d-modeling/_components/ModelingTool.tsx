@@ -90,6 +90,9 @@ export const ModelingTool = () => {
   const [editingKfIndex, setEditingKfIndex] = useState(0);
   // Index of the anim keyframe currently being edited, scoped per selected part.
   const [editingAnimKfIndex, setEditingAnimKfIndex] = useState(0);
+  // Same idea but scoped to the selected group's view / anim keyframes.
+  const [editingGroupViewKfIndex, setEditingGroupViewKfIndex] = useState(0);
+  const [editingGroupAnimKfIndex, setEditingGroupAnimKfIndex] = useState(0);
   const [showAxes, setShowAxes] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
   // Camera angles fed by Scene every frame.
@@ -163,6 +166,13 @@ export const ModelingTool = () => {
     );
     setEditingKfIndex(Math.max(idx, 0));
   }, [selectedPartId]);
+
+  // Reset group editing indexes when the selected group changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: selection trigger is intentional
+  useEffect(() => {
+    setEditingGroupViewKfIndex(0);
+    setEditingGroupAnimKfIndex(0);
+  }, [selectedGroupId]);
 
   const updateHeadSampleField = (
     field: "frontHalfXs" | "sideZFronts" | "sideZBacks",
@@ -653,7 +663,18 @@ export const ModelingTool = () => {
 
         {selectedGroup && (
           <div className="mb-3">
-            <GroupEditor group={selectedGroup} updateGroup={updateGroup} />
+            <GroupEditor
+              group={selectedGroup}
+              updateGroup={updateGroup}
+              cameraYaw={cameraYaw}
+              cameraPitch={cameraPitch}
+              animDefs={model.animParams}
+              currentAnimParams={model.currentAnimParams}
+              editingViewKfIndex={editingGroupViewKfIndex}
+              setEditingViewKfIndex={setEditingGroupViewKfIndex}
+              editingAnimKfIndex={editingGroupAnimKfIndex}
+              setEditingAnimKfIndex={setEditingGroupAnimKfIndex}
+            />
           </div>
         )}
 

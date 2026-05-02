@@ -65,11 +65,23 @@ export const buildDefaultGroup = (
   name,
   visible: true,
   parentId,
-  transformDelta: {
-    anchorDelta: [0, 0, 0],
-    rotationOffsetDelta: [0, 0, 0],
-    scaleDelta: [0, 0],
-  },
+  // A single static view keyframe at (yaw=0, pitch=0) with zero deltas; the
+  // group has no effect until the user adds more keyframes or edits the deltas.
+  viewKeyframes: [
+    {
+      id: `gvk-${id}-default`,
+      yaw: 0,
+      pitch: 0,
+      transformDelta: {
+        anchorDelta: [0, 0, 0],
+        rotationOffsetDelta: [0, 0, 0],
+        scaleDelta: [0, 0],
+      },
+    },
+  ],
+  animKeyframes: [],
+  rbfSigmaView: 30,
+  rbfSigmaAnim: 0.5,
 });
 
 export const buildDefaultPart = (id: string, name: string): Part => ({
