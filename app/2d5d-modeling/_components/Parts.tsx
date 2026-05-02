@@ -8,23 +8,33 @@ import {
 } from "../_lib/partGeometry";
 import { resolvePlacement } from "../_lib/placement";
 import type { Part } from "../_lib/types";
+import { interpolateViewKeyframes } from "../_lib/viewRbf";
 
 interface Props {
   parts: Part[];
   // The head mesh used as the raycast target to resolve part placements.
   headMesh: THREE.Mesh | null;
+  // Current camera angles in degrees, supplied by the parent (Scene).
+  yaw: number;
+  pitch: number;
 }
 
-// Renders all parts at their resolved positions/orientations. Phase 1 uses
-// only the first viewKeyframe of each part (no view interpolation yet).
-export const Parts = ({ parts, headMesh }: Props) => {
+// Renders all parts at their resolved positions/orientations using the view
+// RBF interpolation of their viewKeyframes for the current (yaw, pitch).
+export const Parts = ({ parts, headMesh, yaw, pitch }: Props) => {
   if (!headMesh) return null;
 
   const sorted = [...parts].sort((a, b) => a.layerIndex - b.layerIndex);
   return (
     <>
       {sorted.map((part) => (
-        <PartRenderer key={part.id} part={part} headMesh={headMesh} />
+        <PartRenderer
+          key={part.id}
+          part={part}
+          headMesh={headMesh}
+          yaw={yaw}
+          pitch={pitch}
+        />
       ))}
     </>
   );
@@ -33,13 +43,24 @@ export const Parts = ({ parts, headMesh }: Props) => {
 interface PartRendererProps {
   part: Part;
   headMesh: THREE.Mesh;
+  yaw: number;
+  pitch: number;
 }
 
-const PartRenderer = ({ part, headMesh }: PartRendererProps) => {
+const PartRenderer = ({ part, headMesh, yaw, pitch }: PartRendererProps) => {
   const groupRef = useRef<THREE.Group>(null);
 
-  // Phase 1: pick the first view keyframe, no interpolation.
-  const kf = part.viewKeyframes[0];
+  // Compose a single effective view keyframe at the current camera angles.
+  const kf = useMemo(
+    () =>
+      interpolateViewKeyframes(
+        part.viewKeyframes,
+        yaw,
+        pitch,
+        part.rbfSigmaView,
+      ),
+    [part.viewKeyframes, yaw, pitch, part.rbfSigmaView],
+  );
 
   const fillGeometry = useMemo(
     () => buildPartFillGeometry(kf.shape, kf.placement.scale),
