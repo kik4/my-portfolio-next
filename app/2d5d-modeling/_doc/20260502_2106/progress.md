@@ -17,6 +17,7 @@
 - 全操作が Undo/Redo に乗る (Ctrl+Z / Ctrl+Shift+Z)
 - localStorage 自動保存 + JSON 書き出し/読み込み
 - マルチビュー (4 視点同時表示) で「全角度で気持ちよい」が編集中に確認できる
+- 左サイドバー幅はドラッグで可変 (240..720px)、頭シルエット側面エディタは「左 = 顔の前」に反転済み、頭メッシュの極は滑らかなドーム形状
 
 ## このセッションで作ったもの (commit 順)
 
@@ -35,6 +36,11 @@
 13. `5625cf0` AnchorGizmo (パーツ anchor の 3D ドラッグ)
 14. `7f2b8a0` View keyframe → メインカメラスナップ
 15. `fd70a34` Unreal 出力フォーマット spec
+16. `8f37849` この progress.md 初版
+17. `0d828d1` 左サイドバー幅をドラッグでリサイズ可能に (240..720px、localStorage 永続化、ダブルクリックで初期化)
+18. `2ef15ab` シルエット側面 (ZY) エディタを反転 (左 = 顔の前、右 = 後ろ)。データモデル不変、表示と書き戻しで Z 符号を反転するだけ
+19. `b35f379` 頭頂・顎ハンドルの Y ドラッグが効かないバグ修正 (`if (!pole)` ガードで Y 更新まで塞いでいた)
+20. `f96ad93` 頭メッシュの極を滑らかなドーム形状に。Catmull-Rom 端点クランプ (`p0 = p1`) は接線が水平になり円錐状の尖りを生むので、`sampleCatmullRom1D` に `mirrorEnds` オプションを追加 (`p0 = -p2`, `p3 = -p1`) して接線を急勾配に。同時に極リング (`ringSegments+1` 重複頂点) を **1 頂点 + fan stitch** に変えて、`computeVertexNormals` が極で一貫した法線を出すように (重複頂点だと片側だけの法線になり「くぼみ」のように見えていた)
 
 ## ファイル構成
 
@@ -158,8 +164,9 @@ JSON.parse(localStorage.getItem('2d5d-modeling-data-v3'))
 ## 既知の不具合・注意点
 
 - **頭メッシュの face winding**: CCW 外向き = `(a0, a1, b1), (a0, b1, b0)` の順序 (a0=row,seg / a1=row,seg+1 / b0=row+1,seg / b1=row+1,seg+1; row は y 昇順、seg は θ 増加で +Z→+X)。逆順は CW で MeshStandardMaterial の FrontSide では裏側だけ描画されてしまう (球状なので外見では気づきにくい)。BackSide hull 輪郭で初めて発覚するので spec/コメントで強調済み (headMeshBuild.ts 内コメント参照)
+- **頭メッシュの極**: 単一頂点 + fan stitch にしないと `computeVertexNormals` がくぼみを出す (`ringSegments+1` 個の重複頂点は別物として扱われ、各頂点が片側の三角形だけから法線平均を取る)。さらに Catmull-Rom 端点は標準クランプだと接線が水平で円錐尖端になるため、`mirrorEnds` (`p0 = -p2`, `p3 = -p1`) で接線を急にしないと滑らかなドームにならない。両方揃って初めて極が綺麗になる
 - **マルチビューで Canvas 5 個 → THREE.Clock deprecation warning が 5 件**: 機能影響なし
-- **Playwright 経由のドラッグテストは合成 PointerEvent が React に届きにくい**: TransformControls / PointEditor のドラッグ動作は実機でしか確認できない。状態変化はクリック等の単発イベントで検証可能
+- **Playwright 経由のドラッグテストは合成 PointerEvent が React に届きにくい**: TransformControls / PointEditor のドラッグ動作は実機でしか確認できない。状態変化はクリック等の単発イベントで検証可能。ただし **見た目の確認 (スクショ撮り) は playwright MCP で十分使える** (極のシェーディング不具合は playwright スクショで初めて視覚的に確定した)
 
 ## このプロジェクトの「コア哲学」(再開時に忘れないために)
 
