@@ -5,9 +5,15 @@ import type { PartShape, Vec2 } from "../_lib/types";
 
 interface Props {
   shape: PartShape;
-  // Receives the next shape (closed polygon or open polyline). Caller is
-  // responsible for committing through the history stack.
-  onChange: (next: PartShape) => void;
+  // Move a single existing control point. Only this keyframe's positions
+  // change; topology stays the same so other keyframes are untouched.
+  onMovePoint: (index: number, next: Vec2) => void;
+  // Insert a control point at insertIndex (so points[insertIndex] becomes
+  // the new entry). Topology change — caller should propagate to every
+  // keyframe of the same part so they all keep matching point counts.
+  onAddPoint: (insertIndex: number, position: Vec2) => void;
+  // Remove a control point. Topology change — same propagation rule as add.
+  onRemovePoint: (index: number) => void;
   // Pixel size of the SVG canvas. The view is auto-fit to the shape extents.
   width?: number;
   height?: number;
@@ -21,7 +27,9 @@ interface Props {
 // screen-up (matches the 3D scene's convention).
 export const PointEditor = ({
   shape,
-  onChange,
+  onMovePoint,
+  onAddPoint,
+  onRemovePoint,
   width = 240,
   height = 200,
 }: Props) => {
@@ -56,10 +64,7 @@ export const PointEditor = ({
     if (draggingIdx === null) return;
     const onMove = (e: PointerEvent) => {
       const local = screenToLocal(e.clientX, e.clientY);
-      const next = shape.basePoints.map(
-        (p, i) => (i === draggingIdx ? local : p) as Vec2,
-      );
-      onChange({ ...shape, basePoints: next });
+      onMovePoint(draggingIdx, local);
     };
     const onUp = () => setDraggingIdx(null);
     window.addEventListener("pointermove", onMove);
@@ -68,7 +73,7 @@ export const PointEditor = ({
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
     };
-  }, [draggingIdx, shape, onChange, screenToLocal]);
+  }, [draggingIdx, screenToLocal, onMovePoint]);
 
   const handleEdgeClick = (e: React.MouseEvent<SVGSVGElement>) => {
     // Insert a new control point at the click location, snapping into the
@@ -79,20 +84,12 @@ export const PointEditor = ({
     if (target.dataset.handle !== undefined) return; // ignore handle clicks
     const local = screenToLocal(e.clientX, e.clientY);
     const insertAt = nearestSegmentInsertIndex(shape, local);
-    const next: Vec2[] = [
-      ...shape.basePoints.slice(0, insertAt),
-      local,
-      ...shape.basePoints.slice(insertAt),
-    ];
-    onChange({ ...shape, basePoints: next });
+    onAddPoint(insertAt, local);
   };
 
   const handleRemove = (i: number) => {
     if (shape.basePoints.length <= 3) return; // keep enough points to triangulate
-    onChange({
-      ...shape,
-      basePoints: shape.basePoints.filter((_, idx) => idx !== i),
-    });
+    onRemovePoint(i);
   };
 
   const path = buildSvgPath(shape, view);

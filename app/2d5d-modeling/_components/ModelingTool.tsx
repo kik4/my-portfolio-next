@@ -12,11 +12,11 @@ import {
   saveFaceModelToLocalStorage,
   serializeFaceModel,
 } from "../_lib/jsonIO";
+import { insertShapePoint, removeShapePoint } from "../_lib/shapeTopology";
 import type {
   FaceModel,
   Part,
   PartGroup,
-  PartShape,
   Vec2,
   Vec3,
   ViewKeyframe,
@@ -884,7 +884,18 @@ const PartEditor = ({
         </ul>
       </fieldset>
 
-      <ViewKeyframeFields kf={kf} updateKf={updateKf} />
+      <ViewKeyframeFields
+        kf={kf}
+        updateKf={updateKf}
+        onAddShapePoint={(insertIndex, position) =>
+          updatePart(part.id, (p) =>
+            insertShapePoint(p, safeIdx, insertIndex, position),
+          )
+        }
+        onRemoveShapePoint={(idx) =>
+          updatePart(part.id, (p) => removeShapePoint(p, idx))
+        }
+      />
 
       <AnimKeyframeEditor
         part={part}
@@ -901,9 +912,13 @@ const PartEditor = ({
 const ViewKeyframeFields = ({
   kf,
   updateKf,
+  onAddShapePoint,
+  onRemoveShapePoint,
 }: {
   kf: ViewKeyframe;
   updateKf: (mut: (k: ViewKeyframe) => ViewKeyframe) => void;
+  onAddShapePoint: (insertIndex: number, position: Vec2) => void;
+  onRemoveShapePoint: (index: number) => void;
 }) => {
   return (
     <>
@@ -1038,9 +1053,18 @@ const ViewKeyframeFields = ({
         </legend>
         <PointEditor
           shape={kf.shape}
-          onChange={(nextShape: PartShape) =>
-            updateKf((k) => ({ ...k, shape: nextShape }))
+          onMovePoint={(idx, next) =>
+            // Move only changes this keyframe's positions; other keyframes
+            // and anim deltas are unaffected.
+            updateKf((k) => {
+              const pts = k.shape.basePoints.map(
+                (q, i) => (i === idx ? next : q) as Vec2,
+              );
+              return { ...k, shape: { ...k.shape, basePoints: pts } };
+            })
           }
+          onAddPoint={onAddShapePoint}
+          onRemovePoint={onRemoveShapePoint}
         />
         <p className="mt-1 text-gray-500">
           ハンドルをドラッグ / 線をクリックで点追加 / 右クリックで削除
