@@ -39,30 +39,44 @@ export const buildHeadGeometry = (head: HeadMesh): THREE.BufferGeometry => {
   const yMin = ySorted[0];
   const yMax = ySorted[ySorted.length - 1];
 
-  // Sample evenly between yMin and yMax.
-  const yLines: number[] = [];
+  // Sample evenly between yMin and yMax. mirrorEnds=true tells the spline to
+  // pretend the controls extend symmetrically past each pole (phantom value
+  // = -inner-neighbour), which makes the radius approach zero with a steeper
+  // tangent than the default clamp. Visually that's the difference between a
+  // sharp cone tip and a rounded dome.
+  type Row = { y: number; halfX: number; zFront: number; zBack: number };
+  const rows: Row[] = [];
   for (let row = 0; row < LATITUDE_DENSITY; row++) {
     const u = row / (LATITUDE_DENSITY - 1);
-    yLines.push(yMin + (yMax - yMin) * u);
+    const y = yMin + (yMax - yMin) * u;
+    rows.push({
+      y,
+      halfX: sampleCatmullRom1D(halfXSamples, y, catmullRomTension, true),
+      zFront: sampleCatmullRom1D(zFrontSamples, y, catmullRomTension, true),
+      zBack: sampleCatmullRom1D(zBackSamples, y, catmullRomTension, true),
+    });
   }
 
+  const totalRows = rows.length;
   const positions: number[] = [];
   const indices: number[] = [];
 
-  // Build rings. Each ring contributes ringSegments+1 vertices (we duplicate
-  // the seam to keep the longitude index continuous; a closed-loop wrap would
-  // be fine too but the duplicate keeps stitching code simple).
-  for (let row = 0; row < LATITUDE_DENSITY; row++) {
-    const y = yLines[row];
-    const halfX = sampleCatmullRom1D(halfXSamples, y, catmullRomTension);
-    const zFront = sampleCatmullRom1D(zFrontSamples, y, catmullRomTension);
-    const zBack = sampleCatmullRom1D(zBackSamples, y, catmullRomTension);
-
+  // Vertex layout: a single pole vertex at the chin (index 0), then
+  // ringStride vertices per intermediate ring, then a single pole vertex at
+  // the apex. Collapsing each pole to one vertex is what gives smooth shading
+  // there — duplicating ringSegments+1 coincident vertices fools
+  // computeVertexNormals into giving each duplicate only the normal of its
+  // neighboring face, producing the dimpled look around the pole.
+  const ringStride = ringSegments + 1;
+  // Chin pole vertex (index 0).
+  positions.push(0, rows[0].y, 0);
+  // Intermediate rings (rows 1..totalRows-2): full ringStride vertices each.
+  for (let row = 1; row < totalRows - 1; row++) {
+    const { y, halfX, zFront, zBack } = rows[row];
     const a = Math.max(halfX, 0);
     const center = (zFront + zBack) * 0.5;
     const bFront = Math.max(zFront - center, 0);
     const bBack = Math.max(center - zBack, 0);
-
     for (let seg = 0; seg <= ringSegments; seg++) {
       const theta = (seg / ringSegments) * Math.PI * 2;
       const sinT = Math.sin(theta);
@@ -73,29 +87,42 @@ export const buildHeadGeometry = (head: HeadMesh): THREE.BufferGeometry => {
       positions.push(x, y, z);
     }
   }
+  // Apex pole vertex (last index).
+  const apexIndex = 1 + (totalRows - 2) * ringStride;
+  positions.push(0, rows[totalRows - 1].y, 0);
 
-  // Stitch adjacent rings into quads (two triangles each).
-  // Vertex layout per quad: a0 = (row,   seg), a1 = (row,   seg+1),
-  //                         b0 = (row+1, seg), b1 = (row+1, seg+1).
-  // row indexes y from chin (yMin) at row=0 to apex (yMax) at row=LATITUDE_DENSITY-1,
-  // so row+1 is *higher* on the head. Theta direction: x = a*sin(theta),
-  // z(front) = +b*cos(theta), so at theta=0 the point is at +Z (front of face),
-  // and as seg grows the point rotates toward +X (right side).
-  // Empirically (verified by checking that the BackSide outline hull does not
-  // occlude the FrontSide fill), the outward-CCW ordering is
-  //   a0 -> a1 -> b1 -> b0
-  // i.e. lower-left -> lower-right -> upper-right -> upper-left when viewed
-  // from outside.
-  const ringStride = ringSegments + 1;
-  for (let row = 0; row < LATITUDE_DENSITY - 1; row++) {
+  // Helper to map (interior row, seg) → flat vertex index.
+  // interiorRow runs 1..totalRows-2 (inclusive). seg runs 0..ringSegments.
+  const ringVertexIndex = (interiorRow: number, seg: number) =>
+    1 + (interiorRow - 1) * ringStride + seg;
+
+  // Bottom fan: chin pole → first interior ring.
+  // Ordering: pole, seg, seg+1 — verified CCW by checking the outline hull
+  // doesn't occlude the FrontSide fill.
+  for (let seg = 0; seg < ringSegments; seg++) {
+    const r0 = ringVertexIndex(1, seg);
+    const r1 = ringVertexIndex(1, seg + 1);
+    indices.push(0, r1, r0);
+  }
+
+  // Stitch adjacent interior rings into quads (two triangles each).
+  // row+1 is higher up the head. Outward-CCW ordering is a0 -> a1 -> b1 -> b0.
+  for (let row = 1; row < totalRows - 2; row++) {
     for (let seg = 0; seg < ringSegments; seg++) {
-      const a0 = row * ringStride + seg;
-      const a1 = row * ringStride + seg + 1;
-      const b0 = (row + 1) * ringStride + seg;
-      const b1 = (row + 1) * ringStride + seg + 1;
+      const a0 = ringVertexIndex(row, seg);
+      const a1 = ringVertexIndex(row, seg + 1);
+      const b0 = ringVertexIndex(row + 1, seg);
+      const b1 = ringVertexIndex(row + 1, seg + 1);
       indices.push(a0, a1, b1);
       indices.push(a0, b1, b0);
     }
+  }
+
+  // Top fan: last interior ring → apex pole.
+  for (let seg = 0; seg < ringSegments; seg++) {
+    const r0 = ringVertexIndex(totalRows - 2, seg);
+    const r1 = ringVertexIndex(totalRows - 2, seg + 1);
+    indices.push(r0, r1, apexIndex);
   }
 
   const geometry = new THREE.BufferGeometry();
