@@ -1,8 +1,8 @@
 "use client";
 
 import { OrbitControls } from "@react-three/drei";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { useRef, useState } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import type { FaceModel } from "../_lib/types";
 import { HeadMesh } from "./HeadMesh";
@@ -12,22 +12,59 @@ interface Props {
   model: FaceModel;
   showAxes: boolean;
   showGrid: boolean;
-  // Called every frame with the current camera (yaw, pitch) in degrees.
-  // yaw=0 means the camera looks at the face from +Z (front view).
-  // pitch=0 means the camera is on the equator (eye level).
+  // Called every frame with the current camera (yaw, pitch) in degrees in
+  // interactive mode. Ignored in fixed mode.
   onCameraChange?: (yaw: number, pitch: number) => void;
+  // Fixed view: when set, the scene renders without OrbitControls and parks
+  // the camera at the given (yaw, pitch). Used by mini multi-views.
+  fixedView?: { yaw: number; pitch: number };
+  // Camera distance (radius from origin). Defaults to 3.
+  cameraDistance?: number;
+  // Field of view in degrees. Defaults to 35.
+  cameraFov?: number;
 }
 
-export const Scene = ({ model, showAxes, showGrid, onCameraChange }: Props) => {
-  // Reactive ref for <Parts/> so it knows when the head mesh becomes available.
+const DEFAULT_DISTANCE = 3;
+const DEFAULT_FOV = 35;
+
+export const Scene = ({
+  model,
+  showAxes,
+  showGrid,
+  onCameraChange,
+  fixedView,
+  cameraDistance = DEFAULT_DISTANCE,
+  cameraFov = DEFAULT_FOV,
+}: Props) => {
   const headMeshRef = useRef<THREE.Mesh | null>(null);
   const [headMesh, setHeadMesh] = useState<THREE.Mesh | null>(null);
-  const [yaw, setYaw] = useState(0);
-  const [pitch, setPitch] = useState(0);
+  // In interactive mode the camera tracker drives these. In fixed mode they
+  // come straight from props (no per-frame update needed).
+  const [yaw, setYaw] = useState(fixedView?.yaw ?? 0);
+  const [pitch, setPitch] = useState(fixedView?.pitch ?? 0);
+
+  // When fixedView is supplied, keep yaw/pitch in sync with it.
+  useEffect(() => {
+    if (fixedView) {
+      setYaw(fixedView.yaw);
+      setPitch(fixedView.pitch);
+    }
+  }, [fixedView]);
+
+  const initialCameraPos = computeCameraPosition(
+    fixedView?.yaw ?? 0,
+    fixedView?.pitch ?? 0,
+    cameraDistance,
+  );
 
   return (
     <Canvas
-      camera={{ position: [0, 0.2, 3], fov: 35, near: 0.01, far: 100 }}
+      camera={{
+        position: initialCameraPos,
+        fov: cameraFov,
+        near: 0.01,
+        far: 100,
+      }}
       shadows={false}
     >
       <ambientLight intensity={0.6} />
@@ -52,16 +89,64 @@ export const Scene = ({ model, showAxes, showGrid, onCameraChange }: Props) => {
       {showAxes && <axesHelper args={[1.5]} />}
       {showGrid && <gridHelper args={[4, 8]} />}
 
-      <OrbitControls makeDefault enableDamping />
-      <CameraTracker
-        onChange={(y, p) => {
-          setYaw(y);
-          setPitch(p);
-          onCameraChange?.(y, p);
-        }}
-      />
+      {fixedView ? (
+        <FixedCamera
+          yaw={fixedView.yaw}
+          pitch={fixedView.pitch}
+          distance={cameraDistance}
+        />
+      ) : (
+        <>
+          <OrbitControls makeDefault enableDamping />
+          <CameraTracker
+            onChange={(y, p) => {
+              setYaw(y);
+              setPitch(p);
+              onCameraChange?.(y, p);
+            }}
+          />
+        </>
+      )}
     </Canvas>
   );
+};
+
+// Convert (yaw, pitch) in degrees + radius to a Cartesian camera position.
+// yaw rotates around +Y from +Z toward +X; pitch is elevation above the equator.
+const computeCameraPosition = (
+  yawDeg: number,
+  pitchDeg: number,
+  distance: number,
+): [number, number, number] => {
+  const yaw = (yawDeg * Math.PI) / 180;
+  const pitch = (pitchDeg * Math.PI) / 180;
+  const cp = Math.cos(pitch);
+  return [
+    distance * cp * Math.sin(yaw),
+    distance * Math.sin(pitch),
+    distance * cp * Math.cos(yaw),
+  ];
+};
+
+// Parks the camera at the given (yaw, pitch, distance) and points it at the
+// origin. Reapplies on every prop change so HMR-style edits update live.
+const FixedCamera = ({
+  yaw,
+  pitch,
+  distance,
+}: {
+  yaw: number;
+  pitch: number;
+  distance: number;
+}) => {
+  const { camera } = useThree();
+  useEffect(() => {
+    const [x, y, z] = computeCameraPosition(yaw, pitch, distance);
+    camera.position.set(x, y, z);
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
+  }, [camera, yaw, pitch, distance]);
+  return null;
 };
 
 // Reads the camera's spherical position relative to the origin every frame and
@@ -76,14 +161,10 @@ const CameraTracker = ({
   const lastPitch = useRef<number>(Number.NaN);
   useFrame(({ camera }) => {
     const dir = camera.position.clone().normalize();
-    // yaw: angle around +Y axis from +Z toward +X.
     const yawRad = Math.atan2(dir.x, dir.z);
-    // pitch: elevation above the XZ plane.
     const pitchRad = Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1));
     const yawDeg = (yawRad * 180) / Math.PI;
     const pitchDeg = (pitchRad * 180) / Math.PI;
-    // Skip updates that don't move the angle meaningfully (avoid re-render
-    // storm under OrbitControls damping).
     if (
       Math.abs(yawDeg - lastYaw.current) < 0.05 &&
       Math.abs(pitchDeg - lastPitch.current) < 0.05

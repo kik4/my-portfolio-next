@@ -26,9 +26,9 @@ import { AnimKeyframeEditor } from "./AnimKeyframeEditor";
 import { AnimParamsPanel } from "./AnimParamsPanel";
 import { GroupEditor } from "./GroupEditor";
 import { HeadCurveEditor } from "./HeadCurveEditor";
+import { MultiView } from "./MultiView";
 import { PartTree } from "./PartTree";
 import { PointEditor } from "./PointEditor";
-import { Scene } from "./Scene";
 
 const normalizeVec3 = (v: Vec3): Vec3 => {
   const len = Math.hypot(v[0], v[1], v[2]);
@@ -736,7 +736,7 @@ export const ModelingTool = () => {
       </aside>
 
       <main className="min-h-0 flex-1">
-        <Scene
+        <MultiView
           model={model}
           showAxes={showAxes}
           showGrid={showGrid}
