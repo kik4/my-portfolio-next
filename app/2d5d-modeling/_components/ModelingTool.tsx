@@ -7,10 +7,18 @@ import {
   saveFaceModelToLocalStorage,
   serializeFaceModel,
 } from "../_lib/jsonIO";
-import type { FaceModel, Part, Vec2, Vec3, ViewKeyframe } from "../_lib/types";
+import type {
+  FaceModel,
+  Part,
+  PartShape,
+  Vec2,
+  Vec3,
+  ViewKeyframe,
+} from "../_lib/types";
 import { useHistory } from "../_lib/useHistory";
 import { AnimKeyframeEditor } from "./AnimKeyframeEditor";
 import { AnimParamsPanel } from "./AnimParamsPanel";
+import { PointEditor } from "./PointEditor";
 import { Scene } from "./Scene";
 
 const normalizeVec3 = (v: Vec3): Vec3 => {
@@ -907,9 +915,23 @@ const ViewKeyframeFields = ({
         />
         表示
       </label>
+      <fieldset>
+        <legend className="text-gray-600">
+          形状 ({kf.shape.basePoints.length} 点)
+        </legend>
+        <PointEditor
+          shape={kf.shape}
+          onChange={(nextShape: PartShape) =>
+            updateKf((k) => ({ ...k, shape: nextShape }))
+          }
+        />
+        <p className="mt-1 text-gray-500">
+          ハンドルをドラッグ / 線をクリックで点追加 / 右クリックで削除
+        </p>
+      </fieldset>
       <details>
         <summary className="cursor-pointer text-gray-600">
-          形状制御点 ({kf.shape.basePoints.length})
+          座標を数値で編集 ({kf.shape.basePoints.length})
         </summary>
         <table className="mt-1 w-full">
           <thead>
