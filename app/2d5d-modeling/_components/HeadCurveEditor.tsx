@@ -165,8 +165,9 @@ const CurveCanvas = ({
         if (rightKey === "halfX") next.frontHalfXs[idx] = pole ? 0 : v;
         // Side view: right of midline = back of head. Stored as negative Z.
         if (rightKey === "zBack") next.sideZBacks[idx] = pole ? 0 : -v;
-        // Y can also move because dragging includes vertical motion.
-        if (!pole) next.ySamples[idx] = value.y;
+        // Y always moves because dragging includes vertical motion (poles too:
+        // their X is locked to 0 but they still slide vertically).
+        next.ySamples[idx] = value.y;
       } else if (target === "left") {
         const v = Math.min(value.x, 0);
         if (leftKey === "mirroredHalfX") {
@@ -179,7 +180,7 @@ const CurveCanvas = ({
         if (leftKey === "zFront") {
           next.sideZFronts[idx] = pole ? 0 : -v;
         }
-        if (!pole) next.ySamples[idx] = value.y;
+        next.ySamples[idx] = value.y;
       }
       onChange(next);
     },
