@@ -18,6 +18,7 @@ import type {
 import { useHistory } from "../_lib/useHistory";
 import { AnimKeyframeEditor } from "./AnimKeyframeEditor";
 import { AnimParamsPanel } from "./AnimParamsPanel";
+import { HeadCurveEditor } from "./HeadCurveEditor";
 import { PointEditor } from "./PointEditor";
 import { Scene } from "./Scene";
 
@@ -423,9 +424,21 @@ export const ModelingTool = () => {
               className="w-20 rounded border px-1"
             />
           </label>
+          <fieldset>
+            <legend className="text-gray-600 text-xs">
+              シルエット ({model.head.ySamples.length} 点)
+            </legend>
+            <HeadCurveEditor
+              head={model.head}
+              onChange={(nextHead) => commit((m) => ({ ...m, head: nextHead }))}
+            />
+            <p className="mt-1 text-gray-500 text-xs">
+              ハンドルをドラッグ / 灰色 = 頭頂・顎 (Y のみ移動)
+            </p>
+          </fieldset>
           <details>
             <summary className="cursor-pointer text-gray-600 text-xs">
-              シルエット制御点 ({model.head.ySamples.length})
+              座標を数値で編集 ({model.head.ySamples.length})
             </summary>
             <table className="mt-1 w-full text-xs">
               <thead>

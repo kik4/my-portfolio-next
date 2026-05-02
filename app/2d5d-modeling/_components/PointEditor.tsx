@@ -109,7 +109,6 @@ export const PointEditor = ({
       role="application"
       aria-label="形状エディタ"
     >
-      <title>形状エディタ</title>
       {/* Reference cross at the local origin */}
       <line
         x1={view.cx}
