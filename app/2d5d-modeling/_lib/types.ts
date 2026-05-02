@@ -1,144 +1,100 @@
-// Basic numeric types
+// Spec: app/2d5d-modeling/_doc/20260430_0130/spec.md
+
 export type Vec2 = [number, number];
 export type Vec3 = [number, number, number];
-// Quaternion as [x, y, z, w]
-export type Quaternion = [number, number, number, number];
-export type ColorRGBA = [number, number, number, number];
 
-export interface YawPitch {
-  yaw: number;
-  pitch: number;
+export interface HeadOutline {
+  enabled: boolean;
+  color: string;
+  thickness: number;
 }
 
-// ===== Head control mesh =====
-
-export interface ControlVertex {
-  id: string;
-  position: Vec3;
-  // Mirror partner along the X axis. Absent for vertices on the midplane.
-  mirrorPairId?: string;
-  // When true, X is locked to 0.
-  onMidplane: boolean;
-  // [0, 1]. 0 = fully smoothed (standard Catmull-Clark), 1 = the vertex is
-  // pinned to its position across subdivision (sharp corner). Optional;
-  // missing values default to 0.
-  sharpness?: number;
-}
-
-export interface ControlFace {
-  id: string;
-  // CCW vertex id list. Quads are the norm; n-gons are tolerated.
-  vertexIds: string[];
-}
-
-export interface ControlMesh {
-  vertices: ControlVertex[];
-  faces: ControlFace[];
-}
-
-export interface HeadModel {
-  controlMesh: ControlMesh;
-  // Catmull-Clark iterations. Default 2, capped around 4.
-  subdivisionLevel: number;
-}
-
-// ===== Part billboards (planar decoration only) =====
-
-export interface PartPlacement {
-  // Direction from the head center; expected to be normalized.
-  anchor: Vec3;
-  offsetNormal: number;
-  offsetTangent: Vec2;
-  // [pitch, yaw, roll] in degrees.
-  rotationOffset: Vec3;
+// Front/side silhouette half-curves share a common Y sample list.
+// At each Y we keep:
+//   - halfX: front curve right half-width (X >= 0). 0 at the apex / chin.
+//   - zFront: side curve front Z coordinate. 0 at the apex / chin.
+//   - zBack: side curve back Z coordinate (negative or zero). 0 at the apex / chin.
+// ySamples is descending (apex first, chin last) but the build code does not
+// actually depend on the order.
+export interface HeadMesh {
+  ySamples: number[];
+  frontHalfXs: number[];
+  sideZFronts: number[];
+  sideZBacks: number[];
+  catmullRomTension: number; // 0..1, Catmull-Rom tension parameter
+  ringSegments: number; // segments per latitude ring
+  fillColor: string;
+  outline: HeadOutline;
 }
 
 export interface PartShape {
-  basePoints: Vec2[];
-  layerIndex: number;
+  basePoints: Vec2[]; // CCW
+  closed: boolean;
 }
 
-export interface PartKeyframe {
-  angle: YawPitch;
-  // Per-control-point shape delta. Same length as basePoints.
-  deltas: Vec2[];
-  positionDelta: Vec3;
-  orientationDelta: Quaternion;
+export interface PartPlacement {
+  anchor: Vec3; // direction from head center; expected to be normalized
+  offsetNormal: number;
+  offsetTangent: Vec2;
+  rotationOffset: Vec3; // [pitch, yaw, roll] in degrees
+  scale: Vec2;
+}
+
+export interface ViewKeyframe {
+  id: string;
+  yaw: number; // degrees
+  pitch: number; // degrees
+  shape: PartShape;
+  placement: PartPlacement;
+  visible: boolean;
   alpha: number;
 }
 
-export interface PartBlendShape {
+export interface AnimKeyframe {
   id: string;
-  deltas: Vec2[];
-  positionDelta?: Vec3;
-  orientationDelta?: Quaternion;
-  alphaDelta?: number;
+  paramValues: Record<string, number>;
+  shapeDelta: Vec2[]; // same length as basePoints
+  placementDelta: {
+    anchorDelta: Vec3;
+    offsetNormalDelta: number;
+    offsetTangentDelta: Vec2;
+    rotationOffsetDelta: Vec3;
+    scaleDelta: Vec2;
+  };
+  alphaDelta: number;
 }
 
 export interface Part {
   id: string;
   name: string;
-
-  placement: PartPlacement;
-  shape: PartShape;
-
-  fillColor: ColorRGBA;
-  fillEnabled: boolean;
-  strokeColor: ColorRGBA | null;
-  strokeWidth: number;
-
-  baseAlpha: number;
-
-  yawPitchKeyframes: PartKeyframe[];
-  blendShapes: PartBlendShape[];
-
   groupId?: string;
-}
-
-// ===== Part group =====
-
-export interface PartGroupKeyframe {
-  angle: YawPitch;
-  positionDelta: Vec3;
-  orientationDelta: Quaternion;
+  layerIndex: number;
+  fillColor: string;
+  strokeColor: string;
+  strokeWidth: number;
+  viewKeyframes: ViewKeyframe[]; // at least one
+  animKeyframes: AnimKeyframe[];
+  rbfSigmaView: number;
+  rbfSigmaAnim: number;
 }
 
 export interface PartGroup {
   id: string;
   name: string;
-  yawPitchKeyframes: PartGroupKeyframe[];
-  visibility: {
-    yawRange: [number, number];
-    pitchRange: [number, number];
-  };
+  visible: boolean;
 }
 
-// ===== Whole character =====
-
-export type InterpolationMode =
-  | "rbf-gaussian"
-  | "rbf-gaussian-regularized"
-  | "linear-delaunay";
-
-export interface HeadOutline {
-  enabled: boolean;
-  color: ColorRGBA;
-  // Push along the surface normal in world units. Roughly equal to the
-  // outline's apparent thickness on a head ~1 unit tall.
-  thickness: number;
+export interface AnimParamDef {
+  name: string;
+  range: [number, number];
+  default: number;
 }
 
 export interface FaceModel {
-  head: HeadModel;
-  headFillColor: ColorRGBA;
-  headOutline: HeadOutline;
-
+  version: 3;
+  head: HeadMesh;
   parts: Part[];
   groups: PartGroup[];
-
-  blendShapeWeights: Record<string, number>;
-  interpolationMode: InterpolationMode;
+  animParams: AnimParamDef[];
+  currentAnimParams: Record<string, number>;
 }
-
-// Identity quaternion.
-export const QUAT_IDENTITY: Quaternion = [0, 0, 0, 1];

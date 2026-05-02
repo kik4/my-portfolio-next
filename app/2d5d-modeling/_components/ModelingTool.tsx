@@ -1,697 +1,628 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { moveVertex, setVertexSharpness } from "../_lib/headMeshEdit";
+import { useEffect, useMemo, useState } from "react";
+import { buildDefaultFaceModel, buildDefaultPart } from "../_lib/defaultModel";
 import {
-  buildDefaultFaceModel,
-  downloadJson,
-  exportFaceModel,
-  importFaceModel,
+  loadFaceModelFromLocalStorage,
+  saveFaceModelToLocalStorage,
+  serializeFaceModel,
 } from "../_lib/jsonIO";
-import type {
-  ColorRGBA,
-  FaceModel,
-  InterpolationMode,
-  Part,
-  Vec3,
-  YawPitch,
-} from "../_lib/types";
+import type { FaceModel, Part, Vec2, Vec3, ViewKeyframe } from "../_lib/types";
 import { Scene } from "./Scene";
 
-const LS_KEY = "2d5d-modeling-data-v2";
-
-function loadFromLocalStorage(): FaceModel | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return null;
-    return importFaceModel(raw);
-  } catch {
-    return null;
-  }
-}
-
-function genId(prefix: string): string {
-  return `${prefix}_${crypto.randomUUID().slice(0, 8)}`;
-}
-
-function createDefaultPart(): Part {
-  return {
-    id: genId("part"),
-    name: "新しいパーツ",
-    placement: {
-      anchor: [0, 0, 1],
-      offsetNormal: 0.001,
-      offsetTangent: [0, 0],
-      rotationOffset: [0, 0, 0],
-    },
-    shape: {
-      basePoints: [
-        [-0.04, -0.02],
-        [0.04, -0.02],
-        [0.04, 0.02],
-        [-0.04, 0.02],
-      ],
-      layerIndex: 0,
-    },
-    fillColor: [0.2, 0.2, 0.2, 1],
-    fillEnabled: true,
-    strokeColor: null,
-    strokeWidth: 2,
-    baseAlpha: 1,
-    yawPitchKeyframes: [],
-    blendShapes: [],
-  };
-}
-
-function rgbaToHex(c: ColorRGBA): string {
-  const r = Math.round(c[0] * 255)
-    .toString(16)
-    .padStart(2, "0");
-  const g = Math.round(c[1] * 255)
-    .toString(16)
-    .padStart(2, "0");
-  const b = Math.round(c[2] * 255)
-    .toString(16)
-    .padStart(2, "0");
-  return `#${r}${g}${b}`;
-}
-
-function hexToRgba(hex: string, alpha = 1): ColorRGBA {
-  const r = Number.parseInt(hex.slice(1, 3), 16) / 255;
-  const g = Number.parseInt(hex.slice(3, 5), 16) / 255;
-  const b = Number.parseInt(hex.slice(5, 7), 16) / 255;
-  return [r, g, b, alpha];
-}
-
-function normalizeVec3(v: Vec3): Vec3 {
+const normalizeVec3 = (v: Vec3): Vec3 => {
   const len = Math.hypot(v[0], v[1], v[2]);
   if (len === 0) return [0, 0, 1];
   return [v[0] / len, v[1] / len, v[2] / len];
-}
+};
 
-export function ModelingTool() {
-  // Always start with the default model on the server so SSR HTML matches the
-  // initial client render. localStorage data is loaded after mount.
+export const ModelingTool = () => {
+  // Always start with the default model so SSR and the first client render agree.
+  // Hydrate from localStorage in an effect to avoid hydration mismatch.
   const [model, setModel] = useState<FaceModel>(() => buildDefaultFaceModel());
   const [hydrated, setHydrated] = useState(false);
+  const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
+  const [showAxes, setShowAxes] = useState(true);
+  const [showGrid, setShowGrid] = useState(true);
+
   useEffect(() => {
-    const stored = loadFromLocalStorage();
-    if (stored) setModel(stored);
+    const loaded = loadFaceModelFromLocalStorage();
+    if (loaded) setModel(loaded);
     setHydrated(true);
   }, []);
-  const [angle, setAngle] = useState<YawPitch>({ yaw: 0, pitch: 0 });
-  const [angleSource, setAngleSource] = useState<"slider" | "controls">(
-    "slider",
-  );
-  const [selectedVertexId, setSelectedVertexId] = useState<string | null>(null);
-  const [selectedPartIndex, setSelectedPartIndex] = useState<number | null>(
-    null,
-  );
-  const [showWireframe, setShowWireframe] = useState(true);
-  const [showControlVertices, setShowControlVertices] = useState(true);
-  const [symmetric, setSymmetric] = useState(true);
-  const [showAxes, setShowAxes] = useState(false);
-  const [showGrid, setShowGrid] = useState(false);
 
-  // Persist to localStorage on every model change, but only after hydration so
-  // we don't clobber stored data with the default model on first render.
   useEffect(() => {
     if (!hydrated) return;
-    try {
-      localStorage.setItem(LS_KEY, exportFaceModel(model));
-    } catch {
-      // Ignore quota errors.
-    }
+    saveFaceModelToLocalStorage(model);
   }, [model, hydrated]);
 
-  const selectedVertex = selectedVertexId
-    ? model.head.controlMesh.vertices.find((v) => v.id === selectedVertexId)
-    : undefined;
-  const selectedPart =
-    selectedPartIndex != null ? model.parts[selectedPartIndex] : undefined;
-
-  const handleMoveVertex = useCallback(
-    (id: string, newPos: Vec3) => {
-      setModel((prev) => ({
-        ...prev,
-        head: {
-          ...prev.head,
-          controlMesh: moveVertex(prev.head.controlMesh, id, newPos, symmetric),
-        },
-      }));
-    },
-    [symmetric],
+  const selectedPart = useMemo<Part | null>(
+    () => model.parts.find((p) => p.id === selectedPartId) ?? null,
+    [model.parts, selectedPartId],
   );
 
-  const handleSetSharpness = useCallback(
-    (id: string, sharpness: number) => {
-      setModel((prev) => ({
-        ...prev,
-        head: {
-          ...prev.head,
-          controlMesh: setVertexSharpness(
-            prev.head.controlMesh,
-            id,
-            sharpness,
-            symmetric,
-          ),
-        },
-      }));
-    },
-    [symmetric],
-  );
-
-  const handleSubdivisionLevel = (level: number) => {
-    const clamped = Math.max(0, Math.min(4, Math.floor(level)));
-    setModel((prev) => ({
-      ...prev,
-      head: { ...prev.head, subdivisionLevel: clamped },
-    }));
-  };
-
-  const handleHeadFillColor = (hex: string) => {
-    setModel((prev) => ({
-      ...prev,
-      headFillColor: hexToRgba(hex, prev.headFillColor[3]),
-    }));
-  };
-
-  const handleResetHead = () => {
-    if (!confirm("頭メッシュをプリセット状態にリセットしますか？")) return;
-    setModel((prev) => ({ ...prev, head: buildDefaultFaceModel().head }));
-    setSelectedVertexId(null);
-  };
-
-  const handleAddPart = () => {
-    const part = createDefaultPart();
-    setModel((prev) => ({ ...prev, parts: [...prev.parts, part] }));
-    setSelectedPartIndex(model.parts.length);
-  };
-
-  const handleDeletePart = (idx: number) => {
-    setModel((prev) => ({
-      ...prev,
-      parts: prev.parts.filter((_, i) => i !== idx),
-    }));
-    setSelectedPartIndex(null);
-  };
-
-  const updatePart = (idx: number, patch: Partial<Part>) => {
-    setModel((prev) => ({
-      ...prev,
-      parts: prev.parts.map((p, i) => (i === idx ? { ...p, ...patch } : p)),
-    }));
-  };
-
-  const handleExport = () => {
-    downloadJson(exportFaceModel(model), "face-model.json");
-  };
-
-  const handleImport = (file: File) => {
-    file.text().then((text) => {
-      try {
-        const next = importFaceModel(text);
-        setModel(next);
-        setSelectedVertexId(null);
-        setSelectedPartIndex(null);
-      } catch (e) {
-        alert(`読み込みに失敗しました: ${(e as Error).message}`);
-      }
+  const updateHeadSampleField = (
+    field: "frontHalfXs" | "sideZFronts" | "sideZBacks",
+    index: number,
+    value: number,
+  ) => {
+    setModel((m) => {
+      const arr = [...m.head[field]];
+      arr[index] = value;
+      return { ...m, head: { ...m.head, [field]: arr } };
     });
   };
 
+  const updateHeadYSample = (index: number, value: number) => {
+    setModel((m) => {
+      const ys = [...m.head.ySamples];
+      ys[index] = value;
+      return { ...m, head: { ...m.head, ySamples: ys } };
+    });
+  };
+
+  const updatePart = (id: string, mut: (p: Part) => Part) => {
+    setModel((m) => ({
+      ...m,
+      parts: m.parts.map((p) => (p.id === id ? mut(p) : p)),
+    }));
+  };
+
+  const addPart = () => {
+    const id = `part-${Date.now()}`;
+    const part = buildDefaultPart(id, "new part");
+    setModel((m) => ({ ...m, parts: [...m.parts, part] }));
+    setSelectedPartId(id);
+  };
+
+  const removePart = (id: string) => {
+    setModel((m) => ({ ...m, parts: m.parts.filter((p) => p.id !== id) }));
+    if (selectedPartId === id) setSelectedPartId(null);
+  };
+
+  const exportJson = () => {
+    const blob = new Blob([serializeFaceModel(model)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "face-model.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importJson = async (file: File) => {
+    const text = await file.text();
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && parsed.version === 3) setModel(parsed);
+    } catch {
+      // ignore malformed input
+    }
+  };
+
+  const resetModel = () => {
+    if (confirm("デフォルトモデルにリセットしますか?")) {
+      setModel(buildDefaultFaceModel());
+      setSelectedPartId(null);
+    }
+  };
+
   return (
-    <div className="flex flex-1 overflow-hidden">
-      {/* 3D viewport */}
-      <div className="relative flex-1">
-        <Scene
-          model={model}
-          angle={angle}
-          angleSource={angleSource}
-          faceOpacity={1}
-          showAxes={showAxes}
-          showGrid={showGrid}
-          selectedVertexId={selectedVertexId}
-          showWireframe={showWireframe}
-          showControlVertices={showControlVertices}
-          symmetric={symmetric}
-          onSelectVertex={(id) => {
-            setSelectedVertexId(id);
-            setAngleSource("controls");
-          }}
-          onMoveVertex={handleMoveVertex}
-          onAngleChange={(yaw, pitch) => {
-            setAngle({ yaw, pitch });
-            setAngleSource("controls");
-          }}
-        />
-
-        {/* Top-left HUD: angle sliders */}
-        <div className="absolute top-4 left-4 flex flex-col gap-2 rounded-md border border-gray-200 bg-white/90 p-3 text-xs shadow">
-          <label className="flex items-center gap-2">
-            <span className="w-12 text-right">yaw</span>
-            <input
-              type="range"
-              min={-180}
-              max={180}
-              step={1}
-              value={angle.yaw}
-              onChange={(e) => {
-                setAngle((a) => ({ ...a, yaw: Number(e.target.value) }));
-                setAngleSource("slider");
-              }}
-            />
-            <span className="w-10 text-right">{angle.yaw.toFixed(0)}°</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <span className="w-12 text-right">pitch</span>
-            <input
-              type="range"
-              min={-89}
-              max={89}
-              step={1}
-              value={angle.pitch}
-              onChange={(e) => {
-                setAngle((a) => ({ ...a, pitch: Number(e.target.value) }));
-                setAngleSource("slider");
-              }}
-            />
-            <span className="w-10 text-right">{angle.pitch.toFixed(0)}°</span>
-          </label>
-        </div>
-      </div>
-
-      {/* Right panel */}
-      <aside className="w-90 shrink-0 overflow-y-auto border-gray-200 border-l bg-white p-4 text-sm">
-        {/* Head mesh editing */}
-        <section className="mb-6">
-          <h2 className="mb-2 font-semibold text-gray-800">頭メッシュ</h2>
-          <div className="mb-2 flex flex-wrap gap-2">
-            <label className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={showWireframe}
-                onChange={(e) => setShowWireframe(e.target.checked)}
-              />
-              ワイヤ
-            </label>
-            <label className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={showControlVertices}
-                onChange={(e) => setShowControlVertices(e.target.checked)}
-              />
-              制御点
-            </label>
-            <label className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={symmetric}
-                onChange={(e) => setSymmetric(e.target.checked)}
-              />
-              対称ロック
-            </label>
-            <label className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={showAxes}
-                onChange={(e) => setShowAxes(e.target.checked)}
-              />
-              軸
-            </label>
-            <label className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={showGrid}
-                onChange={(e) => setShowGrid(e.target.checked)}
-              />
-              グリッド
-            </label>
-          </div>
-          <label className="mb-2 flex items-center gap-2">
-            <span className="w-32">細分化レベル</span>
-            <input
-              type="number"
-              min={0}
-              max={4}
-              step={1}
-              value={model.head.subdivisionLevel}
-              onChange={(e) =>
-                handleSubdivisionLevel(Number(e.target.value) || 0)
-              }
-              className="w-16 rounded border px-2 py-1"
-            />
-          </label>
-          <label className="mb-2 flex items-center gap-2">
-            <span className="w-32">頭の色</span>
+    <div className="flex min-h-0 flex-1">
+      <aside className="w-80 shrink-0 overflow-y-auto border-r bg-white p-4 text-sm">
+        <h2 className="mb-2 font-bold">頭メッシュ</h2>
+        <div className="mb-4 space-y-2">
+          <label className="block">
+            <span className="block text-gray-600 text-xs">塗り色</span>
             <input
               type="color"
-              value={rgbaToHex(model.headFillColor)}
-              onChange={(e) => handleHeadFillColor(e.target.value)}
+              value={model.head.fillColor}
+              onChange={(e) =>
+                setModel((m) => ({
+                  ...m,
+                  head: { ...m.head, fillColor: e.target.value },
+                }))
+              }
             />
           </label>
-          <div className="mb-2 rounded border border-gray-200 p-2">
-            <label className="mb-1 flex items-center gap-2 text-xs">
+          <div>
+            <label className="flex items-center gap-2">
               <input
                 type="checkbox"
-                checked={model.headOutline.enabled}
+                checked={model.head.outline.enabled}
                 onChange={(e) =>
-                  setModel((prev) => ({
-                    ...prev,
-                    headOutline: {
-                      ...prev.headOutline,
-                      enabled: e.target.checked,
+                  setModel((m) => ({
+                    ...m,
+                    head: {
+                      ...m.head,
+                      outline: {
+                        ...m.head.outline,
+                        enabled: e.target.checked,
+                      },
                     },
                   }))
                 }
               />
               輪郭線
             </label>
-            <label className="mb-1 flex items-center gap-2 text-xs">
-              <span className="w-12 text-gray-500">色</span>
-              <input
-                type="color"
-                value={rgbaToHex(model.headOutline.color)}
-                onChange={(e) =>
-                  setModel((prev) => ({
-                    ...prev,
-                    headOutline: {
-                      ...prev.headOutline,
-                      color: hexToRgba(
-                        e.target.value,
-                        prev.headOutline.color[3],
-                      ),
-                    },
-                  }))
-                }
-              />
-            </label>
-            <label className="flex items-center gap-2 text-xs">
-              <span className="w-12 text-gray-500">太さ</span>
-              <input
-                type="range"
-                min={0}
-                max={0.03}
-                step={0.001}
-                value={model.headOutline.thickness}
-                onChange={(e) =>
-                  setModel((prev) => ({
-                    ...prev,
-                    headOutline: {
-                      ...prev.headOutline,
-                      thickness: Number(e.target.value),
-                    },
-                  }))
-                }
-                className="flex-1"
-              />
-              <span className="w-12 text-right">
-                {model.headOutline.thickness.toFixed(3)}
-              </span>
-            </label>
-          </div>
-          <button
-            type="button"
-            className="mb-2 rounded border border-red-300 px-2 py-1 text-red-700 text-xs hover:bg-red-50"
-            onClick={handleResetHead}
-          >
-            プリセットにリセット
-          </button>
-
-          {/* Selected vertex */}
-          <div className="mt-2 rounded border border-gray-200 p-2">
-            <div className="mb-1 text-gray-500 text-xs">選択中の制御頂点</div>
-            {selectedVertex ? (
-              <>
-                <div className="mb-1 break-all text-xs">
-                  id: {selectedVertex.id}
-                  {selectedVertex.onMidplane && " (中央線)"}
-                </div>
-                <div className="grid grid-cols-3 gap-1">
-                  {(["x", "y", "z"] as const).map((axis, axisIdx) => (
-                    <label key={axis} className="flex flex-col text-xs">
-                      <span className="text-gray-500">{axis}</span>
-                      <input
-                        type="number"
-                        step={0.01}
-                        value={selectedVertex.position[axisIdx].toFixed(3)}
-                        onChange={(e) => {
-                          const v = Number(e.target.value);
-                          const next: Vec3 = [...selectedVertex.position];
-                          next[axisIdx] = v;
-                          handleMoveVertex(selectedVertex.id, next);
-                        }}
-                        className="rounded border px-1 py-0.5"
-                      />
-                    </label>
-                  ))}
-                </div>
-                <label className="mt-2 flex items-center gap-2 text-xs">
-                  <span className="w-16 text-gray-500">尖り</span>
-                  <input
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    value={selectedVertex.sharpness ?? 0}
-                    onChange={(e) =>
-                      handleSetSharpness(
-                        selectedVertex.id,
-                        Number(e.target.value),
-                      )
-                    }
-                    className="flex-1"
-                  />
-                  <span className="w-8 text-right">
-                    {(selectedVertex.sharpness ?? 0).toFixed(2)}
-                  </span>
-                </label>
-              </>
-            ) : (
-              <div className="text-gray-400 text-xs">未選択</div>
-            )}
-          </div>
-        </section>
-
-        {/* Parts */}
-        <section className="mb-6">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">パーツ</h2>
-            <button
-              type="button"
-              className="rounded border px-2 py-0.5 text-xs hover:bg-gray-50"
-              onClick={handleAddPart}
-            >
-              + 追加
-            </button>
-          </div>
-          <ul className="mb-2 max-h-32 overflow-y-auto rounded border border-gray-200">
-            {model.parts.length === 0 && (
-              <li className="px-2 py-1 text-gray-400 text-xs">なし</li>
-            )}
-            {model.parts.map((p, idx) => (
-              <li
-                key={p.id}
-                className={`flex items-center justify-between border-gray-100 border-b px-2 py-1 ${
-                  selectedPartIndex === idx ? "bg-blue-50" : ""
-                }`}
-              >
-                <button
-                  type="button"
-                  className="flex-1 text-left text-xs"
-                  onClick={() => setSelectedPartIndex(idx)}
-                >
-                  {p.name}
-                </button>
-                <button
-                  type="button"
-                  className="ml-1 text-gray-400 text-xs hover:text-red-600"
-                  onClick={() => handleDeletePart(idx)}
-                  aria-label="削除"
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
-
-          {selectedPart && selectedPartIndex !== null && (
-            <div className="space-y-2 rounded border border-gray-200 p-2 text-xs">
-              <label className="flex items-center gap-2">
-                <span className="w-20">名前</span>
+            {model.head.outline.enabled && (
+              <div className="mt-1 ml-6 flex items-center gap-2">
                 <input
-                  type="text"
-                  value={selectedPart.name}
+                  type="color"
+                  value={model.head.outline.color}
                   onChange={(e) =>
-                    updatePart(selectedPartIndex, { name: e.target.value })
-                  }
-                  className="flex-1 rounded border px-1 py-0.5"
-                />
-              </label>
-              <div>
-                <div className="mb-1 text-gray-500">anchor (方向)</div>
-                <div className="grid grid-cols-3 gap-1">
-                  {(["x", "y", "z"] as const).map((axis, idx) => (
-                    <label key={axis} className="flex flex-col">
-                      <span className="text-gray-500">{axis}</span>
-                      <input
-                        type="number"
-                        step={0.05}
-                        value={selectedPart.placement.anchor[idx].toFixed(3)}
-                        onChange={(e) => {
-                          const v = Number(e.target.value);
-                          const a: Vec3 = [...selectedPart.placement.anchor];
-                          a[idx] = v;
-                          updatePart(selectedPartIndex, {
-                            placement: { ...selectedPart.placement, anchor: a },
-                          });
-                        }}
-                        className="rounded border px-1 py-0.5"
-                      />
-                    </label>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  className="mt-1 rounded border px-2 py-0.5 hover:bg-gray-50"
-                  onClick={() =>
-                    updatePart(selectedPartIndex, {
-                      placement: {
-                        ...selectedPart.placement,
-                        anchor: normalizeVec3(selectedPart.placement.anchor),
+                    setModel((m) => ({
+                      ...m,
+                      head: {
+                        ...m.head,
+                        outline: {
+                          ...m.head.outline,
+                          color: e.target.value,
+                        },
                       },
-                    })
+                    }))
                   }
-                >
-                  正規化
-                </button>
-              </div>
-              <label className="flex items-center gap-2">
-                <span className="w-24">offsetNormal</span>
+                />
                 <input
                   type="number"
                   step={0.001}
-                  value={selectedPart.placement.offsetNormal}
-                  onChange={(e) =>
-                    updatePart(selectedPartIndex, {
-                      placement: {
-                        ...selectedPart.placement,
-                        offsetNormal: Number(e.target.value),
-                      },
-                    })
-                  }
-                  className="w-24 rounded border px-1 py-0.5"
-                />
-              </label>
-              <label className="flex items-center gap-2">
-                <span className="w-24">塗り色</span>
-                <input
-                  type="color"
-                  value={rgbaToHex(selectedPart.fillColor)}
-                  onChange={(e) =>
-                    updatePart(selectedPartIndex, {
-                      fillColor: hexToRgba(
-                        e.target.value,
-                        selectedPart.fillColor[3],
-                      ),
-                    })
-                  }
-                />
-                <label className="flex items-center gap-1">
-                  <input
-                    type="checkbox"
-                    checked={selectedPart.fillEnabled}
-                    onChange={(e) =>
-                      updatePart(selectedPartIndex, {
-                        fillEnabled: e.target.checked,
-                      })
-                    }
-                  />
-                  有効
-                </label>
-              </label>
-              <label className="flex items-center gap-2">
-                <span className="w-24">baseAlpha</span>
-                <input
-                  type="number"
                   min={0}
-                  max={1}
-                  step={0.05}
-                  value={selectedPart.baseAlpha}
+                  max={0.1}
+                  value={model.head.outline.thickness}
                   onChange={(e) =>
-                    updatePart(selectedPartIndex, {
-                      baseAlpha: Number(e.target.value),
-                    })
-                  }
-                  className="w-20 rounded border px-1 py-0.5"
-                />
-              </label>
-              <label className="flex items-center gap-2">
-                <span className="w-24">layerIndex</span>
-                <input
-                  type="number"
-                  step={1}
-                  value={selectedPart.shape.layerIndex}
-                  onChange={(e) =>
-                    updatePart(selectedPartIndex, {
-                      shape: {
-                        ...selectedPart.shape,
-                        layerIndex: Number(e.target.value),
+                    setModel((m) => ({
+                      ...m,
+                      head: {
+                        ...m.head,
+                        outline: {
+                          ...m.head.outline,
+                          thickness: Number(e.target.value),
+                        },
                       },
-                    })
+                    }))
                   }
-                  className="w-20 rounded border px-1 py-0.5"
+                  className="w-20 rounded border px-1"
                 />
-              </label>
-            </div>
-          )}
-        </section>
+              </div>
+            )}
+          </div>
+          <label className="block">
+            <span className="block text-gray-600 text-xs">張力</span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={model.head.catmullRomTension}
+              onChange={(e) =>
+                setModel((m) => ({
+                  ...m,
+                  head: {
+                    ...m.head,
+                    catmullRomTension: Number(e.target.value),
+                  },
+                }))
+              }
+              className="w-full"
+            />
+            <span className="text-gray-600 text-xs">
+              {model.head.catmullRomTension.toFixed(2)}
+            </span>
+          </label>
+          <label className="block">
+            <span className="block text-gray-600 text-xs">円周分割</span>
+            <input
+              type="number"
+              min={6}
+              max={128}
+              value={model.head.ringSegments}
+              onChange={(e) =>
+                setModel((m) => ({
+                  ...m,
+                  head: { ...m.head, ringSegments: Number(e.target.value) },
+                }))
+              }
+              className="w-20 rounded border px-1"
+            />
+          </label>
+          <details>
+            <summary className="cursor-pointer text-gray-600 text-xs">
+              シルエット制御点 ({model.head.ySamples.length})
+            </summary>
+            <table className="mt-1 w-full text-xs">
+              <thead>
+                <tr className="text-gray-500">
+                  <th>Y</th>
+                  <th>halfX</th>
+                  <th>zFront</th>
+                  <th>zBack</th>
+                </tr>
+              </thead>
+              <tbody>
+                {model.head.ySamples.map((y, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: row position is the identity here
+                  <tr key={i}>
+                    <td>
+                      <input
+                        type="number"
+                        step={0.05}
+                        value={y}
+                        onChange={(e) =>
+                          updateHeadYSample(i, Number(e.target.value))
+                        }
+                        className="w-14 rounded border px-1"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        step={0.05}
+                        value={model.head.frontHalfXs[i]}
+                        onChange={(e) =>
+                          updateHeadSampleField(
+                            "frontHalfXs",
+                            i,
+                            Number(e.target.value),
+                          )
+                        }
+                        className="w-14 rounded border px-1"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        step={0.05}
+                        value={model.head.sideZFronts[i]}
+                        onChange={(e) =>
+                          updateHeadSampleField(
+                            "sideZFronts",
+                            i,
+                            Number(e.target.value),
+                          )
+                        }
+                        className="w-14 rounded border px-1"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        step={0.05}
+                        value={model.head.sideZBacks[i]}
+                        onChange={(e) =>
+                          updateHeadSampleField(
+                            "sideZBacks",
+                            i,
+                            Number(e.target.value),
+                          )
+                        }
+                        className="w-14 rounded border px-1"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
+        </div>
 
-        {/* Interpolation mode + IO */}
-        <section className="mb-6">
-          <h2 className="mb-2 font-semibold text-gray-800">補間モード</h2>
-          <select
-            value={model.interpolationMode}
-            onChange={(e) =>
-              setModel((prev) => ({
-                ...prev,
-                interpolationMode: e.target.value as InterpolationMode,
-              }))
-            }
-            className="w-full rounded border px-2 py-1 text-xs"
-          >
-            <option value="rbf-gaussian">RBF Gaussian</option>
-            <option value="rbf-gaussian-regularized">
-              RBF Gaussian (正則化)
-            </option>
-            <option value="linear-delaunay">Linear Delaunay</option>
-          </select>
-        </section>
+        <div className="mb-4">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={showAxes}
+              onChange={(e) => setShowAxes(e.target.checked)}
+            />
+            軸表示
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={showGrid}
+              onChange={(e) => setShowGrid(e.target.checked)}
+            />
+            グリッド
+          </label>
+        </div>
 
-        <section className="flex gap-2">
+        <h2 className="mb-2 font-bold">パーツ</h2>
+        <div className="mb-2 flex gap-2">
           <button
             type="button"
-            className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
-            onClick={handleExport}
+            onClick={addPart}
+            className="rounded bg-blue-500 px-2 py-1 text-white text-xs hover:bg-blue-600"
+          >
+            + 追加
+          </button>
+        </div>
+        <ul className="mb-4 space-y-1">
+          {model.parts.map((part) => (
+            <li
+              key={part.id}
+              className={`flex items-center justify-between rounded text-xs ${
+                selectedPartId === part.id
+                  ? "bg-blue-100 text-blue-800"
+                  : "hover:bg-gray-100"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => setSelectedPartId(part.id)}
+                className="flex-1 px-2 py-1 text-left"
+              >
+                {part.name}
+              </button>
+              <button
+                type="button"
+                onClick={() => removePart(part.id)}
+                className="px-2 py-1 text-red-500 hover:text-red-700"
+                aria-label={`${part.name} を削除`}
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        {selectedPart && (
+          <PartEditor part={selectedPart} updatePart={updatePart} />
+        )}
+
+        <div className="mt-4 space-y-2 border-t pt-4">
+          <h3 className="font-bold text-sm">JSON</h3>
+          <button
+            type="button"
+            onClick={exportJson}
+            className="block w-full rounded bg-gray-200 px-2 py-1 text-xs hover:bg-gray-300"
           >
             書き出し
           </button>
-          <label className="cursor-pointer rounded border px-2 py-1 text-xs hover:bg-gray-50">
+          <label className="block w-full cursor-pointer rounded bg-gray-200 px-2 py-1 text-center text-xs hover:bg-gray-300">
             読み込み
             <input
               type="file"
               accept="application/json"
               className="hidden"
               onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleImport(f);
+                const file = e.target.files?.[0];
+                if (file) importJson(file);
                 e.target.value = "";
               }}
             />
           </label>
-        </section>
+          <button
+            type="button"
+            onClick={resetModel}
+            className="block w-full rounded bg-red-100 px-2 py-1 text-red-700 text-xs hover:bg-red-200"
+          >
+            デフォルトに戻す
+          </button>
+        </div>
       </aside>
+
+      <main className="min-h-0 flex-1">
+        <Scene model={model} showAxes={showAxes} showGrid={showGrid} />
+      </main>
     </div>
   );
+};
+
+interface PartEditorProps {
+  part: Part;
+  updatePart: (id: string, mut: (p: Part) => Part) => void;
 }
+
+const PartEditor = ({ part, updatePart }: PartEditorProps) => {
+  // Phase 1: edit only the first view keyframe.
+  const kf = part.viewKeyframes[0];
+
+  const updateKf = (mut: (k: ViewKeyframe) => ViewKeyframe) => {
+    updatePart(part.id, (p) => ({
+      ...p,
+      viewKeyframes: [mut(p.viewKeyframes[0]), ...p.viewKeyframes.slice(1)],
+    }));
+  };
+
+  return (
+    <div className="space-y-2 rounded border bg-gray-50 p-2 text-xs">
+      <label className="block">
+        <span className="block text-gray-600">名前</span>
+        <input
+          type="text"
+          value={part.name}
+          onChange={(e) =>
+            updatePart(part.id, (p) => ({ ...p, name: e.target.value }))
+          }
+          className="w-full rounded border px-1"
+        />
+      </label>
+      <label className="block">
+        <span className="block text-gray-600">塗り色</span>
+        <input
+          type="color"
+          value={part.fillColor}
+          onChange={(e) =>
+            updatePart(part.id, (p) => ({ ...p, fillColor: e.target.value }))
+          }
+        />
+      </label>
+      <label className="block">
+        <span className="block text-gray-600">layerIndex</span>
+        <input
+          type="number"
+          value={part.layerIndex}
+          onChange={(e) =>
+            updatePart(part.id, (p) => ({
+              ...p,
+              layerIndex: Number(e.target.value),
+            }))
+          }
+          className="w-20 rounded border px-1"
+        />
+      </label>
+      <fieldset>
+        <legend className="text-gray-600">anchor (x, y, z)</legend>
+        <div className="flex gap-1">
+          {(["x", "y", "z"] as const).map((axis, i) => (
+            <input
+              key={axis}
+              aria-label={`anchor ${axis}`}
+              type="number"
+              step={0.05}
+              value={kf.placement.anchor[i]}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                updateKf((k) => {
+                  const next: Vec3 = [...k.placement.anchor] as Vec3;
+                  next[i] = v;
+                  return {
+                    ...k,
+                    placement: {
+                      ...k.placement,
+                      anchor: normalizeVec3(next),
+                    },
+                  };
+                });
+              }}
+              className="w-16 rounded border px-1"
+            />
+          ))}
+        </div>
+        <p className="text-gray-500">入力後に自動正規化されます</p>
+      </fieldset>
+      <label className="block">
+        <span className="block text-gray-600">offsetNormal</span>
+        <input
+          type="number"
+          step={0.005}
+          value={kf.placement.offsetNormal}
+          onChange={(e) =>
+            updateKf((k) => ({
+              ...k,
+              placement: {
+                ...k.placement,
+                offsetNormal: Number(e.target.value),
+              },
+            }))
+          }
+          className="w-20 rounded border px-1"
+        />
+      </label>
+      <fieldset>
+        <legend className="text-gray-600">scale (x, y)</legend>
+        <div className="flex gap-1">
+          {(["x", "y"] as const).map((axis, i) => (
+            <input
+              key={axis}
+              aria-label={`scale ${axis}`}
+              type="number"
+              step={0.1}
+              value={kf.placement.scale[i]}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                updateKf((k) => {
+                  const next: Vec2 = [...k.placement.scale] as Vec2;
+                  next[i] = v;
+                  return {
+                    ...k,
+                    placement: { ...k.placement, scale: next },
+                  };
+                });
+              }}
+              className="w-16 rounded border px-1"
+            />
+          ))}
+        </div>
+      </fieldset>
+      <label className="block">
+        <span className="block text-gray-600">α</span>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.05}
+          value={kf.alpha}
+          onChange={(e) =>
+            updateKf((k) => ({ ...k, alpha: Number(e.target.value) }))
+          }
+          className="w-full"
+        />
+      </label>
+      <label className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={kf.visible}
+          onChange={(e) =>
+            updateKf((k) => ({ ...k, visible: e.target.checked }))
+          }
+        />
+        表示
+      </label>
+      <details>
+        <summary className="cursor-pointer text-gray-600">
+          形状制御点 ({kf.shape.basePoints.length})
+        </summary>
+        <table className="mt-1 w-full">
+          <thead>
+            <tr className="text-gray-500">
+              <th>X</th>
+              <th>Y</th>
+            </tr>
+          </thead>
+          <tbody>
+            {kf.shape.basePoints.map((p, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: control-point index is its identity
+              <tr key={i}>
+                <td>
+                  <input
+                    aria-label={`shape point ${i} x`}
+                    type="number"
+                    step={0.01}
+                    value={p[0]}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      updateKf((k) => {
+                        const pts = k.shape.basePoints.map(
+                          (q, idx) =>
+                            (idx === i ? [v, q[1]] : q) as [number, number],
+                        );
+                        return {
+                          ...k,
+                          shape: { ...k.shape, basePoints: pts },
+                        };
+                      });
+                    }}
+                    className="w-16 rounded border px-1"
+                  />
+                </td>
+                <td>
+                  <input
+                    aria-label={`shape point ${i} y`}
+                    type="number"
+                    step={0.01}
+                    value={p[1]}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      updateKf((k) => {
+                        const pts = k.shape.basePoints.map(
+                          (q, idx) =>
+                            (idx === i ? [q[0], v] : q) as [number, number],
+                        );
+                        return {
+                          ...k,
+                          shape: { ...k.shape, basePoints: pts },
+                        };
+                      });
+                    }}
+                    className="w-16 rounded border px-1"
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
+    </div>
+  );
+};

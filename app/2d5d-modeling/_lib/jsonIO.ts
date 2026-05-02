@@ -1,66 +1,39 @@
-import { buildPresetHeadModel } from "./presetHeadCage";
-import type { FaceModel, InterpolationMode } from "./types";
+import { buildDefaultFaceModel } from "./defaultModel";
+import type { FaceModel } from "./types";
 
-const VALID_MODES: InterpolationMode[] = [
-  "rbf-gaussian",
-  "rbf-gaussian-regularized",
-  "linear-delaunay",
-];
+export const LOCAL_STORAGE_KEY = "2d5d-modeling-data-v3";
 
-export function exportFaceModel(model: FaceModel): string {
-  return JSON.stringify(model, null, 2);
-}
+export const serializeFaceModel = (model: FaceModel): string =>
+  JSON.stringify(model, null, 2);
 
-export function importFaceModel(json: string): FaceModel {
-  const data = JSON.parse(json);
-  if (!data.head?.controlMesh) {
-    throw new Error("Invalid FaceModel: missing head.controlMesh");
+// Tolerant parse. Anything malformed falls back to the default model so the UI
+// never crashes from corrupted localStorage.
+export const parseFaceModel = (raw: string): FaceModel => {
+  try {
+    const parsed = JSON.parse(raw);
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      parsed.version === 3 &&
+      parsed.head &&
+      Array.isArray(parsed.parts)
+    ) {
+      return parsed as FaceModel;
+    }
+  } catch {
+    // fall through to default
   }
-  const interpolationMode: InterpolationMode = VALID_MODES.includes(
-    data.interpolationMode,
-  )
-    ? data.interpolationMode
-    : "rbf-gaussian";
-  return {
-    head: {
-      controlMesh: data.head.controlMesh,
-      subdivisionLevel: data.head.subdivisionLevel ?? 2,
-    },
-    headFillColor: data.headFillColor ?? [0.99, 0.88, 0.78, 1],
-    headOutline: data.headOutline ?? {
-      enabled: false,
-      color: [0, 0, 0, 1],
-      thickness: 0.005,
-    },
-    parts: Array.isArray(data.parts) ? data.parts : [],
-    groups: Array.isArray(data.groups) ? data.groups : [],
-    blendShapeWeights: data.blendShapeWeights ?? {},
-    interpolationMode,
-  };
-}
+  return buildDefaultFaceModel();
+};
 
-export function buildDefaultFaceModel(): FaceModel {
-  return {
-    head: buildPresetHeadModel(2),
-    headFillColor: [0.99, 0.88, 0.78, 1],
-    headOutline: {
-      enabled: true,
-      color: [0, 0, 0, 1],
-      thickness: 0.005,
-    },
-    parts: [],
-    groups: [],
-    blendShapeWeights: {},
-    interpolationMode: "rbf-gaussian",
-  };
-}
+export const loadFaceModelFromLocalStorage = (): FaceModel | null => {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+  if (!raw) return null;
+  return parseFaceModel(raw);
+};
 
-export function downloadJson(content: string, filename: string) {
-  const blob = new Blob([content], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+export const saveFaceModelToLocalStorage = (model: FaceModel): void => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(LOCAL_STORAGE_KEY, serializeFaceModel(model));
+};
