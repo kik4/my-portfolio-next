@@ -14,8 +14,10 @@ interface Props {
 //     front silhouette as a closed loop mirrored back to X=0 along the
 //     midline. Each sample's halfX is a horizontal handle, the Y itself is
 //     the vertical position.
-//   - Right: side view (Z forward = right, Y up). Shows zFront on the right
-//     of the midline and zBack on the left, with the Y axis common.
+//   - Right: side view (Z forward = left, Y up). Shows zFront on the left of
+//     the midline and zBack on the right, matching how a face profile is
+//     usually drawn (looking at the character's right cheek), with the Y axis
+//     common.
 //
 // All three columns (frontHalfXs, sideZFronts, sideZBacks) share the same Y
 // sample list, so dragging a sample's Y in either canvas moves both. To keep
@@ -39,8 +41,8 @@ export const HeadCurveEditor = ({ head, onChange }: Props) => {
         head={head}
         onChange={onChange}
         title="側面 (ZY)"
-        leftKey="zBack"
-        rightKey="zFront"
+        leftKey="zFront"
+        rightKey="zBack"
       />
     </div>
   );
@@ -161,7 +163,8 @@ const CurveCanvas = ({
         // Positive-X side handle: writes to rightKey value at idx.
         const v = Math.max(value.x, 0);
         if (rightKey === "halfX") next.frontHalfXs[idx] = pole ? 0 : v;
-        if (rightKey === "zFront") next.sideZFronts[idx] = pole ? 0 : v;
+        // Side view: right of midline = back of head. Stored as negative Z.
+        if (rightKey === "zBack") next.sideZBacks[idx] = pole ? 0 : -v;
         // Y can also move because dragging includes vertical motion.
         if (!pole) next.ySamples[idx] = value.y;
       } else if (target === "left") {
@@ -171,8 +174,10 @@ const CurveCanvas = ({
           // |v|, and X >= 0 in the data model.
           next.frontHalfXs[idx] = pole ? 0 : Math.abs(v);
         }
-        if (leftKey === "zBack") {
-          next.sideZBacks[idx] = pole ? 0 : v;
+        // Side view: left of midline = front of face. Stored as positive Z,
+        // so flip the screen-X sign back.
+        if (leftKey === "zFront") {
+          next.sideZFronts[idx] = pole ? 0 : -v;
         }
         if (!pole) next.ySamples[idx] = value.y;
       }
@@ -291,6 +296,10 @@ const CurveCanvas = ({
 };
 
 // Returns the canonical pixel-X-mapped value for sample idx on the given side.
+// Note: side view flips Z so the front of the face appears on the left of the
+// canvas (matches how a profile is conventionally drawn). zFront is stored as
+// a positive Z but rendered as negative X; zBack is stored as negative Z but
+// rendered as positive X.
 const getCurveValue = (head: HeadMesh, idx: number, side: Side): number => {
   switch (side) {
     case "halfX":
@@ -298,9 +307,9 @@ const getCurveValue = (head: HeadMesh, idx: number, side: Side): number => {
     case "mirroredHalfX":
       return -head.frontHalfXs[idx];
     case "zFront":
-      return head.sideZFronts[idx];
+      return -head.sideZFronts[idx];
     case "zBack":
-      return head.sideZBacks[idx];
+      return -head.sideZBacks[idx];
   }
 };
 
