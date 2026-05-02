@@ -4,15 +4,20 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { animRbfWeights, composeViewWithAnim } from "../_lib/animRbf";
 import {
+  applyGroupChainToPlacement,
+  isGroupChainVisible,
+} from "../_lib/groupTransform";
+import {
   buildPartFillGeometry,
   buildPartStrokePositions,
 } from "../_lib/partGeometry";
 import { resolvePlacement } from "../_lib/placement";
-import type { Part } from "../_lib/types";
+import type { Part, PartGroup } from "../_lib/types";
 import { interpolateViewKeyframes } from "../_lib/viewRbf";
 
 interface Props {
   parts: Part[];
+  groups: PartGroup[];
   // The head mesh used as the raycast target to resolve part placements.
   headMesh: THREE.Mesh | null;
   // Current camera angles in degrees, supplied by the parent (Scene).
@@ -24,29 +29,42 @@ interface Props {
 
 // Renders all parts at their resolved positions/orientations using the view
 // RBF interpolation of their viewKeyframes for the current (yaw, pitch),
-// then layered with anim deltas for the current animParams.
-export const Parts = ({ parts, headMesh, yaw, pitch, animParams }: Props) => {
+// then layered with anim deltas for the current animParams, and finally with
+// the accumulated transform deltas of the part's group chain.
+export const Parts = ({
+  parts,
+  groups,
+  headMesh,
+  yaw,
+  pitch,
+  animParams,
+}: Props) => {
   if (!headMesh) return null;
 
   const sorted = [...parts].sort((a, b) => a.layerIndex - b.layerIndex);
   return (
     <>
-      {sorted.map((part) => (
-        <PartRenderer
-          key={part.id}
-          part={part}
-          headMesh={headMesh}
-          yaw={yaw}
-          pitch={pitch}
-          animParams={animParams}
-        />
-      ))}
+      {sorted.map((part) => {
+        if (!isGroupChainVisible(groups, part.groupId)) return null;
+        return (
+          <PartRenderer
+            key={part.id}
+            part={part}
+            groups={groups}
+            headMesh={headMesh}
+            yaw={yaw}
+            pitch={pitch}
+            animParams={animParams}
+          />
+        );
+      })}
     </>
   );
 };
 
 interface PartRendererProps {
   part: Part;
+  groups: PartGroup[];
   headMesh: THREE.Mesh;
   yaw: number;
   pitch: number;
@@ -55,6 +73,7 @@ interface PartRendererProps {
 
 const PartRenderer = ({
   part,
+  groups,
   headMesh,
   yaw,
   pitch,
@@ -88,9 +107,17 @@ const PartRenderer = ({
     animParams,
   ]);
 
+  // Bake group transform deltas into the placement before any geometry
+  // building or raycast resolution. Group transform is part of the part's
+  // effective placement, not a separate stage.
+  const placementWithGroup = useMemo(
+    () => applyGroupChainToPlacement(groups, part.groupId, kf.placement),
+    [groups, part.groupId, kf.placement],
+  );
+
   const fillGeometry = useMemo(
-    () => buildPartFillGeometry(kf.shape, kf.placement.scale),
-    [kf.shape, kf.placement.scale],
+    () => buildPartFillGeometry(kf.shape, placementWithGroup.scale),
+    [kf.shape, placementWithGroup.scale],
   );
   const fillMaterial = useMemo(
     () =>
@@ -107,9 +134,9 @@ const PartRenderer = ({
   const strokePositions = useMemo(
     () =>
       part.strokeWidth > 0
-        ? buildPartStrokePositions(kf.shape, kf.placement.scale)
+        ? buildPartStrokePositions(kf.shape, placementWithGroup.scale)
         : null,
-    [part.strokeWidth, kf.shape, kf.placement.scale],
+    [part.strokeWidth, kf.shape, placementWithGroup.scale],
   );
 
   const strokeGeometry = useMemo(() => {
@@ -144,8 +171,8 @@ const PartRenderer = ({
   // it's a single raycast per part.
   const placement = useMemo(() => {
     headMesh.updateMatrixWorld();
-    return resolvePlacement(kf.placement, headMesh);
-  }, [kf.placement, headMesh]);
+    return resolvePlacement(placementWithGroup, headMesh);
+  }, [placementWithGroup, headMesh]);
 
   if (!kf.visible) return null;
 

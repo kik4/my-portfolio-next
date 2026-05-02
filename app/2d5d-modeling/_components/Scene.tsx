@@ -42,6 +42,7 @@ export const Scene = ({ model, showAxes, showGrid, onCameraChange }: Props) => {
       />
       <Parts
         parts={model.parts}
+        groups={model.groups}
         headMesh={headMesh}
         yaw={yaw}
         pitch={pitch}

@@ -82,6 +82,20 @@ export interface PartGroup {
   id: string;
   name: string;
   visible: boolean;
+  // Optional parent group id, enabling nested group hierarchies. Top-level
+  // groups have no parentId. Cycles are not allowed (enforced by the editor /
+  // resolver) — see groupAncestorChain in groupTransform.ts.
+  parentId?: string;
+  // Static transform delta applied on top of every descendant's resolved
+  // placement. Anchor delta nudges the descendant's anchor direction (then
+  // re-normalized); rotation delta is degrees added to rotationOffset; scale
+  // delta is multiplicative (so [0,0] = identity, [0.5,0] = 1.5x in X).
+  // Phase 4 will add view/anim keyframes that interpolate this delta.
+  transformDelta: {
+    anchorDelta: Vec3;
+    rotationOffsetDelta: Vec3;
+    scaleDelta: Vec2;
+  };
 }
 
 export interface AnimParamDef {

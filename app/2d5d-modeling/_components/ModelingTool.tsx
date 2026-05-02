@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buildDefaultFaceModel, buildDefaultPart } from "../_lib/defaultModel";
+import {
+  buildDefaultFaceModel,
+  buildDefaultGroup,
+  buildDefaultPart,
+} from "../_lib/defaultModel";
+import { wouldCreateCycle } from "../_lib/groupTransform";
 import {
   loadFaceModelFromLocalStorage,
   saveFaceModelToLocalStorage,
@@ -10,6 +15,7 @@ import {
 import type {
   FaceModel,
   Part,
+  PartGroup,
   PartShape,
   Vec2,
   Vec3,
@@ -18,7 +24,9 @@ import type {
 import { useHistory } from "../_lib/useHistory";
 import { AnimKeyframeEditor } from "./AnimKeyframeEditor";
 import { AnimParamsPanel } from "./AnimParamsPanel";
+import { GroupEditor } from "./GroupEditor";
 import { HeadCurveEditor } from "./HeadCurveEditor";
+import { PartTree } from "./PartTree";
 import { PointEditor } from "./PointEditor";
 import { Scene } from "./Scene";
 
@@ -75,6 +83,9 @@ export const ModelingTool = () => {
   } = history;
   const [hydrated, setHydrated] = useState(false);
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
+  // Group selection is independent of part selection: selecting a group opens
+  // the group editor, but the part editor stays bound to the last-selected part.
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   // Index of the view keyframe currently being edited, scoped per selected part.
   const [editingKfIndex, setEditingKfIndex] = useState(0);
   // Index of the anim keyframe currently being edited, scoped per selected part.
@@ -194,6 +205,74 @@ export const ModelingTool = () => {
     commit((m) => ({ ...m, parts: m.parts.filter((p) => p.id !== id) }));
     if (selectedPartId === id) setSelectedPartId(null);
   };
+
+  // ===== Group edits =====
+  const updateGroup = useCallback(
+    (id: string, mut: (g: PartGroup) => PartGroup) => {
+      commit((m) => ({
+        ...m,
+        groups: m.groups.map((g) => (g.id === id ? mut(g) : g)),
+      }));
+    },
+    [commit],
+  );
+
+  const addGroup = () => {
+    const id = `group-${Date.now()}`;
+    // Create the new group as a child of the currently selected group, if any,
+    // otherwise at the top level. Common case: opening a new sub-bucket of an
+    // already-focused group ("inside the eyes group, add a pupils group").
+    const parentId = selectedGroupId ?? undefined;
+    const group = buildDefaultGroup(id, "new group", parentId);
+    commit((m) => ({ ...m, groups: [...m.groups, group] }));
+    setSelectedGroupId(id);
+  };
+
+  const removeGroup = (id: string) => {
+    // Detach descendants instead of cascading: every part / sub-group that
+    // referenced this group gets its parent set to the removed group's parent
+    // (or top-level if the removed group was a root). Less destructive than a
+    // cascade and keeps the history step recoverable by undo.
+    commit((m) => {
+      const g = m.groups.find((x) => x.id === id);
+      const newParent = g?.parentId;
+      return {
+        ...m,
+        groups: m.groups
+          .filter((x) => x.id !== id)
+          .map((x) => (x.parentId === id ? { ...x, parentId: newParent } : x)),
+        parts: m.parts.map((p) =>
+          p.groupId === id ? { ...p, groupId: newParent } : p,
+        ),
+      };
+    });
+    if (selectedGroupId === id) setSelectedGroupId(null);
+  };
+
+  const reparentPart = (partId: string, parentId: string | undefined) => {
+    commit((m) => ({
+      ...m,
+      parts: m.parts.map((p) =>
+        p.id === partId ? { ...p, groupId: parentId } : p,
+      ),
+    }));
+  };
+
+  const reparentGroup = (groupId: string, parentId: string | undefined) => {
+    if (wouldCreateCycle(model.groups, groupId, parentId)) {
+      alert("循環構造になるため変更できません");
+      return;
+    }
+    commit((m) => ({
+      ...m,
+      groups: m.groups.map((g) => (g.id === groupId ? { ...g, parentId } : g)),
+    }));
+  };
+
+  const selectedGroup = useMemo<PartGroup | null>(
+    () => model.groups.find((g) => g.id === selectedGroupId) ?? null,
+    [model.groups, selectedGroupId],
+  );
 
   // ===== View Keyframe edits =====
   const addViewKeyframeAtCamera = (partId: string) => {
@@ -542,37 +621,41 @@ export const ModelingTool = () => {
             onClick={addPart}
             className="rounded bg-blue-500 px-2 py-1 text-white text-xs hover:bg-blue-600"
           >
-            + 追加
+            + パーツ
+          </button>
+          <button
+            type="button"
+            onClick={addGroup}
+            className="rounded bg-amber-500 px-2 py-1 text-white text-xs hover:bg-amber-600"
+          >
+            + グループ
           </button>
         </div>
-        <ul className="mb-4 space-y-1">
-          {model.parts.map((part) => (
-            <li
-              key={part.id}
-              className={`flex items-center justify-between rounded text-xs ${
-                selectedPartId === part.id
-                  ? "bg-blue-100 text-blue-800"
-                  : "hover:bg-gray-100"
-              }`}
-            >
-              <button
-                type="button"
-                onClick={() => setSelectedPartId(part.id)}
-                className="flex-1 px-2 py-1 text-left"
-              >
-                {part.name}
-              </button>
-              <button
-                type="button"
-                onClick={() => removePart(part.id)}
-                className="px-2 py-1 text-red-500 hover:text-red-700"
-                aria-label={`${part.name} を削除`}
-              >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
+        <div className="mb-4">
+          <PartTree
+            parts={model.parts}
+            groups={model.groups}
+            selectedPartId={selectedPartId}
+            selectedGroupId={selectedGroupId}
+            onSelectPart={(id) => {
+              setSelectedPartId(id);
+              setSelectedGroupId(null);
+            }}
+            onSelectGroup={(id) => {
+              setSelectedGroupId(id);
+            }}
+            onRemovePart={removePart}
+            onRemoveGroup={removeGroup}
+            onReparentPart={reparentPart}
+            onReparentGroup={reparentGroup}
+          />
+        </div>
+
+        {selectedGroup && (
+          <div className="mb-3">
+            <GroupEditor group={selectedGroup} updateGroup={updateGroup} />
+          </div>
+        )}
 
         {selectedPart && (
           <PartEditor

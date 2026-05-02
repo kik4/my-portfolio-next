@@ -1,4 +1,10 @@
-import type { FaceModel, HeadMesh, Part, ViewKeyframe } from "./types";
+import type {
+  FaceModel,
+  HeadMesh,
+  Part,
+  PartGroup,
+  ViewKeyframe,
+} from "./types";
 
 export const buildDefaultHeadMesh = (): HeadMesh => {
   // 7 latitude samples from apex (Y=1) down to chin (Y=-1.1).
@@ -48,6 +54,22 @@ const buildDefaultViewKeyframe = (): ViewKeyframe => ({
   },
   visible: true,
   alpha: 1,
+});
+
+export const buildDefaultGroup = (
+  id: string,
+  name: string,
+  parentId?: string,
+): PartGroup => ({
+  id,
+  name,
+  visible: true,
+  parentId,
+  transformDelta: {
+    anchorDelta: [0, 0, 0],
+    rotationOffsetDelta: [0, 0, 0],
+    scaleDelta: [0, 0],
+  },
 });
 
 export const buildDefaultPart = (id: string, name: string): Part => ({
