@@ -22,6 +22,7 @@ interface Props {
   setEditingViewKfIndex: (i: number) => void;
   editingAnimKfIndex: number;
   setEditingAnimKfIndex: (i: number) => void;
+  onSnapCamera: (yaw: number, pitch: number) => void;
 }
 
 // Sidebar editor for a selected group: name, visibility, view keyframes (one
@@ -39,6 +40,7 @@ export const GroupEditor = ({
   setEditingViewKfIndex,
   editingAnimKfIndex,
   setEditingAnimKfIndex,
+  onSnapCamera,
 }: Props) => {
   const safeViewIdx = Math.min(
     editingViewKfIndex,
@@ -192,7 +194,10 @@ export const GroupEditor = ({
             <li key={k.id} className="flex items-center gap-1">
               <button
                 type="button"
-                onClick={() => setEditingViewKfIndex(i)}
+                onClick={() => {
+                  setEditingViewKfIndex(i);
+                  onSnapCamera(k.yaw, k.pitch);
+                }}
                 className={`flex-1 rounded px-1 py-0.5 text-left ${
                   i === safeViewIdx
                     ? "bg-blue-100 text-blue-800"

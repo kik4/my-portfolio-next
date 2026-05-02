@@ -17,6 +17,9 @@ interface Props {
     yaw: number;
     pitch: number;
   }) => React.ReactNode;
+  // Forwarded straight to the main Scene's snapRequest. Mini views ignore it
+  // since they're already locked to their own fixedView.
+  snapRequest?: { yaw: number; pitch: number };
 }
 
 // Fixed mini view configurations. Each renders a small Scene at a frozen
@@ -35,6 +38,7 @@ export const MultiView = ({
   showGrid,
   onCameraChange,
   renderMainOverlay,
+  snapRequest,
 }: Props) => {
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -65,6 +69,7 @@ export const MultiView = ({
           showGrid={showGrid}
           onCameraChange={onCameraChange}
           renderOverlay={renderMainOverlay}
+          snapRequest={snapRequest}
         />
       </div>
     </div>

@@ -30,6 +30,10 @@ interface Props {
     yaw: number;
     pitch: number;
   }) => React.ReactNode;
+  // When this object's identity changes, the interactive camera teleports to
+  // the given (yaw, pitch). Use a fresh object literal each request so the
+  // hook fires even if the angles repeat. Ignored in fixed mode.
+  snapRequest?: { yaw: number; pitch: number };
 }
 
 const DEFAULT_DISTANCE = 3;
@@ -44,6 +48,7 @@ export const Scene = ({
   cameraDistance = DEFAULT_DISTANCE,
   cameraFov = DEFAULT_FOV,
   renderOverlay,
+  snapRequest,
 }: Props) => {
   const headMeshRef = useRef<THREE.Mesh | null>(null);
   const [headMesh, setHeadMesh] = useState<THREE.Mesh | null>(null);
@@ -115,6 +120,9 @@ export const Scene = ({
               onCameraChange?.(y, p);
             }}
           />
+          {snapRequest && (
+            <CameraSnap request={snapRequest} distance={cameraDistance} />
+          )}
         </>
       )}
     </Canvas>
@@ -136,6 +144,36 @@ const computeCameraPosition = (
     distance * Math.sin(pitch),
     distance * cp * Math.cos(yaw),
   ];
+};
+
+// Teleports the OrbitControls camera to the requested (yaw, pitch) on every
+// new request object. Uses object identity, not value equality, so the same
+// (yaw, pitch) can be requested twice in a row by passing a fresh literal.
+const CameraSnap = ({
+  request,
+  distance,
+}: {
+  request: { yaw: number; pitch: number };
+  distance: number;
+}) => {
+  const { camera, controls } = useThree() as unknown as {
+    camera: THREE.PerspectiveCamera;
+    controls: { target: THREE.Vector3; update: () => void } | null;
+  };
+  useEffect(() => {
+    const [x, y, z] = computeCameraPosition(
+      request.yaw,
+      request.pitch,
+      distance,
+    );
+    camera.position.set(x, y, z);
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
+    // OrbitControls keeps its own internal spherical state; nudging
+    // controls.update() resyncs that to the new camera position.
+    controls?.update();
+  }, [camera, controls, request, distance]);
+  return null;
 };
 
 // Parks the camera at the given (yaw, pitch, distance) and points it at the

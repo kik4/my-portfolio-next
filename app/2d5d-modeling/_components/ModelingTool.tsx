@@ -99,6 +99,15 @@ export const ModelingTool = () => {
   // Camera angles fed by Scene every frame.
   const [cameraYaw, setCameraYaw] = useState(0);
   const [cameraPitch, setCameraPitch] = useState(0);
+  // Snap target. Each new object literal triggers Scene to teleport the
+  // interactive camera. Identity-based, so requesting the same angle twice
+  // (by passing a fresh literal each time) still fires.
+  const [snapRequest, setSnapRequest] = useState<
+    { yaw: number; pitch: number } | undefined
+  >(undefined);
+  const snapToCamera = useCallback((yaw: number, pitch: number) => {
+    setSnapRequest({ yaw, pitch });
+  }, []);
 
   useEffect(() => {
     const loaded = loadFaceModelFromLocalStorage();
@@ -675,6 +684,7 @@ export const ModelingTool = () => {
               setEditingViewKfIndex={setEditingGroupViewKfIndex}
               editingAnimKfIndex={editingGroupAnimKfIndex}
               setEditingAnimKfIndex={setEditingGroupAnimKfIndex}
+              onSnapCamera={snapToCamera}
             />
           </div>
         )}
@@ -693,6 +703,7 @@ export const ModelingTool = () => {
             currentAnimParams={model.currentAnimParams}
             onAddKfAtCamera={() => addViewKeyframeAtCamera(selectedPart.id)}
             onRemoveKf={(idx) => removeViewKeyframe(selectedPart.id, idx)}
+            onSnapCamera={snapToCamera}
           />
         )}
 
@@ -745,6 +756,7 @@ export const ModelingTool = () => {
             setCameraYaw(y);
             setCameraPitch(p);
           }}
+          snapRequest={snapRequest}
           renderMainOverlay={
             selectedPart
               ? ({ headMesh, yaw, pitch }) => (
@@ -799,6 +811,7 @@ interface PartEditorProps {
   currentAnimParams: FaceModel["currentAnimParams"];
   onAddKfAtCamera: () => void;
   onRemoveKf: (idx: number) => void;
+  onSnapCamera: (yaw: number, pitch: number) => void;
 }
 
 const PartEditor = ({
@@ -814,6 +827,7 @@ const PartEditor = ({
   currentAnimParams,
   onAddKfAtCamera,
   onRemoveKf,
+  onSnapCamera,
 }: PartEditorProps) => {
   const safeIdx = Math.min(editingKfIndex, part.viewKeyframes.length - 1);
   const kf = part.viewKeyframes[safeIdx];
@@ -897,7 +911,12 @@ const PartEditor = ({
             <li key={k.id} className="flex items-center gap-1">
               <button
                 type="button"
-                onClick={() => setEditingKfIndex(i)}
+                onClick={() => {
+                  setEditingKfIndex(i);
+                  // Snap the main camera so the user is looking at this
+                  // keyframe's angle while editing it.
+                  onSnapCamera(k.yaw, k.pitch);
+                }}
                 className={`flex-1 rounded px-1 py-0.5 text-left ${
                   i === safeIdx
                     ? "bg-blue-100 text-blue-800"
