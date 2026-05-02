@@ -40,7 +40,13 @@ export const Scene = ({ model, showAxes, showGrid, onCameraChange }: Props) => {
           if (mesh !== headMesh) setHeadMesh(mesh);
         }}
       />
-      <Parts parts={model.parts} headMesh={headMesh} yaw={yaw} pitch={pitch} />
+      <Parts
+        parts={model.parts}
+        headMesh={headMesh}
+        yaw={yaw}
+        pitch={pitch}
+        animParams={model.currentAnimParams}
+      />
 
       {showAxes && <axesHelper args={[1.5]} />}
       {showGrid && <gridHelper args={[4, 8]} />}

@@ -9,6 +9,8 @@ import {
 } from "../_lib/jsonIO";
 import type { FaceModel, Part, Vec2, Vec3, ViewKeyframe } from "../_lib/types";
 import { useHistory } from "../_lib/useHistory";
+import { AnimKeyframeEditor } from "./AnimKeyframeEditor";
+import { AnimParamsPanel } from "./AnimParamsPanel";
 import { Scene } from "./Scene";
 
 const normalizeVec3 = (v: Vec3): Vec3 => {
@@ -66,6 +68,8 @@ export const ModelingTool = () => {
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
   // Index of the view keyframe currently being edited, scoped per selected part.
   const [editingKfIndex, setEditingKfIndex] = useState(0);
+  // Index of the anim keyframe currently being edited, scoped per selected part.
+  const [editingAnimKfIndex, setEditingAnimKfIndex] = useState(0);
   const [showAxes, setShowAxes] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
   // Camera angles fed by Scene every frame.
@@ -555,12 +559,24 @@ export const ModelingTool = () => {
             updatePart={updatePart}
             editingKfIndex={editingKfIndex}
             setEditingKfIndex={setEditingKfIndex}
+            editingAnimKfIndex={editingAnimKfIndex}
+            setEditingAnimKfIndex={setEditingAnimKfIndex}
             cameraYaw={cameraYaw}
             cameraPitch={cameraPitch}
+            animDefs={model.animParams}
+            currentAnimParams={model.currentAnimParams}
             onAddKfAtCamera={() => addViewKeyframeAtCamera(selectedPart.id)}
             onRemoveKf={(idx) => removeViewKeyframe(selectedPart.id, idx)}
           />
         )}
+
+        <div className="mt-4 border-t pt-4">
+          <AnimParamsPanel
+            defs={model.animParams}
+            current={model.currentAnimParams}
+            commit={commit}
+          />
+        </div>
 
         <div className="mt-4 space-y-2 border-t pt-4">
           <h3 className="font-bold text-sm">JSON</h3>
@@ -614,8 +630,12 @@ interface PartEditorProps {
   updatePart: (id: string, mut: (p: Part) => Part) => void;
   editingKfIndex: number;
   setEditingKfIndex: (i: number) => void;
+  editingAnimKfIndex: number;
+  setEditingAnimKfIndex: (i: number) => void;
   cameraYaw: number;
   cameraPitch: number;
+  animDefs: FaceModel["animParams"];
+  currentAnimParams: FaceModel["currentAnimParams"];
   onAddKfAtCamera: () => void;
   onRemoveKf: (idx: number) => void;
 }
@@ -625,8 +645,12 @@ const PartEditor = ({
   updatePart,
   editingKfIndex,
   setEditingKfIndex,
+  editingAnimKfIndex,
+  setEditingAnimKfIndex,
   cameraYaw,
   cameraPitch,
+  animDefs,
+  currentAnimParams,
   onAddKfAtCamera,
   onRemoveKf,
 }: PartEditorProps) => {
@@ -736,6 +760,15 @@ const PartEditor = ({
       </fieldset>
 
       <ViewKeyframeFields kf={kf} updateKf={updateKf} />
+
+      <AnimKeyframeEditor
+        part={part}
+        defs={animDefs}
+        current={currentAnimParams}
+        updatePart={updatePart}
+        editingIndex={editingAnimKfIndex}
+        setEditingIndex={setEditingAnimKfIndex}
+      />
     </div>
   );
 };

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { animRbfWeights, composeViewWithAnim } from "../_lib/animRbf";
 import {
   buildPartFillGeometry,
   buildPartStrokePositions,
@@ -17,11 +18,14 @@ interface Props {
   // Current camera angles in degrees, supplied by the parent (Scene).
   yaw: number;
   pitch: number;
+  // Current named animation parameter values.
+  animParams: Record<string, number>;
 }
 
 // Renders all parts at their resolved positions/orientations using the view
-// RBF interpolation of their viewKeyframes for the current (yaw, pitch).
-export const Parts = ({ parts, headMesh, yaw, pitch }: Props) => {
+// RBF interpolation of their viewKeyframes for the current (yaw, pitch),
+// then layered with anim deltas for the current animParams.
+export const Parts = ({ parts, headMesh, yaw, pitch, animParams }: Props) => {
   if (!headMesh) return null;
 
   const sorted = [...parts].sort((a, b) => a.layerIndex - b.layerIndex);
@@ -34,6 +38,7 @@ export const Parts = ({ parts, headMesh, yaw, pitch }: Props) => {
           headMesh={headMesh}
           yaw={yaw}
           pitch={pitch}
+          animParams={animParams}
         />
       ))}
     </>
@@ -45,22 +50,43 @@ interface PartRendererProps {
   headMesh: THREE.Mesh;
   yaw: number;
   pitch: number;
+  animParams: Record<string, number>;
 }
 
-const PartRenderer = ({ part, headMesh, yaw, pitch }: PartRendererProps) => {
+const PartRenderer = ({
+  part,
+  headMesh,
+  yaw,
+  pitch,
+  animParams,
+}: PartRendererProps) => {
   const groupRef = useRef<THREE.Group>(null);
 
-  // Compose a single effective view keyframe at the current camera angles.
-  const kf = useMemo(
-    () =>
-      interpolateViewKeyframes(
-        part.viewKeyframes,
-        yaw,
-        pitch,
-        part.rbfSigmaView,
-      ),
-    [part.viewKeyframes, yaw, pitch, part.rbfSigmaView],
-  );
+  // Compose a single effective view keyframe at the current camera angles,
+  // then layer anim keyframe deltas.
+  const kf = useMemo(() => {
+    const base = interpolateViewKeyframes(
+      part.viewKeyframes,
+      yaw,
+      pitch,
+      part.rbfSigmaView,
+    );
+    if (part.animKeyframes.length === 0) return base;
+    const weights = animRbfWeights(
+      part.animKeyframes,
+      animParams,
+      part.rbfSigmaAnim,
+    );
+    return composeViewWithAnim(base, part.animKeyframes, weights);
+  }, [
+    part.viewKeyframes,
+    part.animKeyframes,
+    part.rbfSigmaView,
+    part.rbfSigmaAnim,
+    yaw,
+    pitch,
+    animParams,
+  ]);
 
   const fillGeometry = useMemo(
     () => buildPartFillGeometry(kf.shape, kf.placement.scale),
