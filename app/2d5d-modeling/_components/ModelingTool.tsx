@@ -96,6 +96,10 @@ export const ModelingTool = () => {
   const [editingGroupAnimKfIndex, setEditingGroupAnimKfIndex] = useState(0);
   const [showAxes, setShowAxes] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
+  // Sidebar width in px. Persisted to localStorage so it survives reloads.
+  // Hydrated in an effect (not useState initializer) to avoid SSR mismatch.
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [resizing, setResizing] = useState(false);
   // Camera angles fed by Scene every frame.
   const [cameraYaw, setCameraYaw] = useState(0);
   const [cameraPitch, setCameraPitch] = useState(0);
@@ -112,8 +116,41 @@ export const ModelingTool = () => {
   useEffect(() => {
     const loaded = loadFaceModelFromLocalStorage();
     if (loaded) replace(loaded);
+    const savedWidth = localStorage.getItem("2d5d-modeling-sidebar-width");
+    if (savedWidth) {
+      const n = Number(savedWidth);
+      if (Number.isFinite(n) && n >= 240 && n <= 720) setSidebarWidth(n);
+    }
     setHydrated(true);
   }, [replace]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    localStorage.setItem("2d5d-modeling-sidebar-width", String(sidebarWidth));
+  }, [sidebarWidth, hydrated]);
+
+  // Drag-to-resize: while resizing, listen to pointer events on window so the
+  // drag keeps tracking even if the cursor leaves the divider element.
+  useEffect(() => {
+    if (!resizing) return;
+    const onMove = (e: PointerEvent) => {
+      const next = Math.max(240, Math.min(720, e.clientX));
+      setSidebarWidth(next);
+    };
+    const onUp = () => setResizing(false);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    const prevCursor = document.body.style.cursor;
+    const prevSelect = document.body.style.userSelect;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      document.body.style.cursor = prevCursor;
+      document.body.style.userSelect = prevSelect;
+    };
+  }, [resizing]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -384,7 +421,10 @@ export const ModelingTool = () => {
 
   return (
     <div className="flex min-h-0 flex-1">
-      <aside className="w-80 shrink-0 overflow-y-auto border-r bg-white p-4 text-sm">
+      <aside
+        style={{ width: sidebarWidth }}
+        className="shrink-0 overflow-y-auto border-r bg-white p-4 text-sm"
+      >
         <div className="mb-3 flex items-center justify-between border-b pb-2">
           <span className="text-gray-500 text-xs">
             視点 yaw {cameraYaw.toFixed(1)}° / pitch {cameraPitch.toFixed(1)}°
@@ -747,7 +787,20 @@ export const ModelingTool = () => {
         </div>
       </aside>
 
-      <main className="min-h-0 flex-1">
+      <button
+        type="button"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          setResizing(true);
+        }}
+        onDoubleClick={() => setSidebarWidth(320)}
+        aria-label="サイドバー幅を調整 (ダブルクリックで初期化)"
+        className={`w-1 shrink-0 cursor-col-resize border-0 bg-gray-200 hover:bg-blue-400 ${
+          resizing ? "bg-blue-500" : ""
+        }`}
+      />
+
+      <main className="min-h-0 min-w-0 flex-1">
         <MultiView
           model={model}
           showAxes={showAxes}
