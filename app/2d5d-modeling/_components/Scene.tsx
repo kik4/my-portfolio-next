@@ -22,6 +22,14 @@ interface Props {
   cameraDistance?: number;
   // Field of view in degrees. Defaults to 35.
   cameraFov?: number;
+  // Render-prop hook that lets the parent insert extra scene-graph nodes
+  // (e.g. an anchor gizmo on the main view) once the head mesh is ready.
+  // Receives current yaw/pitch so the inserted node can react to the camera.
+  renderOverlay?: (ctx: {
+    headMesh: THREE.Mesh;
+    yaw: number;
+    pitch: number;
+  }) => React.ReactNode;
 }
 
 const DEFAULT_DISTANCE = 3;
@@ -35,6 +43,7 @@ export const Scene = ({
   fixedView,
   cameraDistance = DEFAULT_DISTANCE,
   cameraFov = DEFAULT_FOV,
+  renderOverlay,
 }: Props) => {
   const headMeshRef = useRef<THREE.Mesh | null>(null);
   const [headMesh, setHeadMesh] = useState<THREE.Mesh | null>(null);
@@ -85,6 +94,7 @@ export const Scene = ({
         pitch={pitch}
         animParams={model.currentAnimParams}
       />
+      {headMesh && renderOverlay?.({ headMesh, yaw, pitch })}
 
       {showAxes && <axesHelper args={[1.5]} />}
       {showGrid && <gridHelper args={[4, 8]} />}

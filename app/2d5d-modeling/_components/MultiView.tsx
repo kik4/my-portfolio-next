@@ -1,5 +1,6 @@
 "use client";
 
+import type * as THREE from "three";
 import type { FaceModel } from "../_lib/types";
 import { Scene } from "./Scene";
 
@@ -8,6 +9,14 @@ interface Props {
   showAxes: boolean;
   showGrid: boolean;
   onCameraChange: (yaw: number, pitch: number) => void;
+  // Same render-prop as Scene.renderOverlay, but only invoked for the main
+  // interactive view. Mini views never get an overlay so the gizmos don't
+  // multiply across canvases.
+  renderMainOverlay?: (ctx: {
+    headMesh: THREE.Mesh;
+    yaw: number;
+    pitch: number;
+  }) => React.ReactNode;
 }
 
 // Fixed mini view configurations. Each renders a small Scene at a frozen
@@ -25,6 +34,7 @@ export const MultiView = ({
   showAxes,
   showGrid,
   onCameraChange,
+  renderMainOverlay,
 }: Props) => {
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -54,6 +64,7 @@ export const MultiView = ({
           showAxes={showAxes}
           showGrid={showGrid}
           onCameraChange={onCameraChange}
+          renderOverlay={renderMainOverlay}
         />
       </div>
     </div>

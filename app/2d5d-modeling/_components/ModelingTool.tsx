@@ -22,6 +22,7 @@ import type {
   ViewKeyframe,
 } from "../_lib/types";
 import { useHistory } from "../_lib/useHistory";
+import { AnchorGizmo } from "./AnchorGizmo";
 import { AnimKeyframeEditor } from "./AnimKeyframeEditor";
 import { AnimParamsPanel } from "./AnimParamsPanel";
 import { GroupEditor } from "./GroupEditor";
@@ -744,6 +745,41 @@ export const ModelingTool = () => {
             setCameraYaw(y);
             setCameraPitch(p);
           }}
+          renderMainOverlay={
+            selectedPart
+              ? ({ headMesh, yaw, pitch }) => (
+                  <AnchorGizmo
+                    part={selectedPart}
+                    groups={model.groups}
+                    headMesh={headMesh}
+                    yaw={yaw}
+                    pitch={pitch}
+                    animParams={model.currentAnimParams}
+                    editingKfIndex={editingKfIndex}
+                    onAnchorChange={(next) => {
+                      // Apply to the part's currently edited view keyframe.
+                      updatePart(selectedPart.id, (p) => {
+                        const idx = Math.min(
+                          editingKfIndex,
+                          p.viewKeyframes.length - 1,
+                        );
+                        return {
+                          ...p,
+                          viewKeyframes: p.viewKeyframes.map((k, i) =>
+                            i === idx
+                              ? {
+                                  ...k,
+                                  placement: { ...k.placement, anchor: next },
+                                }
+                              : k,
+                          ),
+                        };
+                      });
+                    }}
+                  />
+                )
+              : undefined
+          }
         />
       </main>
     </div>
