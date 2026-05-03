@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type CatmullRomSample, sampleCatmullRom1D } from "../_lib/catmullRom";
+import { capLift } from "../_lib/headMeshBuild";
 import type { HeadMesh } from "../_lib/types";
 
 interface Props {
@@ -208,8 +209,9 @@ const CurveCanvas = ({
 
   // Build the silhouette path for visualization. Densely sample the same
   // Catmull-Rom curve that headMeshBuild uses so the editor's display matches
-  // the 3D mesh's actual silhouette (the previous version connected control
-  // points with straight lines, which made every pole look angular).
+  // the 3D mesh's actual silhouette. The two poles are closed off with a
+  // half-ellipse arc whose vertical extent equals the 3D cap's lift, so
+  // increasing CAP_DOME_RATIO inflates the editor curve in the same way.
   const path = useMemo(() => {
     if (sortedIndices.length === 0) return "";
     const px = (xVal: number) => view.cx + xVal * view.scale;
@@ -228,9 +230,22 @@ const CurveCanvas = ({
 
     const yMin = head.ySamples[ascending[0]];
     const yMax = head.ySamples[ascending[ascending.length - 1]];
+    const apexIdx = ascending[ascending.length - 1];
+    const chinIdx = ascending[0];
+    const apexLift = capLift({
+      halfX: head.frontHalfXs[apexIdx],
+      zFront: head.sideZFronts[apexIdx],
+      zBack: head.sideZBacks[apexIdx],
+    });
+    const chinLift = capLift({
+      halfX: head.frontHalfXs[chinIdx],
+      zFront: head.sideZFronts[chinIdx],
+      zBack: head.sideZBacks[chinIdx],
+    });
+
     const STEPS = 60;
     const cmds: string[] = [];
-    // Right side: top-to-bottom.
+    // Right side: top-to-bottom (yMax → yMin).
     for (let s = 0; s <= STEPS; s++) {
       const u = s / STEPS;
       const y = yMax + (yMin - yMax) * u;
@@ -244,6 +259,28 @@ const CurveCanvas = ({
         `${s === 0 ? "M" : "L"} ${px(x).toFixed(2)} ${py(y).toFixed(2)}`,
       );
     }
+    // Chin cap arc: from right end at yMin to left end at yMin, bulging
+    // downward by chinLift. SVG arc rx = horizontal half-width between the
+    // two endpoints, ry = the lift in world units. We sweep CCW (=1) so the
+    // arc bulges away from the body of the silhouette (=screen-down here,
+    // matching world -Y).
+    const chinRightX = sampleCatmullRom1D(
+      rightSamples,
+      yMin,
+      head.catmullRomTension,
+      true,
+    );
+    const chinLeftX = sampleCatmullRom1D(
+      leftSamples,
+      yMin,
+      head.catmullRomTension,
+      true,
+    );
+    const chinRx = Math.abs(chinRightX - chinLeftX) * 0.5 * view.scale;
+    const chinRy = chinLift * view.scale;
+    cmds.push(
+      `A ${chinRx.toFixed(2)} ${chinRy.toFixed(2)} 0 0 1 ${px(chinLeftX).toFixed(2)} ${py(yMin).toFixed(2)}`,
+    );
     // Left side: bottom-to-top.
     for (let s = 0; s <= STEPS; s++) {
       const u = s / STEPS;
@@ -256,6 +293,25 @@ const CurveCanvas = ({
       );
       cmds.push(`L ${px(x).toFixed(2)} ${py(y).toFixed(2)}`);
     }
+    // Apex cap arc: from left end at yMax to right end at yMax, bulging
+    // upward by apexLift.
+    const apexLeftX = sampleCatmullRom1D(
+      leftSamples,
+      yMax,
+      head.catmullRomTension,
+      true,
+    );
+    const apexRightX = sampleCatmullRom1D(
+      rightSamples,
+      yMax,
+      head.catmullRomTension,
+      true,
+    );
+    const apexRx = Math.abs(apexRightX - apexLeftX) * 0.5 * view.scale;
+    const apexRy = apexLift * view.scale;
+    cmds.push(
+      `A ${apexRx.toFixed(2)} ${apexRy.toFixed(2)} 0 0 1 ${px(apexRightX).toFixed(2)} ${py(yMax).toFixed(2)}`,
+    );
     cmds.push("Z");
     return cmds.join(" ");
   }, [head, sortedIndices, leftKey, rightKey, view]);

@@ -7,6 +7,25 @@ import type { HeadMesh } from "./types";
 // the spline at this many positions to make a smooth surface.
 const LATITUDE_DENSITY = 40;
 
+// How far the pole-cap center is pushed outward in Y, expressed as a
+// fraction of the cap ring's average radius. 0 = flat disc cap, 1 = full
+// hemisphere. 0.25 gives a gentle dome that doesn't read as either pinched
+// or pointy. Exported so the silhouette editor can mirror the same lift in
+// its 2D drawing of the path.
+export const CAP_DOME_RATIO = 0.25;
+
+// The Y-distance from the pole ring to the cap center vertex. Positive
+// always — callers add it to apexRow.y or subtract from chinRow.y.
+export const capLift = (row: {
+  halfX: number;
+  zFront: number;
+  zBack: number;
+}): number => {
+  const a = Math.max(row.halfX, 0);
+  const b = Math.max((row.zFront - row.zBack) * 0.5, 0);
+  return (a + b) * 0.5 * CAP_DOME_RATIO;
+};
+
 // Build a BufferGeometry by:
 //   1. Sampling the front/side spline at LATITUDE_DENSITY heights.
 //   2. At each height, generating a half-ellipse-front + half-ellipse-back ring
@@ -86,15 +105,26 @@ export const buildHeadGeometry = (head: HeadMesh): THREE.BufferGeometry => {
 
   for (let row = 0; row < totalRows; row++) emitRing(row);
 
-  // Center cap vertices for chin (front of array) and apex (back). Position
-  // is at the elliptical center of the corresponding pole ring so the cap is
-  // flush with the ring rather than pulled toward the world Y axis.
+  // Center cap vertices for chin (front of array) and apex (back). The
+  // center sits at the elliptical center of the pole ring (so the cap stays
+  // aligned with chin forward poke etc.) but is pushed outward in Y by a
+  // fraction of the ring's average radius. This gives a shallow dome rather
+  // than a flat disc — the silhouette editor mirrors the same lift so the
+  // 2D drawing stays in sync with the 3D mesh.
   const chinRow = rows[0];
   const apexRow = rows[totalRows - 1];
   const chinCenterIndex = totalRows * ringStride;
-  positions.push(0, chinRow.y, (chinRow.zFront + chinRow.zBack) * 0.5);
+  positions.push(
+    0,
+    chinRow.y - capLift(chinRow),
+    (chinRow.zFront + chinRow.zBack) * 0.5,
+  );
   const apexCenterIndex = chinCenterIndex + 1;
-  positions.push(0, apexRow.y, (apexRow.zFront + apexRow.zBack) * 0.5);
+  positions.push(
+    0,
+    apexRow.y + capLift(apexRow),
+    (apexRow.zFront + apexRow.zBack) * 0.5,
+  );
 
   const ringVertexIndex = (row: number, seg: number) => row * ringStride + seg;
 
