@@ -1,9 +1,11 @@
 "use client";
 
 import { AFFINE_IDENTITY, type AffineMatrix } from "../_lib/affine";
-import type { Part, PartViewKeyframe } from "../_lib/types";
+import { insertShapePoint, removeShapePoint } from "../_lib/shapeTopology";
+import type { Part, PartViewKeyframe, Vec2 } from "../_lib/types";
 import { AffineFields } from "./AffineFields";
 import { KeyframeList } from "./KeyframeList";
+import { PointEditor } from "./PointEditor";
 
 interface Props {
   part: Part;
@@ -159,6 +161,37 @@ export const PartEditor = ({
             className="w-20 rounded border px-1"
           />
         </div>
+      </fieldset>
+
+      <fieldset className="rounded border bg-white p-2">
+        <legend className="text-gray-600">
+          形状 ({kf.shape.basePoints.length} 点)
+        </legend>
+        <PointEditor
+          shape={kf.shape}
+          onMovePoint={(idx, next: Vec2) =>
+            updateKf((k) => ({
+              ...k,
+              shape: {
+                ...k.shape,
+                basePoints: k.shape.basePoints.map((p, i) =>
+                  i === idx ? next : p,
+                ),
+              },
+            }))
+          }
+          onAddPoint={(insertIndex, position) =>
+            updatePart(part.id, (p) =>
+              insertShapePoint(p, safeIdx, insertIndex, position),
+            )
+          }
+          onRemovePoint={(idx) =>
+            updatePart(part.id, (p) => removeShapePoint(p, idx))
+          }
+        />
+        <p className="mt-1 text-[10px] text-gray-500">
+          ハンドルをドラッグ / 線をクリックで点追加 / 右クリックで削除
+        </p>
       </fieldset>
 
       <AffineFields
