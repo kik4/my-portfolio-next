@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { buildDefaultFaceModel } from "../_lib/defaultModel";
+import {
+  buildDefaultChildGroup,
+  buildDefaultFaceModel,
+  buildDefaultPart,
+  buildDefaultRootGroup,
+} from "../_lib/defaultModel";
+import { wouldCreateCycle } from "../_lib/groupTransform";
 import {
   loadFaceModelFromLocalStorage,
   saveFaceModelToLocalStorage,
@@ -11,6 +17,7 @@ import type { FaceModel } from "../_lib/types";
 import { useHistory } from "../_lib/useHistory";
 import { HeadCurveEditor } from "./HeadCurveEditor";
 import { MultiView } from "./MultiView";
+import { PartTree, type Selection } from "./PartTree";
 
 // Phase 1 of the v4 spec: enough UI to confirm that the new schema renders
 // (head mesh + parts under one root group). Part / group editing UIs are
@@ -33,6 +40,8 @@ export const ModelingTool = () => {
   const [resizing, setResizing] = useState(false);
   const [cameraYaw, setCameraYaw] = useState(0);
   const [cameraPitch, setCameraPitch] = useState(0);
+  // Single selection across the whole tree: a part or a group, or nothing.
+  const [selection, setSelection] = useState<Selection>(null);
 
   useEffect(() => {
     const loaded = loadFaceModelFromLocalStorage();
@@ -98,6 +107,108 @@ export const ModelingTool = () => {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [undo, redo]);
+
+  // ===== structure mutations =====
+
+  const newId = (kind: string) => `${kind}-${Date.now()}`;
+
+  const addRootGroup = () => {
+    const id = newId("group");
+    const g = buildDefaultRootGroup(id, "new group", [0, 0, 0.9]);
+    commit((m) => ({ ...m, groups: [...m.groups, g] }));
+    setSelection({ kind: "group", id });
+  };
+
+  const addChildGroup = (parentId: string) => {
+    const id = newId("group");
+    const g = buildDefaultChildGroup(id, "new group", parentId);
+    commit((m) => ({ ...m, groups: [...m.groups, g] }));
+    setSelection({ kind: "group", id });
+  };
+
+  const addPart = (groupId: string) => {
+    const id = newId("part");
+    const p = buildDefaultPart(id, "new part", groupId);
+    commit((m) => ({ ...m, parts: [...m.parts, p] }));
+    setSelection({ kind: "part", id });
+  };
+
+  // Cascade-delete a group: also remove every descendant group / part. The
+  // alternative (promote children to the parent) is awkward for a root group
+  // since promoted children would have nowhere to live, so we go with a
+  // confirmable cascade. Undo brings everything back.
+  const removeGroup = (id: string) => {
+    const g = model.groups.find((x) => x.id === id);
+    if (!g) return;
+    const descendantIds = new Set<string>([id]);
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const ch of model.groups) {
+        if (
+          ch.parentId !== null &&
+          descendantIds.has(ch.parentId) &&
+          !descendantIds.has(ch.id)
+        ) {
+          descendantIds.add(ch.id);
+          grew = true;
+        }
+      }
+    }
+    if (
+      !confirm(
+        `グループ「${g.name}」とその配下 (グループ ${descendantIds.size - 1} 個 + 関連パーツ) を削除します。よろしいですか?`,
+      )
+    ) {
+      return;
+    }
+    commit((m) => ({
+      ...m,
+      groups: m.groups.filter((x) => !descendantIds.has(x.id)),
+      parts: m.parts.filter((p) => !descendantIds.has(p.groupId)),
+    }));
+    if (
+      selection &&
+      ((selection.kind === "group" && descendantIds.has(selection.id)) ||
+        (selection.kind === "part" &&
+          descendantIds.has(
+            model.parts.find((p) => p.id === selection.id)?.groupId ?? "",
+          )))
+    ) {
+      setSelection(null);
+    }
+  };
+
+  const removePart = (id: string) => {
+    commit((m) => ({ ...m, parts: m.parts.filter((p) => p.id !== id) }));
+    if (selection?.kind === "part" && selection.id === id) setSelection(null);
+  };
+
+  const reparentGroup = (id: string, newParentId: string) => {
+    if (wouldCreateCycle(model.groups, id, newParentId)) {
+      alert("循環構造になるため変更できません");
+      return;
+    }
+    commit((m) => ({
+      ...m,
+      groups: m.groups.map((g) =>
+        // Only child groups can be reparented; the dropdown enforces this by
+        // not appearing for root groups, but cast safely for type narrowing.
+        g.id === id && g.parentId !== null
+          ? { ...g, parentId: newParentId }
+          : g,
+      ),
+    }));
+  };
+
+  const reparentPart = (id: string, newGroupId: string) => {
+    commit((m) => ({
+      ...m,
+      parts: m.parts.map((p) =>
+        p.id === id ? { ...p, groupId: newGroupId } : p,
+      ),
+    }));
+  };
 
   const exportJson = () => {
     const blob = new Blob([serializeFaceModel(model)], {
@@ -205,26 +316,27 @@ export const ModelingTool = () => {
         </div>
 
         <h2 className="mb-2 font-bold">構造</h2>
-        <p className="mb-4 text-gray-500 text-xs">
-          パーツ/グループ編集 UI は v4 仕様の Phase 3 で再実装予定。現状は
-          defaultModel.ts のルートグループ + 子パーツ 3 個がそのまま描画される。
-        </p>
-        <ul className="mb-4 space-y-1 text-xs">
-          {model.groups.map((g) => (
-            <li key={g.id}>
-              <span className="font-bold">{g.name}</span>{" "}
-              <span className="text-gray-500">
-                {g.parentId === null ? "(root)" : "(child)"}
-              </span>
-            </li>
-          ))}
-          {model.parts.map((p) => (
-            <li key={p.id} className="ml-4">
-              <span>{p.name}</span>{" "}
-              <span className="text-gray-500">→ {p.groupId}</span>
-            </li>
-          ))}
-        </ul>
+        <div className="mb-4">
+          <PartTree
+            groups={model.groups}
+            parts={model.parts}
+            selection={selection}
+            onSelect={setSelection}
+            onAddRootGroup={addRootGroup}
+            onAddChildGroup={addChildGroup}
+            onAddPart={addPart}
+            onRemoveGroup={removeGroup}
+            onRemovePart={removePart}
+            onReparentGroup={reparentGroup}
+            onReparentPart={reparentPart}
+          />
+        </div>
+        {selection && (
+          <p className="mb-4 text-gray-500 text-xs">
+            選択中: {selection.kind} / {selection.id}
+            （詳細編集 UI は次の Phase で追加）
+          </p>
+        )}
 
         <div className="mt-4 space-y-2 border-t pt-4">
           <h3 className="font-bold text-sm">JSON</h3>
