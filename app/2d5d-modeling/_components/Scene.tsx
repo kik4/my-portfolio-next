@@ -2,7 +2,7 @@
 
 import { OrbitControls } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import type { FaceModel } from "../_lib/types";
 import { HeadMesh } from "./HeadMesh";
@@ -52,6 +52,13 @@ export const Scene = ({
 }: Props) => {
   const headMeshRef = useRef<THREE.Mesh | null>(null);
   const [headMesh, setHeadMesh] = useState<THREE.Mesh | null>(null);
+  // r3f reattaches refs every render, so a fresh inline callback would flip
+  // between (mesh) and (null) and re-trigger setHeadMesh on every commit.
+  // Stabilizing with useCallback keeps the ref identity steady.
+  const setHeadMeshRef = useCallback((mesh: THREE.Mesh | null) => {
+    headMeshRef.current = mesh;
+    setHeadMesh((prev) => (prev === mesh ? prev : mesh));
+  }, []);
   // In interactive mode the camera tracker drives these. In fixed mode they
   // come straight from props (no per-frame update needed).
   const [yaw, setYaw] = useState(fixedView?.yaw ?? 0);
@@ -89,13 +96,7 @@ export const Scene = ({
       <ambientLight intensity={0.6} />
       <directionalLight position={[2, 3, 4]} intensity={0.8} />
 
-      <HeadMesh
-        head={model.head}
-        ref={(mesh) => {
-          headMeshRef.current = mesh;
-          if (mesh !== headMesh) setHeadMesh(mesh);
-        }}
-      />
+      <HeadMesh head={model.head} ref={setHeadMeshRef} />
       <Parts
         parts={model.parts}
         groups={model.groups}
