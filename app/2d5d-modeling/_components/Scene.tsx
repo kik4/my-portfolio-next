@@ -71,16 +71,21 @@ export const Scene = ({
     cameraDistance,
   );
 
+  // Match the orthographic frustum to what the previous perspective camera
+  // showed at the origin: half-height = distance * tan(fov/2) world units.
+  const halfHeight = cameraDistance * Math.tan((cameraFov * Math.PI) / 360);
+
   return (
     <Canvas
+      orthographic
       camera={{
         position: initialCameraPos,
-        fov: cameraFov,
         near: 0.01,
         far: 100,
       }}
       shadows={false}
     >
+      <OrthoZoom halfHeight={halfHeight} />
       <ambientLight intensity={0.6} />
       <directionalLight position={[2, 3, 4]} intensity={0.8} />
 
@@ -173,6 +178,23 @@ const CameraSnap = ({
     // controls.update() resyncs that to the new camera position.
     controls?.update();
   }, [camera, controls, request, distance]);
+  return null;
+};
+
+// Drives the orthographic camera's `zoom` so that `halfHeight` world units
+// fill half the canvas height. r3f's default ortho camera uses pixel-unit
+// frustum bounds (left=-w/2, right=w/2, top=h/2, bottom=-h/2), so the world
+// span shown vertically is `canvasHeightPx / zoom`. Solving for zoom that
+// maps `2 * halfHeight` world units onto the canvas height gives the formula
+// below, and we re-run it on every resize.
+const OrthoZoom = ({ halfHeight }: { halfHeight: number }) => {
+  const camera = useThree((s) => s.camera);
+  const size = useThree((s) => s.size);
+  useEffect(() => {
+    if (!(camera as THREE.OrthographicCamera).isOrthographicCamera) return;
+    camera.zoom = size.height / (2 * halfHeight);
+    camera.updateProjectionMatrix();
+  }, [camera, size.height, halfHeight]);
   return null;
 };
 
