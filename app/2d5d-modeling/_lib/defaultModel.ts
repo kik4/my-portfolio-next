@@ -11,10 +11,13 @@ import type {
 } from "./types";
 
 export const buildDefaultHeadMesh = (): HeadMesh => {
+  // The poles aren't pinched anymore: the apex (top) keeps a small ring so
+  // the head is rounded rather than pointy, and the chin pulls forward so a
+  // jaw juts out a bit.
   const ySamples = [1.0, 0.7, 0.4, 0.0, -0.4, -0.8, -1.1];
-  const frontHalfXs = [0.0, 0.55, 0.7, 0.72, 0.65, 0.45, 0.0];
-  const sideZFronts = [0.0, 0.55, 0.72, 0.78, 0.7, 0.5, 0.0];
-  const sideZBacks = [0.0, -0.7, -0.85, -0.85, -0.7, -0.45, 0.0];
+  const frontHalfXs = [0.2, 0.55, 0.7, 0.72, 0.65, 0.45, 0.15];
+  const sideZFronts = [0.15, 0.55, 0.72, 0.78, 0.7, 0.5, 0.25];
+  const sideZBacks = [-0.2, -0.7, -0.85, -0.85, -0.7, -0.45, -0.15];
 
   return {
     ySamples,

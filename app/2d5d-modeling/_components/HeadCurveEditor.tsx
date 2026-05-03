@@ -24,9 +24,13 @@ interface Props {
 // the UI predictable, we expose Y editing only on the front view; the side
 // view's Y is read-only-locked to the matching front-view handle.
 //
-// The apex (Y max) and chin (Y min) — by convention the first and last entries
-// after sorting by Y — must collapse to a point: halfX = zFront = zBack = 0.
-// We enforce this by only letting the user drag those samples vertically.
+// The apex (Y max) and chin (Y min) — the first and last entries after
+// sorting by Y — used to be locked to a single point (halfX = zFront = zBack
+// = 0) so the head capped to a sharp tip. That was abandoned because real
+// heads aren't pointy on top and chins aren't pointy at the bottom either.
+// Now the poles are draggable like any other sample; they're rendered with
+// a slightly different color so the user can still spot the topmost/bottommost
+// rings, but no values are clamped.
 export const HeadCurveEditor = ({ head, onChange }: Props) => {
   return (
     <div className="flex gap-2">
@@ -149,7 +153,6 @@ const CurveCanvas = ({
       target: "left" | "right" | "y",
       value: { x: number; y: number },
     ) => {
-      const pole = isPole(idx);
       const next: HeadMesh = {
         ...head,
         ySamples: [...head.ySamples],
@@ -160,31 +163,28 @@ const CurveCanvas = ({
       if (target === "y") {
         next.ySamples[idx] = value.y;
       } else if (target === "right") {
-        // Positive-X side handle: writes to rightKey value at idx.
         const v = Math.max(value.x, 0);
-        if (rightKey === "halfX") next.frontHalfXs[idx] = pole ? 0 : v;
+        if (rightKey === "halfX") next.frontHalfXs[idx] = v;
         // Side view: right of midline = back of head. Stored as negative Z.
-        if (rightKey === "zBack") next.sideZBacks[idx] = pole ? 0 : -v;
-        // Y always moves because dragging includes vertical motion (poles too:
-        // their X is locked to 0 but they still slide vertically).
+        if (rightKey === "zBack") next.sideZBacks[idx] = -v;
         next.ySamples[idx] = value.y;
       } else if (target === "left") {
         const v = Math.min(value.x, 0);
         if (leftKey === "mirroredHalfX") {
           // Front view's left half mirrors halfX; the canonical halfX is
           // |v|, and X >= 0 in the data model.
-          next.frontHalfXs[idx] = pole ? 0 : Math.abs(v);
+          next.frontHalfXs[idx] = Math.abs(v);
         }
         // Side view: left of midline = front of face. Stored as positive Z,
         // so flip the screen-X sign back.
         if (leftKey === "zFront") {
-          next.sideZFronts[idx] = pole ? 0 : -v;
+          next.sideZFronts[idx] = -v;
         }
         next.ySamples[idx] = value.y;
       }
       onChange(next);
     },
-    [head, onChange, leftKey, rightKey, isPole],
+    [head, onChange, leftKey, rightKey],
   );
 
   useEffect(() => {
@@ -335,6 +335,6 @@ const Handle = ({
     stroke="white"
     strokeWidth={1.5}
     onPointerDown={onPointerDown}
-    style={{ cursor: pole ? "ns-resize" : "grab" }}
+    style={{ cursor: "grab" }}
   />
 );

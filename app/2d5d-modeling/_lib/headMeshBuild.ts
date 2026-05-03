@@ -39,11 +39,10 @@ export const buildHeadGeometry = (head: HeadMesh): THREE.BufferGeometry => {
   const yMin = ySorted[0];
   const yMax = ySorted[ySorted.length - 1];
 
-  // Sample evenly between yMin and yMax. mirrorEnds=true tells the spline to
-  // pretend the controls extend symmetrically past each pole (phantom value
-  // = -inner-neighbour), which makes the radius approach zero with a steeper
-  // tangent than the default clamp. Visually that's the difference between a
-  // sharp cone tip and a rounded dome.
+  // Sample evenly between yMin and yMax. The poles (apex / chin) are now
+  // ordinary rings rather than collapsed-to-a-point caps, so we use the
+  // standard Catmull-Rom clamp (mirrorEnds=false) — the head tapers naturally
+  // by whatever halfX / zFront / zBack values the user picked at the poles.
   type Row = { y: number; halfX: number; zFront: number; zBack: number };
   const rows: Row[] = [];
   for (let row = 0; row < LATITUDE_DENSITY; row++) {
@@ -51,9 +50,9 @@ export const buildHeadGeometry = (head: HeadMesh): THREE.BufferGeometry => {
     const y = yMin + (yMax - yMin) * u;
     rows.push({
       y,
-      halfX: sampleCatmullRom1D(halfXSamples, y, catmullRomTension, true),
-      zFront: sampleCatmullRom1D(zFrontSamples, y, catmullRomTension, true),
-      zBack: sampleCatmullRom1D(zBackSamples, y, catmullRomTension, true),
+      halfX: sampleCatmullRom1D(halfXSamples, y, catmullRomTension, false),
+      zFront: sampleCatmullRom1D(zFrontSamples, y, catmullRomTension, false),
+      zBack: sampleCatmullRom1D(zBackSamples, y, catmullRomTension, false),
     });
   }
 
@@ -61,17 +60,14 @@ export const buildHeadGeometry = (head: HeadMesh): THREE.BufferGeometry => {
   const positions: number[] = [];
   const indices: number[] = [];
 
-  // Vertex layout: a single pole vertex at the chin (index 0), then
-  // ringStride vertices per intermediate ring, then a single pole vertex at
-  // the apex. Collapsing each pole to one vertex is what gives smooth shading
-  // there — duplicating ringSegments+1 coincident vertices fools
-  // computeVertexNormals into giving each duplicate only the normal of its
-  // neighboring face, producing the dimpled look around the pole.
+  // Vertex layout: every row is a full ring of ringStride vertices (no
+  // collapsed pole). The two end rings (chin at row 0, apex at row totalRows-1)
+  // get capped with a fan that radiates from a center vertex placed at the
+  // ring's elliptical center, so the cap is flat-ish but not pinched.
   const ringStride = ringSegments + 1;
-  // Chin pole vertex (index 0).
-  positions.push(0, rows[0].y, 0);
-  // Intermediate rings (rows 1..totalRows-2): full ringStride vertices each.
-  for (let row = 1; row < totalRows - 1; row++) {
+
+  // Emit one ring's vertices at row index `row`.
+  const emitRing = (row: number) => {
     const { y, halfX, zFront, zBack } = rows[row];
     const a = Math.max(halfX, 0);
     const center = (zFront + zBack) * 0.5;
@@ -86,28 +82,25 @@ export const buildHeadGeometry = (head: HeadMesh): THREE.BufferGeometry => {
       const z = center + (cosT >= 0 ? bFront : bBack) * cosT;
       positions.push(x, y, z);
     }
-  }
-  // Apex pole vertex (last index).
-  const apexIndex = 1 + (totalRows - 2) * ringStride;
-  positions.push(0, rows[totalRows - 1].y, 0);
+  };
 
-  // Helper to map (interior row, seg) → flat vertex index.
-  // interiorRow runs 1..totalRows-2 (inclusive). seg runs 0..ringSegments.
-  const ringVertexIndex = (interiorRow: number, seg: number) =>
-    1 + (interiorRow - 1) * ringStride + seg;
+  for (let row = 0; row < totalRows; row++) emitRing(row);
 
-  // Bottom fan: chin pole → first interior ring.
-  // Ordering: pole, seg, seg+1 — verified CCW by checking the outline hull
-  // doesn't occlude the FrontSide fill.
-  for (let seg = 0; seg < ringSegments; seg++) {
-    const r0 = ringVertexIndex(1, seg);
-    const r1 = ringVertexIndex(1, seg + 1);
-    indices.push(0, r1, r0);
-  }
+  // Center cap vertices for chin (front of array) and apex (back). Position
+  // is at the elliptical center of the corresponding pole ring so the cap is
+  // flush with the ring rather than pulled toward the world Y axis.
+  const chinRow = rows[0];
+  const apexRow = rows[totalRows - 1];
+  const chinCenterIndex = totalRows * ringStride;
+  positions.push(0, chinRow.y, (chinRow.zFront + chinRow.zBack) * 0.5);
+  const apexCenterIndex = chinCenterIndex + 1;
+  positions.push(0, apexRow.y, (apexRow.zFront + apexRow.zBack) * 0.5);
 
-  // Stitch adjacent interior rings into quads (two triangles each).
+  const ringVertexIndex = (row: number, seg: number) => row * ringStride + seg;
+
+  // Stitch adjacent rings into quads (two triangles each).
   // row+1 is higher up the head. Outward-CCW ordering is a0 -> a1 -> b1 -> b0.
-  for (let row = 1; row < totalRows - 2; row++) {
+  for (let row = 0; row < totalRows - 1; row++) {
     for (let seg = 0; seg < ringSegments; seg++) {
       const a0 = ringVertexIndex(row, seg);
       const a1 = ringVertexIndex(row, seg + 1);
@@ -118,11 +111,20 @@ export const buildHeadGeometry = (head: HeadMesh): THREE.BufferGeometry => {
     }
   }
 
-  // Top fan: last interior ring → apex pole.
+  // Bottom cap (chin): fan from chinCenterIndex to the first ring. CCW seen
+  // from below means center -> seg+1 -> seg.
   for (let seg = 0; seg < ringSegments; seg++) {
-    const r0 = ringVertexIndex(totalRows - 2, seg);
-    const r1 = ringVertexIndex(totalRows - 2, seg + 1);
-    indices.push(r0, r1, apexIndex);
+    const r0 = ringVertexIndex(0, seg);
+    const r1 = ringVertexIndex(0, seg + 1);
+    indices.push(chinCenterIndex, r1, r0);
+  }
+
+  // Top cap (apex): fan from apexCenterIndex. CCW seen from above means
+  // seg -> seg+1 -> center.
+  for (let seg = 0; seg < ringSegments; seg++) {
+    const r0 = ringVertexIndex(totalRows - 1, seg);
+    const r1 = ringVertexIndex(totalRows - 1, seg + 1);
+    indices.push(r0, r1, apexCenterIndex);
   }
 
   const geometry = new THREE.BufferGeometry();
