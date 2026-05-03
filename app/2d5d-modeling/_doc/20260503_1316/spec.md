@@ -298,18 +298,22 @@ view RBF / anim RBF は引き続き Gaussian RBF。`affine` の 6 成分は **�
 
 ## 6. 補間アルゴリズム
 
-### 6.1 view RBF（直前 spec から流用、補間対象を変更）
+### 6.1 view RBF（exact interpolation）
 
-球面距離 + Gaussian:
+球面距離 + Gaussian の exact RBF interpolation:
 
 ```
-angle_i = great_circle_distance(camera_dir, keyframe_i_dir)
-weight_i = exp(-(angle_i / σ)²)
-result = Σ weight_i × value_i / Σ weight_i
+kernel(a, b) = exp(-(great_circle_distance(a, b) / σ)²)
+K[i][j]       = kernel(kf_i, kf_j)        (n×n)、対角に小さなリッジを足す
+k_i           = kernel(query, kf_i)        (n)
+weight        = K^-1 · k                   (Σw≠1。kf_i 角度では w = e_i)
+result        = Σ weight_i × value_i
 ```
+
+正規化重みではなく **線形システムを解く** ことで、各 keyframe の角度で query するとその keyframe の値が完全に再現される。間の補間は通常の Gaussian RBF と同じ滑らかさだが、weight は [0, 1] に収まらない（負や 1 超過もあり得る）。
 
 補間対象:
-- パーツ: `shape.basePoints[]` の各成分、`affine` の 6 成分、`alpha`、`visible`（重み 0.5 を閾値に bool）
+- パーツ: `shape.basePoints[]` の各成分、`affine` の 6 成分、`alpha`、`visible`（最大重み keyframe の値を採用）
 - ルートグループ: `anchor` の 3 成分、`affine` の 6 成分、`alpha`、`visible`
 - 子グループ: `affine` の 6 成分、`alpha`、`visible`
 

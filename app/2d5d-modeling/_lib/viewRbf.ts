@@ -31,8 +31,19 @@ const sphericalAngleDistance = (
   return Math.acos(dot);
 };
 
-// Gaussian RBF weights for view keyframes. Returns weights normalized to sum
-// to 1. For 0 keyframes returns []; for 1, returns [1].
+// Gaussian RBF weights for view keyframes computed by EXACT interpolation:
+// solve `K w = k(query)` where K[i][j] = kernel(kf_i, kf_j) and k_i =
+// kernel(query, kf_i). This guarantees that querying exactly at any
+// keyframe's (yaw, pitch) returns that keyframe's stored value untouched
+// by the others — the property the previous "normalize Σw to 1" form
+// silently broke (a 90°-away keyframe still leaked ~1% influence at the
+// other keyframe's angle).
+//
+// Tiny ridge `RIDGE` is added to K's diagonal so the system stays solvable
+// when two keyframes happen to share angles. Returns [] for 0 keyframes
+// and [1] for 1.
+const RIDGE = 1e-8;
+
 export const viewRbfWeights = (
   keyframes: { yaw: number; pitch: number }[],
   yaw: number,
@@ -46,19 +57,88 @@ export const viewRbfWeights = (
   const sigmaRad = (sigmaDeg * Math.PI) / 180;
   const inv2Sigma2 = 1 / (2 * sigmaRad * sigmaRad);
 
-  const dists = keyframes.map((k) =>
-    sphericalAngleDistance(k.yaw, k.pitch, yaw, pitch),
-  );
-  const dMin = Math.min(...dists);
-  const raw = dists.map((d) => Math.exp(-((d - dMin) ** 2) * inv2Sigma2));
-  const sum = raw.reduce((a, b) => a + b, 0);
-  if (sum === 0) {
-    const idx = dists.indexOf(dMin);
-    const out = new Array(n).fill(0);
-    out[idx] = 1;
-    return out;
+  // K matrix: kernel between every pair of keyframes (symmetric).
+  const K: number[][] = [];
+  for (let i = 0; i < n; i++) {
+    K.push(new Array(n));
+    for (let j = 0; j < n; j++) {
+      if (i === j) {
+        K[i][j] = 1 + RIDGE;
+        continue;
+      }
+      const d = sphericalAngleDistance(
+        keyframes[i].yaw,
+        keyframes[i].pitch,
+        keyframes[j].yaw,
+        keyframes[j].pitch,
+      );
+      K[i][j] = Math.exp(-(d * d) * inv2Sigma2);
+    }
   }
-  return raw.map((r) => r / sum);
+
+  // k vector: kernel between the query angle and each keyframe.
+  const k = keyframes.map((kf) => {
+    const d = sphericalAngleDistance(kf.yaw, kf.pitch, yaw, pitch);
+    return Math.exp(-(d * d) * inv2Sigma2);
+  });
+
+  // Solve K w = k via Gaussian elimination on the augmented matrix [K | k].
+  return solveLinearSystem(K, k);
+};
+
+// Gauss-Jordan elimination with partial pivoting. Mutates A and b in place.
+// Caller passes copies if needed; here viewRbfWeights builds fresh arrays
+// every call.
+const solveLinearSystem = (A: number[][], b: number[]): number[] => {
+  const n = b.length;
+  // Augmented matrix [A | b].
+  const M: number[][] = A.map((row, i) => [...row, b[i]]);
+
+  for (let col = 0; col < n; col++) {
+    // Find pivot: largest absolute value in this column at or below the
+    // current row.
+    let pivot = col;
+    let maxAbs = Math.abs(M[col][col]);
+    for (let r = col + 1; r < n; r++) {
+      const v = Math.abs(M[r][col]);
+      if (v > maxAbs) {
+        maxAbs = v;
+        pivot = r;
+      }
+    }
+    if (maxAbs < 1e-12) {
+      // Singular system — fall back to "use the nearest keyframe with
+      // weight 1, others 0". Shouldn't happen with the ridge term but
+      // guard for safety.
+      const out = new Array(n).fill(0);
+      let bestIdx = 0;
+      let bestVal = -Infinity;
+      for (let i = 0; i < n; i++) {
+        if (b[i] > bestVal) {
+          bestVal = b[i];
+          bestIdx = i;
+        }
+      }
+      out[bestIdx] = 1;
+      return out;
+    }
+    if (pivot !== col) {
+      const tmp = M[col];
+      M[col] = M[pivot];
+      M[pivot] = tmp;
+    }
+    // Normalize the pivot row so M[col][col] = 1.
+    const inv = 1 / M[col][col];
+    for (let j = col; j <= n; j++) M[col][j] *= inv;
+    // Eliminate in every other row.
+    for (let r = 0; r < n; r++) {
+      if (r === col) continue;
+      const factor = M[r][col];
+      if (factor === 0) continue;
+      for (let j = col; j <= n; j++) M[r][j] -= factor * M[col][j];
+    }
+  }
+  return M.map((row) => row[n]);
 };
 
 // ===== blending helpers =====
@@ -82,12 +162,21 @@ const blendVec3 = (vs: Vec3[], weights: number[]): Vec3 => {
   return [x, y, z];
 };
 
+// Exact-interpolation weights are not bounded to [0, 1] (they may be
+// slightly negative or exceed 1 between keyframes), so a linear "weighted
+// 0/1 sum" doesn't make sense for a boolean. Take the visibility of the
+// keyframe with the largest weight as the answer — this matches the
+// nearest-keyframe intuition the editor uses elsewhere.
 const blendVisible = (flags: boolean[], weights: number[]): boolean => {
-  let acc = 0;
+  let bestIdx = 0;
+  let bestWeight = -Infinity;
   for (let i = 0; i < flags.length; i++) {
-    acc += (flags[i] ? 1 : 0) * weights[i];
+    if (weights[i] > bestWeight) {
+      bestWeight = weights[i];
+      bestIdx = i;
+    }
   }
-  return acc >= 0.5;
+  return flags[bestIdx] ?? true;
 };
 
 const blendBasePoints = (
