@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type CatmullRomSample, sampleCatmullRom1D } from "../_lib/catmullRom";
 import type { HeadMesh } from "../_lib/types";
 
 interface Props {
@@ -205,25 +206,56 @@ const CurveCanvas = ({
     };
   }, [dragging, writeValue, screenToValue]);
 
-  // Build the silhouette path for visualization (closed loop: right side
-  // top-to-bottom, then left side bottom-to-top).
+  // Build the silhouette path for visualization. Densely sample the same
+  // Catmull-Rom curve that headMeshBuild uses so the editor's display matches
+  // the 3D mesh's actual silhouette (the previous version connected control
+  // points with straight lines, which made every pole look angular).
   const path = useMemo(() => {
     if (sortedIndices.length === 0) return "";
     const px = (xVal: number) => view.cx + xVal * view.scale;
     const py = (yVal: number) => view.cy - yVal * view.scale;
+
+    // Build CatmullRom inputs sorted by Y ascending (the spline expects
+    // monotonic t).
+    const ascending = [...sortedIndices].reverse();
+    const buildSamples = (side: Side): CatmullRomSample[] =>
+      ascending.map((idx) => ({
+        t: head.ySamples[idx],
+        value: getCurveValue(head, idx, side),
+      }));
+    const rightSamples = buildSamples(rightKey);
+    const leftSamples = buildSamples(leftKey);
+
+    const yMin = head.ySamples[ascending[0]];
+    const yMax = head.ySamples[ascending[ascending.length - 1]];
+    const STEPS = 60;
     const cmds: string[] = [];
-    sortedIndices.forEach((idx, j) => {
-      const y = head.ySamples[idx];
-      const xVal = getCurveValue(head, idx, rightKey);
-      cmds.push(
-        `${j === 0 ? "M" : "L"} ${px(xVal).toFixed(2)} ${py(y).toFixed(2)}`,
+    // Right side: top-to-bottom.
+    for (let s = 0; s <= STEPS; s++) {
+      const u = s / STEPS;
+      const y = yMax + (yMin - yMax) * u;
+      const x = sampleCatmullRom1D(
+        rightSamples,
+        y,
+        head.catmullRomTension,
+        true,
       );
-    });
-    [...sortedIndices].reverse().forEach((idx) => {
-      const y = head.ySamples[idx];
-      const xVal = getCurveValue(head, idx, leftKey);
-      cmds.push(`L ${px(xVal).toFixed(2)} ${py(y).toFixed(2)}`);
-    });
+      cmds.push(
+        `${s === 0 ? "M" : "L"} ${px(x).toFixed(2)} ${py(y).toFixed(2)}`,
+      );
+    }
+    // Left side: bottom-to-top.
+    for (let s = 0; s <= STEPS; s++) {
+      const u = s / STEPS;
+      const y = yMin + (yMax - yMin) * u;
+      const x = sampleCatmullRom1D(
+        leftSamples,
+        y,
+        head.catmullRomTension,
+        true,
+      );
+      cmds.push(`L ${px(x).toFixed(2)} ${py(y).toFixed(2)}`);
+    }
     cmds.push("Z");
     return cmds.join(" ");
   }, [head, sortedIndices, leftKey, rightKey, view]);

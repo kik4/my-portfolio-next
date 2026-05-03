@@ -39,10 +39,10 @@ export const buildHeadGeometry = (head: HeadMesh): THREE.BufferGeometry => {
   const yMin = ySorted[0];
   const yMax = ySorted[ySorted.length - 1];
 
-  // Sample evenly between yMin and yMax. The poles (apex / chin) are now
-  // ordinary rings rather than collapsed-to-a-point caps, so we use the
-  // standard Catmull-Rom clamp (mirrorEnds=false) — the head tapers naturally
-  // by whatever halfX / zFront / zBack values the user picked at the poles.
+  // Sample evenly between yMin and yMax. mirrorEnds=true gives the spline a
+  // steeper tangent at each pole (phantom value = -inner-neighbour) than the
+  // default clamp, which keeps the head's silhouette rounded into the cap
+  // instead of flaring out into a polygonal-looking edge near the poles.
   type Row = { y: number; halfX: number; zFront: number; zBack: number };
   const rows: Row[] = [];
   for (let row = 0; row < LATITUDE_DENSITY; row++) {
@@ -50,9 +50,9 @@ export const buildHeadGeometry = (head: HeadMesh): THREE.BufferGeometry => {
     const y = yMin + (yMax - yMin) * u;
     rows.push({
       y,
-      halfX: sampleCatmullRom1D(halfXSamples, y, catmullRomTension, false),
-      zFront: sampleCatmullRom1D(zFrontSamples, y, catmullRomTension, false),
-      zBack: sampleCatmullRom1D(zBackSamples, y, catmullRomTension, false),
+      halfX: sampleCatmullRom1D(halfXSamples, y, catmullRomTension, true),
+      zFront: sampleCatmullRom1D(zFrontSamples, y, catmullRomTension, true),
+      zBack: sampleCatmullRom1D(zBackSamples, y, catmullRomTension, true),
     });
   }
 
