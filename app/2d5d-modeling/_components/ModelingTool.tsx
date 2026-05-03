@@ -502,7 +502,6 @@ export const ModelingTool = () => {
                         );
                         return {
                           ...g,
-                          anchor: next,
                           viewKeyframes: g.viewKeyframes.map((k, i) =>
                             i === idx ? { ...k, anchor: next } : k,
                           ),

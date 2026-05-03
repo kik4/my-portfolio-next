@@ -76,11 +76,12 @@ interface GroupBase {
   rbfSigmaAnim: number;
 }
 
-// Root group: lives in 3D, holds the billboard anchor for its descendant
-// parts. parentId === null marks it as a root.
+// Root group: lives in 3D, holds the billboard for its descendant parts.
+// parentId === null marks it as a root. The actual world-space anchor is
+// stored per-viewKeyframe so it can be interpolated by yaw/pitch — there's
+// no top-level anchor on the group itself.
 export interface RootGroup extends GroupBase {
   parentId: null;
-  anchor: Vec3;
   viewKeyframes: RootGroupViewKeyframe[];
   animKeyframes: RootGroupAnimKeyframe[];
 }

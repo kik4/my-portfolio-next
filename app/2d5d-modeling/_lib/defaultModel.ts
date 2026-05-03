@@ -81,7 +81,6 @@ export const buildDefaultRootGroup = (
   name,
   parentId: null,
   visible: true,
-  anchor,
   viewKeyframes: [
     {
       id: `gvk-${id}-default`,

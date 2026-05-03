@@ -93,8 +93,9 @@ interface FaceModel {
 不変条件:
 - 全 `Part.groupId` は `groups` 内のいずれかの id を指す（オーファン禁止）
 - グループツリーにサイクルなし
-- ルート（`parentId == null`）グループのみ `anchor` フィールドを持つ
-- 非ルートグループは `anchor` フィールドを持たない
+- ルート（`parentId == null`）グループの view keyframe のみ `anchor` を持つ
+- 非ルートグループの view keyframe は `anchor` を持たない
+- グループ自身（top-level の RootGroup / ChildGroup どちらも）には `anchor` フィールドはない（位置は viewKeyframes[].anchor で view 軸補間される）
 
 ### 4.2 Part（純 2D）
 
@@ -150,8 +151,8 @@ interface RootGroup {
   name: string;
   parentId: null;
   visible: boolean;
-  anchor: [number, number, number];        // 3D world position（ルートのみ）
-  // view × anim 二軸補間の対象
+  // 3D world position は viewKeyframes[].anchor のみが持つ（補間の対象）。
+  // RootGroup 自体には anchor フィールドを持たせない。
   viewKeyframes: RootGroupViewKeyframe[];
   animKeyframes: RootGroupAnimKeyframe[];
   rbfSigmaView: number;
