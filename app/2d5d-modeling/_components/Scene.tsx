@@ -5,15 +5,15 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import type { FaceModel } from "../_lib/types";
-import { HeadMesh } from "./HeadMesh";
+import { HeadMesh, type ShadingMode } from "./HeadMesh";
 import { Parts } from "./Parts";
 
 interface Props {
   model: FaceModel;
   showAxes: boolean;
   showGrid: boolean;
-  // When true, the head mesh renders with flat (per-face) shading.
-  flatShading?: boolean;
+  // Head mesh shading: smooth (default), flat (per-face), or toon (cel).
+  shadingMode?: ShadingMode;
   // Called every frame with the current camera (yaw, pitch) in degrees in
   // interactive mode. Ignored in fixed mode.
   onCameraChange?: (yaw: number, pitch: number) => void;
@@ -41,7 +41,7 @@ export const Scene = ({
   model,
   showAxes,
   showGrid,
-  flatShading = false,
+  shadingMode = "smooth",
   onCameraChange,
   fixedView,
   cameraDistance = DEFAULT_DISTANCE,
@@ -86,7 +86,7 @@ export const Scene = ({
       <ambientLight intensity={0.6} />
       <directionalLight position={[2, 3, 4]} intensity={0.8} />
 
-      <HeadMesh head={model.head} flatShading={flatShading} />
+      <HeadMesh head={model.head} shadingMode={shadingMode} />
       <Parts
         parts={model.parts}
         groups={model.groups}

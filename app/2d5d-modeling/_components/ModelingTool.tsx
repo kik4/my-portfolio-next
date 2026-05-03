@@ -19,6 +19,7 @@ import { useHistory } from "../_lib/useHistory";
 import { AnchorGizmo } from "./AnchorGizmo";
 import { GroupEditor } from "./GroupEditor";
 import { HeadCurveEditor } from "./HeadCurveEditor";
+import type { ShadingMode } from "./HeadMesh";
 import { MultiView } from "./MultiView";
 import { PartEditor } from "./PartEditor";
 import { PartTree, type Selection } from "./PartTree";
@@ -40,10 +41,10 @@ export const ModelingTool = () => {
   const [hydrated, setHydrated] = useState(false);
   const [showAxes, setShowAxes] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
-  // Local UI toggle (not persisted with the model). Switches the head mesh
-  // material between smooth (interpolated vertex normals) and flat (per-face
-  // normals via dFdx/dFdy in the shader).
-  const [flatShading, setFlatShading] = useState(false);
+  // Local UI mode (not persisted with the model). Switches the head mesh
+  // material between smooth (interpolated vertex normals), flat (per-face
+  // normals via dFdx/dFdy), and toon (cel-shaded with a 3-step gradient).
+  const [shadingMode, setShadingMode] = useState<ShadingMode>("smooth");
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [resizing, setResizing] = useState(false);
   const [cameraYaw, setCameraYaw] = useState(0);
@@ -374,12 +375,16 @@ export const ModelingTool = () => {
             グリッド
           </label>
           <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={flatShading}
-              onChange={(e) => setFlatShading(e.target.checked)}
-            />
-            フラットシェーディング
+            <span>シェーディング</span>
+            <select
+              value={shadingMode}
+              onChange={(e) => setShadingMode(e.target.value as ShadingMode)}
+              className="rounded border bg-white px-1 text-xs"
+            >
+              <option value="smooth">スムーズ</option>
+              <option value="flat">フラット</option>
+              <option value="toon">セル (3 段)</option>
+            </select>
           </label>
         </div>
 
@@ -476,7 +481,7 @@ export const ModelingTool = () => {
           model={model}
           showAxes={showAxes}
           showGrid={showGrid}
-          flatShading={flatShading}
+          shadingMode={shadingMode}
           onCameraChange={(y, p) => {
             setCameraYaw(y);
             setCameraPitch(p);

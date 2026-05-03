@@ -1,6 +1,7 @@
 "use client";
 
 import type { FaceModel } from "../_lib/types";
+import type { ShadingMode } from "./HeadMesh";
 import { Scene } from "./Scene";
 
 interface Props {
@@ -8,7 +9,7 @@ interface Props {
   showAxes: boolean;
   showGrid: boolean;
   // Forwarded to every Scene (main + minis) so head shading mode is uniform.
-  flatShading?: boolean;
+  shadingMode?: ShadingMode;
   onCameraChange: (yaw: number, pitch: number) => void;
   // Same render-prop as Scene.renderOverlay, but only invoked for the main
   // interactive view. Mini views never get an overlay so the gizmos don't
@@ -33,7 +34,7 @@ export const MultiView = ({
   model,
   showAxes,
   showGrid,
-  flatShading = false,
+  shadingMode = "smooth",
   onCameraChange,
   renderMainOverlay,
   snapRequest,
@@ -51,7 +52,7 @@ export const MultiView = ({
               model={model}
               showAxes={false}
               showGrid={false}
-              flatShading={flatShading}
+              shadingMode={shadingMode}
               fixedView={{ yaw: v.yaw, pitch: v.pitch }}
             />
             <span className="pointer-events-none absolute top-0.5 left-1 text-[10px] text-gray-600">
@@ -66,7 +67,7 @@ export const MultiView = ({
           model={model}
           showAxes={showAxes}
           showGrid={showGrid}
-          flatShading={flatShading}
+          shadingMode={shadingMode}
           onCameraChange={onCameraChange}
           renderOverlay={renderMainOverlay}
           snapRequest={snapRequest}
