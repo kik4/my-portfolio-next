@@ -165,23 +165,24 @@ const CurveCanvas = ({
       if (target === "y") {
         next.ySamples[idx] = value.y;
       } else if (target === "right") {
-        const v = Math.max(value.x, 0);
-        if (rightKey === "halfX") next.frontHalfXs[idx] = v;
-        // Side view: right of midline = back of head. Stored as negative Z.
-        if (rightKey === "zBack") next.sideZBacks[idx] = -v;
+        if (rightKey === "halfX") {
+          // Front view halves are mirrored, so collapse onto the positive
+          // half: the right handle stays X >= 0 by construction.
+          next.frontHalfXs[idx] = Math.max(value.x, 0);
+        }
+        // Side view: right handle drives zBack with no half-plane clamp,
+        // because zFront and zBack are independent — letting the chin's
+        // back point swing past the Y axis is desirable for jutted profiles.
+        if (rightKey === "zBack") next.sideZBacks[idx] = -value.x;
         next.ySamples[idx] = value.y;
       } else if (target === "left") {
-        const v = Math.min(value.x, 0);
         if (leftKey === "mirroredHalfX") {
-          // Front view's left half mirrors halfX; the canonical halfX is
-          // |v|, and X >= 0 in the data model.
-          next.frontHalfXs[idx] = Math.abs(v);
+          // Front view's left half mirrors halfX; canonical halfX is |v|.
+          next.frontHalfXs[idx] = Math.abs(Math.min(value.x, 0));
         }
-        // Side view: left of midline = front of face. Stored as positive Z,
-        // so flip the screen-X sign back.
-        if (leftKey === "zFront") {
-          next.sideZFronts[idx] = -v;
-        }
+        // Side view: left handle drives zFront. No half-plane clamp for
+        // the same reason as above.
+        if (leftKey === "zFront") next.sideZFronts[idx] = -value.x;
         next.ySamples[idx] = value.y;
       }
       onChange(next);

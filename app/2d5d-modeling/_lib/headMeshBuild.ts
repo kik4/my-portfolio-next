@@ -14,15 +14,17 @@ const LATITUDE_DENSITY = 40;
 // its 2D drawing of the path.
 export const CAP_DOME_RATIO = 0.25;
 
-// The Y-distance from the pole ring to the cap center vertex. Positive
-// always — callers add it to apexRow.y or subtract from chinRow.y.
+// The Y-distance from the pole ring to the cap center vertex. Negative
+// inputs are taken as absolute values so the lift stays well-defined even
+// when the user pulled an end ring's controls past the Y axis (which makes
+// halfX/zFront/zBack signed in the data model).
 export const capLift = (row: {
   halfX: number;
   zFront: number;
   zBack: number;
 }): number => {
-  const a = Math.max(row.halfX, 0);
-  const b = Math.max((row.zFront - row.zBack) * 0.5, 0);
+  const a = Math.abs(row.halfX);
+  const b = Math.abs((row.zFront - row.zBack) * 0.5);
   return (a + b) * 0.5 * CAP_DOME_RATIO;
 };
 
@@ -86,17 +88,21 @@ export const buildHeadGeometry = (head: HeadMesh): THREE.BufferGeometry => {
   const ringStride = ringSegments + 1;
 
   // Emit one ring's vertices at row index `row`.
+  // halfX, zFront-center, center-zBack are used as ellipse radii. They're
+  // not clamped to 0 here, so a user pulling the side editor's chin handle
+  // past the Y axis (zFront going negative or zBack going positive) lets
+  // the ring stretch / invert; the surface twists rather than the editor
+  // silently rejecting the motion.
   const emitRing = (row: number) => {
     const { y, halfX, zFront, zBack } = rows[row];
-    const a = Math.max(halfX, 0);
     const center = (zFront + zBack) * 0.5;
-    const bFront = Math.max(zFront - center, 0);
-    const bBack = Math.max(center - zBack, 0);
+    const bFront = zFront - center;
+    const bBack = center - zBack;
     for (let seg = 0; seg <= ringSegments; seg++) {
       const theta = (seg / ringSegments) * Math.PI * 2;
       const sinT = Math.sin(theta);
       const cosT = Math.cos(theta);
-      const x = a * sinT;
+      const x = halfX * sinT;
       // Front half of the ellipse (cos >= 0) uses bFront, back half uses bBack.
       const z = center + (cosT >= 0 ? bFront : bBack) * cosT;
       positions.push(x, y, z);
