@@ -298,19 +298,25 @@ view RBF / anim RBF は引き続き Gaussian RBF。`affine` の 6 成分は **�
 
 ## 6. 補間アルゴリズム
 
-### 6.1 view RBF（exact interpolation）
+### 6.1 view RBF（exact interpolation, base-relative）
 
-球面距離 + Gaussian の exact RBF interpolation:
+`viewKeyframes[0]` を base frame として扱い、他の keyframe は base からの差分として補間する。これにより、どの keyframe の角度で query してもその keyframe の値が完全に再現され、かつどの keyframe からも遠い角度では base に引き寄せられる。
 
 ```
 kernel(a, b) = exp(-(great_circle_distance(a, b) / σ)²)
 K[i][j]       = kernel(kf_i, kf_j)        (n×n)、対角に小さなリッジを足す
 k_i           = kernel(query, kf_i)        (n)
 weight        = K^-1 · k                   (Σw≠1。kf_i 角度では w = e_i)
-result        = Σ weight_i × value_i
+
+base = kf_0.value
+result = base + Σ weight_i × (kf_i.value - base)
+       = (1 - Σ weight) × base + Σ weight_i × kf_i.value
 ```
 
-正規化重みではなく **線形システムを解く** ことで、各 keyframe の角度で query するとその keyframe の値が完全に再現される。間の補間は通常の Gaussian RBF と同じ滑らかさだが、weight は [0, 1] に収まらない（負や 1 超過もあり得る）。
+性質:
+- query が kf_0 の角度: weight = e_0、`result = base × (1 - 1) + 1 × base = base`。
+- query が kf_j (j > 0) の角度: weight = e_j、`result = (1 - 1) × base + 1 × kf_j.value = kf_j.value`。
+- query がどの keyframe からも遠い: Σ weight が 0 に近づき、`result ≈ base`（base に引き寄せられる）。
 
 補間対象:
 - パーツ: `shape.basePoints[]` の各成分、`affine` の 6 成分、`alpha`、`visible`（最大重み keyframe の値を採用）

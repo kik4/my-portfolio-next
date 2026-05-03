@@ -1,4 +1,4 @@
-import { AFFINE_IDENTITY, type AffineMatrix, blendAffines } from "./affine";
+import { AFFINE_IDENTITY, type AffineMatrix } from "./affine";
 import type {
   ChildGroupViewKeyframe,
   PartViewKeyframe,
@@ -142,17 +142,41 @@ const solveLinearSystem = (A: number[][], b: number[]): number[] => {
 };
 
 // ===== blending helpers =====
+//
+// Convention: all blend functions interpret `keyframes[0]` as the base
+// frame and the remaining keyframes' values as deltas relative to it.
+// Concretely they compute `base + Σ w_i × (values[i] - base)`, which
+// rearranges to `(1 - Σ w) × values[0] + Σ w_i × values[i]`. With exact
+// RBF weights, querying at kf_0's angle yields w_0 = 1, w_{i>0} = 0, so
+// `(1 - 1) × base + 1 × base = base` — no leakage from the other frames.
+// At kf_j's (j > 0) angle, w_j = 1 and the others = 0, giving kf_j's
+// stored value back. In between, the interpolation gravitates toward
+// the base frame whenever Σ w < 1 (which is what exact RBF naturally does
+// far from any keyframe).
+
+const sumWeights = (weights: number[]): number => {
+  let s = 0;
+  for (let i = 0; i < weights.length; i++) s += weights[i];
+  return s;
+};
 
 const blendScalar = (values: number[], weights: number[]): number => {
-  let acc = 0;
+  if (values.length === 0) return 0;
+  const base = values[0];
+  const wSum = sumWeights(weights);
+  let acc = (1 - wSum) * base;
   for (let i = 0; i < values.length; i++) acc += values[i] * weights[i];
   return acc;
 };
 
 const blendVec3 = (vs: Vec3[], weights: number[]): Vec3 => {
-  let x = 0;
-  let y = 0;
-  let z = 0;
+  if (vs.length === 0) return [0, 0, 0];
+  const base = vs[0];
+  const wSum = sumWeights(weights);
+  const f = 1 - wSum;
+  let x = f * base[0];
+  let y = f * base[1];
+  let z = f * base[2];
   for (let i = 0; i < vs.length; i++) {
     const w = weights[i];
     x += vs[i][0] * w;
@@ -160,6 +184,30 @@ const blendVec3 = (vs: Vec3[], weights: number[]): Vec3 => {
     z += vs[i][2] * w;
   }
   return [x, y, z];
+};
+
+const blendAffinesView = (
+  affines: AffineMatrix[],
+  weights: number[],
+): AffineMatrix => {
+  if (affines.length === 0) return [...AFFINE_IDENTITY] as AffineMatrix;
+  const base = affines[0];
+  const wSum = sumWeights(weights);
+  const f = 1 - wSum;
+  const out: AffineMatrix = [
+    f * base[0],
+    f * base[1],
+    f * base[2],
+    f * base[3],
+    f * base[4],
+    f * base[5],
+  ];
+  for (let i = 0; i < affines.length; i++) {
+    const w = weights[i];
+    const m = affines[i];
+    for (let k = 0; k < 6; k++) out[k] += m[k] * w;
+  }
+  return out;
 };
 
 // Exact-interpolation weights are not bounded to [0, 1] (they may be
@@ -184,10 +232,15 @@ const blendBasePoints = (
   weights: number[],
   pointCount: number,
 ): Vec2[] => {
+  if (perKf.length === 0) return [];
+  const baseFrame = perKf[0];
+  const wSum = sumWeights(weights);
+  const f = 1 - wSum;
   const out: Vec2[] = [];
   for (let p = 0; p < pointCount; p++) {
-    let x = 0;
-    let y = 0;
+    const basePt = baseFrame[p] ?? [0, 0];
+    let x = f * basePt[0];
+    let y = f * basePt[1];
     for (let i = 0; i < perKf.length; i++) {
       const pt = perKf[i][p] ?? [0, 0];
       x += pt[0] * weights[i];
@@ -239,7 +292,7 @@ export const interpolatePartViewKeyframes = (
       ),
       closed: keyframes[0].shape.closed,
     },
-    affine: blendAffines(
+    affine: blendAffinesView(
       keyframes.map((k) => k.affine),
       weights,
     ),
@@ -292,7 +345,7 @@ export const interpolateRootGroupViewKeyframes = (
       keyframes.map((k) => k.anchor),
       weights,
     ),
-    affine: blendAffines(
+    affine: blendAffinesView(
       keyframes.map((k) => k.affine),
       weights,
     ),
@@ -338,7 +391,7 @@ export const interpolateChildGroupViewKeyframes = (
   }
   const weights = viewRbfWeights(keyframes, yaw, pitch, sigmaDeg);
   return {
-    affine: blendAffines(
+    affine: blendAffinesView(
       keyframes.map((k) => k.affine),
       weights,
     ),
