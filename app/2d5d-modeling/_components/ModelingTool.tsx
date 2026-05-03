@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   buildDefaultChildGroup,
   buildDefaultFaceModel,
@@ -13,10 +13,12 @@ import {
   saveFaceModelToLocalStorage,
   serializeFaceModel,
 } from "../_lib/jsonIO";
-import type { FaceModel } from "../_lib/types";
+import type { FaceModel, Group, Part } from "../_lib/types";
 import { useHistory } from "../_lib/useHistory";
+import { GroupEditor } from "./GroupEditor";
 import { HeadCurveEditor } from "./HeadCurveEditor";
 import { MultiView } from "./MultiView";
+import { PartEditor } from "./PartEditor";
 import { PartTree, type Selection } from "./PartTree";
 
 // Phase 1 of the v4 spec: enough UI to confirm that the new schema renders
@@ -42,6 +44,8 @@ export const ModelingTool = () => {
   const [cameraPitch, setCameraPitch] = useState(0);
   // Single selection across the whole tree: a part or a group, or nothing.
   const [selection, setSelection] = useState<Selection>(null);
+  // Per-selection keyframe editing index. Reset when the selection changes.
+  const [editingKfIndex, setEditingKfIndex] = useState(0);
 
   useEffect(() => {
     const loaded = loadFaceModelFromLocalStorage();
@@ -107,6 +111,47 @@ export const ModelingTool = () => {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [undo, redo]);
+
+  // Reset the keyframe editor index when selection changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: selection trigger only
+  useEffect(() => {
+    setEditingKfIndex(0);
+  }, [selection?.kind, selection?.id]);
+
+  const updatePart = useCallback(
+    (id: string, mut: (p: Part) => Part) => {
+      commit((m) => ({
+        ...m,
+        parts: m.parts.map((p) => (p.id === id ? mut(p) : p)),
+      }));
+    },
+    [commit],
+  );
+
+  const updateGroup = useCallback(
+    (id: string, mut: (g: Group) => Group) => {
+      commit((m) => ({
+        ...m,
+        groups: m.groups.map((g) => (g.id === id ? mut(g) : g)),
+      }));
+    },
+    [commit],
+  );
+
+  const selectedPart = useMemo<Part | null>(
+    () =>
+      selection?.kind === "part"
+        ? (model.parts.find((p) => p.id === selection.id) ?? null)
+        : null,
+    [model.parts, selection],
+  );
+  const selectedGroup = useMemo<Group | null>(
+    () =>
+      selection?.kind === "group"
+        ? (model.groups.find((g) => g.id === selection.id) ?? null)
+        : null,
+    [model.groups, selection],
+  );
 
   // ===== structure mutations =====
 
@@ -331,11 +376,29 @@ export const ModelingTool = () => {
             onReparentPart={reparentPart}
           />
         </div>
-        {selection && (
-          <p className="mb-4 text-gray-500 text-xs">
-            選択中: {selection.kind} / {selection.id}
-            （詳細編集 UI は次の Phase で追加）
-          </p>
+        {selectedPart && (
+          <div className="mb-4">
+            <PartEditor
+              part={selectedPart}
+              updatePart={updatePart}
+              editingKfIndex={editingKfIndex}
+              setEditingKfIndex={setEditingKfIndex}
+              cameraYaw={cameraYaw}
+              cameraPitch={cameraPitch}
+            />
+          </div>
+        )}
+        {selectedGroup && (
+          <div className="mb-4">
+            <GroupEditor
+              group={selectedGroup}
+              updateGroup={updateGroup}
+              editingKfIndex={editingKfIndex}
+              setEditingKfIndex={setEditingKfIndex}
+              cameraYaw={cameraYaw}
+              cameraPitch={cameraPitch}
+            />
+          </div>
         )}
 
         <div className="mt-4 space-y-2 border-t pt-4">
