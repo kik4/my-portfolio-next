@@ -1,6 +1,5 @@
 "use client";
 
-import type * as THREE from "three";
 import type { FaceModel } from "../_lib/types";
 import { Scene } from "./Scene";
 
@@ -12,11 +11,7 @@ interface Props {
   // Same render-prop as Scene.renderOverlay, but only invoked for the main
   // interactive view. Mini views never get an overlay so the gizmos don't
   // multiply across canvases.
-  renderMainOverlay?: (ctx: {
-    headMesh: THREE.Mesh;
-    yaw: number;
-    pitch: number;
-  }) => React.ReactNode;
+  renderMainOverlay?: (ctx: { yaw: number; pitch: number }) => React.ReactNode;
   // Forwarded straight to the main Scene's snapRequest. Mini views ignore it
   // since they're already locked to their own fixedView.
   snapRequest?: { yaw: number; pitch: number };

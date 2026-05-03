@@ -2,7 +2,7 @@
 
 import { OrbitControls } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import type { FaceModel } from "../_lib/types";
 import { HeadMesh } from "./HeadMesh";
@@ -23,13 +23,9 @@ interface Props {
   // Field of view in degrees. Defaults to 35.
   cameraFov?: number;
   // Render-prop hook that lets the parent insert extra scene-graph nodes
-  // (e.g. an anchor gizmo on the main view) once the head mesh is ready.
-  // Receives current yaw/pitch so the inserted node can react to the camera.
-  renderOverlay?: (ctx: {
-    headMesh: THREE.Mesh;
-    yaw: number;
-    pitch: number;
-  }) => React.ReactNode;
+  // (e.g. an anchor gizmo on the main view). Receives current yaw/pitch so
+  // the inserted node can react to the camera.
+  renderOverlay?: (ctx: { yaw: number; pitch: number }) => React.ReactNode;
   // When this object's identity changes, the interactive camera teleports to
   // the given (yaw, pitch). Use a fresh object literal each request so the
   // hook fires even if the angles repeat. Ignored in fixed mode.
@@ -50,15 +46,6 @@ export const Scene = ({
   renderOverlay,
   snapRequest,
 }: Props) => {
-  const headMeshRef = useRef<THREE.Mesh | null>(null);
-  const [headMesh, setHeadMesh] = useState<THREE.Mesh | null>(null);
-  // r3f reattaches refs every render, so a fresh inline callback would flip
-  // between (mesh) and (null) and re-trigger setHeadMesh on every commit.
-  // Stabilizing with useCallback keeps the ref identity steady.
-  const setHeadMeshRef = useCallback((mesh: THREE.Mesh | null) => {
-    headMeshRef.current = mesh;
-    setHeadMesh((prev) => (prev === mesh ? prev : mesh));
-  }, []);
   // In interactive mode the camera tracker drives these. In fixed mode they
   // come straight from props (no per-frame update needed).
   const [yaw, setYaw] = useState(fixedView?.yaw ?? 0);
@@ -96,7 +83,7 @@ export const Scene = ({
       <ambientLight intensity={0.6} />
       <directionalLight position={[2, 3, 4]} intensity={0.8} />
 
-      <HeadMesh head={model.head} ref={setHeadMeshRef} />
+      <HeadMesh head={model.head} />
       <Parts
         parts={model.parts}
         groups={model.groups}
@@ -104,7 +91,7 @@ export const Scene = ({
         pitch={pitch}
         animParams={model.currentAnimParams}
       />
-      {headMesh && renderOverlay?.({ headMesh, yaw, pitch })}
+      {renderOverlay?.({ yaw, pitch })}
 
       {showAxes && <axesHelper args={[1.5]} />}
       {showGrid && <gridHelper args={[4, 8]} />}

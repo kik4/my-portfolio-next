@@ -13,8 +13,10 @@ import {
   saveFaceModelToLocalStorage,
   serializeFaceModel,
 } from "../_lib/jsonIO";
-import type { FaceModel, Group, Part } from "../_lib/types";
+import type { FaceModel, Group, Part, Vec3 } from "../_lib/types";
+import { isRootGroup } from "../_lib/types";
 import { useHistory } from "../_lib/useHistory";
+import { AnchorGizmo } from "./AnchorGizmo";
 import { GroupEditor } from "./GroupEditor";
 import { HeadCurveEditor } from "./HeadCurveEditor";
 import { MultiView } from "./MultiView";
@@ -455,6 +457,32 @@ export const ModelingTool = () => {
             setCameraYaw(y);
             setCameraPitch(p);
           }}
+          renderMainOverlay={
+            selectedGroup && isRootGroup(selectedGroup)
+              ? () => (
+                  <AnchorGizmo
+                    group={selectedGroup}
+                    editingKfIndex={editingKfIndex}
+                    onAnchorChange={(next: Vec3) => {
+                      updateGroup(selectedGroup.id, (g) => {
+                        if (!isRootGroup(g)) return g;
+                        const idx = Math.min(
+                          editingKfIndex,
+                          g.viewKeyframes.length - 1,
+                        );
+                        return {
+                          ...g,
+                          anchor: next,
+                          viewKeyframes: g.viewKeyframes.map((k, i) =>
+                            i === idx ? { ...k, anchor: next } : k,
+                          ),
+                        };
+                      });
+                    }}
+                  />
+                )
+              : undefined
+          }
         />
       </main>
     </div>
