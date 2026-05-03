@@ -1,46 +1,34 @@
 "use client";
 
+import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { animRbfWeights, composeViewWithAnim } from "../_lib/animRbf";
+import { applyAffine, composeAffine } from "../_lib/affine";
+import { composePartViewWithAnim } from "../_lib/animRbf";
+import { isGroupChainVisible, resolveGroupChain } from "../_lib/groupTransform";
 import {
-  applyGroupChainToPlacement,
-  isGroupChainVisible,
-} from "../_lib/groupTransform";
-import {
-  buildPartFillGeometry,
-  buildPartStrokePositions,
+  buildFillGeometryFromPoints,
+  buildStrokePositionsFromPoints,
 } from "../_lib/partGeometry";
-import { resolvePlacement } from "../_lib/placement";
-import type { Part, PartGroup } from "../_lib/types";
-import { interpolateViewKeyframes } from "../_lib/viewRbf";
+import type { Group, Part, Vec2 } from "../_lib/types";
+import { interpolatePartViewKeyframes } from "../_lib/viewRbf";
 
 interface Props {
   parts: Part[];
-  groups: PartGroup[];
-  // The head mesh used as the raycast target to resolve part placements.
-  headMesh: THREE.Mesh | null;
-  // Current camera angles in degrees, supplied by the parent (Scene).
+  groups: Group[];
   yaw: number;
   pitch: number;
-  // Current named animation parameter values.
   animParams: Record<string, number>;
 }
 
-// Renders all parts at their resolved positions/orientations using the view
-// RBF interpolation of their viewKeyframes for the current (yaw, pitch),
-// then layered with anim deltas for the current animParams, and finally with
-// the accumulated transform deltas of the part's group chain.
-export const Parts = ({
-  parts,
-  groups,
-  headMesh,
-  yaw,
-  pitch,
-  animParams,
-}: Props) => {
-  if (!headMesh) return null;
-
+// Renders all parts as billboards anchored at their root group's 3D anchor.
+// Each part's shape points go through:
+//   - part view RBF interpolation (yaw/pitch) → InterpolatedPartView
+//   - part anim composition → adds shapeDelta + affineDelta
+//   - chain affine (root + child groups) composed onto the part's affine
+//   - the chain's group anchor positions the billboard plane
+//   - the camera quaternion orients the plane
+export const Parts = ({ parts, groups, yaw, pitch, animParams }: Props) => {
   const sorted = [...parts].sort((a, b) => a.layerIndex - b.layerIndex);
   return (
     <>
@@ -51,7 +39,6 @@ export const Parts = ({
             key={part.id}
             part={part}
             groups={groups}
-            headMesh={headMesh}
             yaw={yaw}
             pitch={pitch}
             animParams={animParams}
@@ -64,8 +51,7 @@ export const Parts = ({
 
 interface PartRendererProps {
   part: Part;
-  groups: PartGroup[];
-  headMesh: THREE.Mesh;
+  groups: Group[];
   yaw: number;
   pitch: number;
   animParams: Record<string, number>;
@@ -74,77 +60,77 @@ interface PartRendererProps {
 const PartRenderer = ({
   part,
   groups,
-  headMesh,
   yaw,
   pitch,
   animParams,
 }: PartRendererProps) => {
   const groupRef = useRef<THREE.Group>(null);
-
-  // Compose a single effective view keyframe at the current camera angles,
-  // then layer anim keyframe deltas.
-  const kf = useMemo(() => {
-    const base = interpolateViewKeyframes(
-      part.viewKeyframes,
-      yaw,
-      pitch,
-      part.rbfSigmaView,
-    );
-    if (part.animKeyframes.length === 0) return base;
-    const weights = animRbfWeights(
-      part.animKeyframes,
-      animParams,
-      part.rbfSigmaAnim,
-    );
-    return composeViewWithAnim(base, part.animKeyframes, weights);
-  }, [
-    part.viewKeyframes,
-    part.animKeyframes,
-    part.rbfSigmaView,
-    part.rbfSigmaAnim,
-    yaw,
-    pitch,
-    animParams,
-  ]);
-
-  // Bake group transform deltas into the placement before any geometry
-  // building or raycast resolution. Group transform is part of the part's
-  // effective placement, not a separate stage.
-  const placementWithGroup = useMemo(
+  // Each frame, copy the camera's quaternion onto our group so the billboard
+  // plane stays facing the camera. Using useFrame here rather than passing
+  // a quaternion through props keeps the orbit-controls update loop in sync.
+  useFrame(({ camera }) => {
+    if (groupRef.current) {
+      groupRef.current.quaternion.copy(camera.quaternion);
+    }
+  });
+  const baseView = useMemo(
     () =>
-      applyGroupChainToPlacement(
-        groups,
-        part.groupId,
-        kf.placement,
+      interpolatePartViewKeyframes(
+        part.viewKeyframes,
         yaw,
         pitch,
-        animParams,
+        part.rbfSigmaView,
       ),
-    [groups, part.groupId, kf.placement, yaw, pitch, animParams],
+    [part.viewKeyframes, part.rbfSigmaView, yaw, pitch],
   );
 
+  const partView = useMemo(
+    () =>
+      composePartViewWithAnim(
+        baseView,
+        part.animKeyframes,
+        animParams,
+        part.rbfSigmaAnim,
+      ),
+    [baseView, part.animKeyframes, animParams, part.rbfSigmaAnim],
+  );
+
+  const chain = useMemo(
+    () => resolveGroupChain(groups, part.groupId, yaw, pitch, animParams),
+    [groups, part.groupId, yaw, pitch, animParams],
+  );
+
+  // Final 2D points = chain.affine ∘ part.affine applied to shape.basePoints.
+  const transformedPoints = useMemo(() => {
+    const m = composeAffine(chain.affine, partView.affine);
+    return partView.shape.basePoints.map((p) => applyAffine(m, p) as Vec2);
+  }, [chain.affine, partView.affine, partView.shape.basePoints]);
+
   const fillGeometry = useMemo(
-    () => buildPartFillGeometry(kf.shape, placementWithGroup.scale),
-    [kf.shape, placementWithGroup.scale],
+    () => buildFillGeometryFromPoints(transformedPoints),
+    [transformedPoints],
   );
   const fillMaterial = useMemo(
     () =>
       new THREE.MeshBasicMaterial({
         color: part.fillColor,
         transparent: true,
-        opacity: kf.alpha,
+        opacity: clamp01(partView.alpha * chain.alpha),
         side: THREE.DoubleSide,
         depthWrite: false,
       }),
-    [part.fillColor, kf.alpha],
+    [part.fillColor, partView.alpha, chain.alpha],
   );
 
   const strokePositions = useMemo(
     () =>
       part.strokeWidth > 0
-        ? buildPartStrokePositions(kf.shape, placementWithGroup.scale)
+        ? buildStrokePositionsFromPoints(
+            transformedPoints,
+            partView.shape.closed,
+          )
         : null,
-    [part.strokeWidth, kf.shape, placementWithGroup.scale],
+    [part.strokeWidth, transformedPoints, partView.shape.closed],
   );
 
   const strokeGeometry = useMemo(() => {
@@ -160,10 +146,10 @@ const PartRenderer = ({
         ? new THREE.LineBasicMaterial({
             color: part.strokeColor,
             transparent: true,
-            opacity: kf.alpha,
+            opacity: clamp01(partView.alpha * chain.alpha),
           })
         : null,
-    [part.strokeWidth, part.strokeColor, kf.alpha],
+    [part.strokeWidth, part.strokeColor, partView.alpha, chain.alpha],
   );
 
   useEffect(() => {
@@ -175,21 +161,10 @@ const PartRenderer = ({
     };
   }, [fillGeometry, fillMaterial, strokeGeometry, strokeMaterial]);
 
-  // Resolve placement against the head mesh on every render. Cheap because
-  // it's a single raycast per part.
-  const placement = useMemo(() => {
-    headMesh.updateMatrixWorld();
-    return resolvePlacement(placementWithGroup, headMesh);
-  }, [placementWithGroup, headMesh]);
-
-  if (!kf.visible) return null;
+  if (!partView.visible || !chain.visible) return null;
 
   return (
-    <group
-      ref={groupRef}
-      position={placement.position}
-      quaternion={placement.quaternion}
-    >
+    <group ref={groupRef} position={chain.anchor}>
       <mesh geometry={fillGeometry} material={fillMaterial} />
       {strokeGeometry && strokeMaterial && (
         <lineLoop geometry={strokeGeometry} material={strokeMaterial} />
@@ -197,3 +172,5 @@ const PartRenderer = ({
     </group>
   );
 };
+
+const clamp01 = (x: number) => Math.max(0, Math.min(1, x));

@@ -100,7 +100,6 @@ export const Scene = ({
       <Parts
         parts={model.parts}
         groups={model.groups}
-        headMesh={headMesh}
         yaw={yaw}
         pitch={pitch}
         animParams={model.currentAnimParams}

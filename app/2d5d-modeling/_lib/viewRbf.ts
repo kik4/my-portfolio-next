@@ -1,20 +1,21 @@
-import type { ViewKeyframe } from "./types";
+import { AFFINE_IDENTITY, type AffineMatrix, blendAffines } from "./affine";
+import type {
+  ChildGroupViewKeyframe,
+  PartViewKeyframe,
+  RootGroupViewKeyframe,
+  Vec2,
+  Vec3,
+} from "./types";
 
 // Convert (yaw, pitch) in degrees to a unit vector on the sphere. yaw rotates
-// around +Y (yaw=0 -> +Z, yaw=90 -> +X). pitch tilts up from the equator
-// (pitch=0 on equator, pitch=90 at +Y pole).
-const yawPitchToVec = (
-  yawDeg: number,
-  pitchDeg: number,
-): [number, number, number] => {
+// around +Y (yaw=0 -> +Z, yaw=90 -> +X). pitch tilts up from the equator.
+const yawPitchToVec = (yawDeg: number, pitchDeg: number): Vec3 => {
   const yaw = (yawDeg * Math.PI) / 180;
   const pitch = (pitchDeg * Math.PI) / 180;
   const cp = Math.cos(pitch);
   return [cp * Math.sin(yaw), Math.sin(pitch), cp * Math.cos(yaw)];
 };
 
-// Angular distance (radians) between two (yaw, pitch) directions on the sphere.
-// Treats yaw as periodic (yaw=0 and yaw=360 are the same direction).
 const sphericalAngleDistance = (
   aYaw: number,
   aPitch: number,
@@ -30,13 +31,8 @@ const sphericalAngleDistance = (
   return Math.acos(dot);
 };
 
-// Compute Gaussian RBF weights for the given keyframes at the query (yaw, pitch).
-// sigmaDeg controls the falloff width (in degrees). Weights are normalized so
-// that they sum to 1.
-//
-// Returns an array of weights with the same length and order as keyframes.
-// If keyframes is empty, returns [].
-// If exactly one keyframe, returns [1].
+// Gaussian RBF weights for view keyframes. Returns weights normalized to sum
+// to 1. For 0 keyframes returns []; for 1, returns [1].
 export const viewRbfWeights = (
   keyframes: { yaw: number; pitch: number }[],
   yaw: number,
@@ -50,8 +46,6 @@ export const viewRbfWeights = (
   const sigmaRad = (sigmaDeg * Math.PI) / 180;
   const inv2Sigma2 = 1 / (2 * sigmaRad * sigmaRad);
 
-  // Compute raw Gaussian weights. To avoid numerical underflow when all
-  // distances are large, subtract the min distance before exponentiating.
   const dists = keyframes.map((k) =>
     sphericalAngleDistance(k.yaw, k.pitch, yaw, pitch),
   );
@@ -59,7 +53,6 @@ export const viewRbfWeights = (
   const raw = dists.map((d) => Math.exp(-((d - dMin) ** 2) * inv2Sigma2));
   const sum = raw.reduce((a, b) => a + b, 0);
   if (sum === 0) {
-    // Fall back to nearest-neighbor.
     const idx = dists.indexOf(dMin);
     const out = new Array(n).fill(0);
     out[idx] = 1;
@@ -68,117 +61,204 @@ export const viewRbfWeights = (
   return raw.map((r) => r / sum);
 };
 
-// Linearly blend per-keyframe scalar values with the given weights.
-export const blendScalar = (values: number[], weights: number[]): number => {
+// ===== blending helpers =====
+
+const blendScalar = (values: number[], weights: number[]): number => {
   let acc = 0;
   for (let i = 0; i < values.length; i++) acc += values[i] * weights[i];
   return acc;
 };
 
-// Linearly blend per-keyframe Vec2 / Vec3 arrays.
-export const blendVecArray = <T extends number[]>(
-  vectors: T[],
-  weights: number[],
-): T => {
-  const dim = vectors[0].length;
-  const out = new Array(dim).fill(0) as T;
-  for (let i = 0; i < vectors.length; i++) {
+const blendVec3 = (vs: Vec3[], weights: number[]): Vec3 => {
+  let x = 0;
+  let y = 0;
+  let z = 0;
+  for (let i = 0; i < vs.length; i++) {
     const w = weights[i];
-    for (let d = 0; d < dim; d++) out[d] += vectors[i][d] * w;
+    x += vs[i][0] * w;
+    y += vs[i][1] * w;
+    z += vs[i][2] * w;
+  }
+  return [x, y, z];
+};
+
+const blendVisible = (flags: boolean[], weights: number[]): boolean => {
+  let acc = 0;
+  for (let i = 0; i < flags.length; i++) {
+    acc += (flags[i] ? 1 : 0) * weights[i];
+  }
+  return acc >= 0.5;
+};
+
+const blendBasePoints = (
+  perKf: Vec2[][],
+  weights: number[],
+  pointCount: number,
+): Vec2[] => {
+  const out: Vec2[] = [];
+  for (let p = 0; p < pointCount; p++) {
+    let x = 0;
+    let y = 0;
+    for (let i = 0; i < perKf.length; i++) {
+      const pt = perKf[i][p] ?? [0, 0];
+      x += pt[0] * weights[i];
+      y += pt[1] * weights[i];
+    }
+    out.push([x, y]);
   }
   return out;
 };
 
-// Blend visibility: each keyframe contributes its visible flag (1 / 0). The
-// result is true if the weighted sum exceeds 0.5.
-export const blendVisible = (flags: boolean[], weights: number[]): boolean => {
-  let acc = 0;
-  for (let i = 0; i < flags.length; i++) acc += (flags[i] ? 1 : 0) * weights[i];
-  return acc >= 0.5;
-};
+// ===== part view keyframe interpolation =====
 
-// Interpolate every component of the keyframes producing a single composite
-// view keyframe at (yaw, pitch). All keyframes must share the same shape
-// length (this is enforced by the part editor; defensive here just in case).
-export const interpolateViewKeyframes = (
-  keyframes: ViewKeyframe[],
+export interface InterpolatedPartView {
+  shape: { basePoints: Vec2[]; closed: boolean };
+  affine: AffineMatrix;
+  alpha: number;
+  visible: boolean;
+}
+
+export const interpolatePartViewKeyframes = (
+  keyframes: PartViewKeyframe[],
   yaw: number,
   pitch: number,
   sigmaDeg: number,
-): ViewKeyframe => {
+): InterpolatedPartView => {
   if (keyframes.length === 0) {
-    throw new Error("interpolateViewKeyframes: empty keyframes");
+    throw new Error("interpolatePartViewKeyframes: empty keyframes");
   }
-  if (keyframes.length === 1) return keyframes[0];
-
+  if (keyframes.length === 1) {
+    const k = keyframes[0];
+    return {
+      shape: {
+        basePoints: k.shape.basePoints.map((p) => [p[0], p[1]] as Vec2),
+        closed: k.shape.closed,
+      },
+      affine: [...k.affine] as AffineMatrix,
+      alpha: k.alpha,
+      visible: k.visible,
+    };
+  }
   const weights = viewRbfWeights(keyframes, yaw, pitch, sigmaDeg);
-
-  // Determine the canonical point count from the first keyframe; clip others.
   const pointCount = keyframes[0].shape.basePoints.length;
-
-  const blendedShape: [number, number][] = [];
-  for (let p = 0; p < pointCount; p++) {
-    const points = keyframes.map(
-      (k) => (k.shape.basePoints[p] ?? [0, 0]) as [number, number],
-    );
-    blendedShape.push(blendVecArray(points, weights));
-  }
-
-  const blendedAnchor = blendVecArray(
-    keyframes.map((k) => k.placement.anchor),
-    weights,
-  );
-  const anchorLen = Math.hypot(
-    blendedAnchor[0],
-    blendedAnchor[1],
-    blendedAnchor[2],
-  );
-  const anchor: [number, number, number] =
-    anchorLen > 0
-      ? [
-          blendedAnchor[0] / anchorLen,
-          blendedAnchor[1] / anchorLen,
-          blendedAnchor[2] / anchorLen,
-        ]
-      : [0, 0, 1];
-
-  const blendedOffsetTangent = blendVecArray(
-    keyframes.map((k) => k.placement.offsetTangent),
-    weights,
-  );
-  const blendedRotationOffset = blendVecArray(
-    keyframes.map((k) => k.placement.rotationOffset),
-    weights,
-  );
-  const blendedScale = blendVecArray(
-    keyframes.map((k) => k.placement.scale),
-    weights,
-  );
-
   return {
-    id: "interpolated",
-    yaw,
-    pitch,
     shape: {
-      basePoints: blendedShape,
+      basePoints: blendBasePoints(
+        keyframes.map((k) => k.shape.basePoints),
+        weights,
+        pointCount,
+      ),
       closed: keyframes[0].shape.closed,
     },
-    placement: {
-      anchor,
-      offsetNormal: blendScalar(
-        keyframes.map((k) => k.placement.offsetNormal),
-        weights,
-      ),
-      offsetTangent: blendedOffsetTangent,
-      rotationOffset: blendedRotationOffset,
-      scale: blendedScale,
-    },
-    visible: blendVisible(
-      keyframes.map((k) => k.visible),
+    affine: blendAffines(
+      keyframes.map((k) => k.affine),
       weights,
     ),
     alpha: blendScalar(
       keyframes.map((k) => k.alpha),
+      weights,
+    ),
+    visible: blendVisible(
+      keyframes.map((k) => k.visible),
+      weights,
+    ),
+  };
+};
+
+// ===== root group view keyframe interpolation =====
+
+export interface InterpolatedRootGroupView {
+  anchor: Vec3;
+  affine: AffineMatrix;
+  alpha: number;
+  visible: boolean;
+}
+
+export const interpolateRootGroupViewKeyframes = (
+  keyframes: RootGroupViewKeyframe[],
+  yaw: number,
+  pitch: number,
+  sigmaDeg: number,
+): InterpolatedRootGroupView => {
+  if (keyframes.length === 0) {
+    return {
+      anchor: [0, 0, 0],
+      affine: [...AFFINE_IDENTITY] as AffineMatrix,
+      alpha: 1,
+      visible: true,
+    };
+  }
+  if (keyframes.length === 1) {
+    const k = keyframes[0];
+    return {
+      anchor: [...k.anchor] as Vec3,
+      affine: [...k.affine] as AffineMatrix,
+      alpha: k.alpha,
+      visible: k.visible,
+    };
+  }
+  const weights = viewRbfWeights(keyframes, yaw, pitch, sigmaDeg);
+  return {
+    anchor: blendVec3(
+      keyframes.map((k) => k.anchor),
+      weights,
+    ),
+    affine: blendAffines(
+      keyframes.map((k) => k.affine),
+      weights,
+    ),
+    alpha: blendScalar(
+      keyframes.map((k) => k.alpha),
+      weights,
+    ),
+    visible: blendVisible(
+      keyframes.map((k) => k.visible),
+      weights,
+    ),
+  };
+};
+
+// ===== child group view keyframe interpolation =====
+
+export interface InterpolatedChildGroupView {
+  affine: AffineMatrix;
+  alpha: number;
+  visible: boolean;
+}
+
+export const interpolateChildGroupViewKeyframes = (
+  keyframes: ChildGroupViewKeyframe[],
+  yaw: number,
+  pitch: number,
+  sigmaDeg: number,
+): InterpolatedChildGroupView => {
+  if (keyframes.length === 0) {
+    return {
+      affine: [...AFFINE_IDENTITY] as AffineMatrix,
+      alpha: 1,
+      visible: true,
+    };
+  }
+  if (keyframes.length === 1) {
+    const k = keyframes[0];
+    return {
+      affine: [...k.affine] as AffineMatrix,
+      alpha: k.alpha,
+      visible: k.visible,
+    };
+  }
+  const weights = viewRbfWeights(keyframes, yaw, pitch, sigmaDeg);
+  return {
+    affine: blendAffines(
+      keyframes.map((k) => k.affine),
+      weights,
+    ),
+    alpha: blendScalar(
+      keyframes.map((k) => k.alpha),
+      weights,
+    ),
+    visible: blendVisible(
+      keyframes.map((k) => k.visible),
       weights,
     ),
   };

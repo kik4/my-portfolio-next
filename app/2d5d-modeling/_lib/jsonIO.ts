@@ -1,22 +1,23 @@
 import { buildDefaultFaceModel } from "./defaultModel";
 import type { FaceModel } from "./types";
 
-export const LOCAL_STORAGE_KEY = "2d5d-modeling-data-v3";
+export const LOCAL_STORAGE_KEY = "2d5d-modeling-data-v4";
 
 export const serializeFaceModel = (model: FaceModel): string =>
   JSON.stringify(model, null, 2);
 
-// Tolerant parse. Anything malformed falls back to the default model so the UI
-// never crashes from corrupted localStorage.
+// Tolerant parse. Anything malformed (or v3 and older) falls back to the
+// default model so the UI never crashes from corrupted localStorage.
 export const parseFaceModel = (raw: string): FaceModel => {
   try {
     const parsed = JSON.parse(raw);
     if (
       parsed &&
       typeof parsed === "object" &&
-      parsed.version === 3 &&
+      parsed.version === 4 &&
       parsed.head &&
-      Array.isArray(parsed.parts)
+      Array.isArray(parsed.parts) &&
+      Array.isArray(parsed.groups)
     ) {
       return parsed as FaceModel;
     }

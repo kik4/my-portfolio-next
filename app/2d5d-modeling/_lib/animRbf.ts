@@ -1,8 +1,20 @@
-import type { AnimKeyframe, AnimParamDef, ViewKeyframe } from "./types";
+import { AFFINE_ZERO, type AffineMatrix } from "./affine";
+import type {
+  AnimParamDef,
+  ChildGroupAnimKeyframe,
+  PartAnimKeyframe,
+  RootGroupAnimKeyframe,
+  Vec2,
+  Vec3,
+} from "./types";
+import type {
+  InterpolatedChildGroupView,
+  InterpolatedPartView,
+  InterpolatedRootGroupView,
+} from "./viewRbf";
 
-// Squared Euclidean distance between two paramValues maps over the union of
-// their keys. Missing values are treated as 0 (matches the spec rule that
-// "params not in paramValues are zero").
+// Squared Euclidean distance between two paramValues maps. Missing values
+// count as 0.
 const paramDistanceSq = (
   a: Record<string, number>,
   b: Record<string, number>,
@@ -16,18 +28,8 @@ const paramDistanceSq = (
   return acc;
 };
 
-// Gaussian RBF weights for anim keyframes at a query point in N-dim
-// paramValues space. sigma is in raw paramValues units (so e.g. for a param
-// ranging 0..1, sigma=0.5 makes neighbours ~0.5 apart blend smoothly).
-//
-// Unlike the view RBF, anim keyframes are *deltas* applied on top of the view
-// result. Returned weights are NOT normalized to sum to 1: each keyframe's
-// contribution is independent. A keyframe far from currentParams contributes
-// near-zero, and the static (all-zero anim) state corresponds to no
-// keyframe-anchor contributing.
-//
-// The convention we adopt: when currentParams exactly equals a keyframe's
-// paramValues, that keyframe contributes weight 1 (its full delta applies).
+// Anim keyframe weights are NOT normalized (each keyframe contributes its
+// delta independently, so far-away keyframes shrink to ~0).
 export const animRbfWeights = (
   keyframes: { paramValues: Record<string, number> }[],
   currentParams: Record<string, number>,
@@ -41,112 +43,137 @@ export const animRbfWeights = (
   });
 };
 
-// Apply anim deltas to a base view-interpolated keyframe. Each anim keyframe
-// contributes `weight * delta` to every component (shape points, placement
-// fields, alpha). Anchor delta is added then re-normalized so the result is a
-// valid unit direction. Visibility is not touched by anim.
-export const composeViewWithAnim = (
-  base: ViewKeyframe,
-  anim: AnimKeyframe[],
-  weights: number[],
-): ViewKeyframe => {
+const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
+
+// ===== part anim composition =====
+
+export const composePartViewWithAnim = (
+  base: InterpolatedPartView,
+  anim: PartAnimKeyframe[],
+  currentParams: Record<string, number>,
+  sigma: number,
+): InterpolatedPartView => {
   if (anim.length === 0) return base;
-
-  // Shape delta: same length as base.shape.basePoints. Anim deltas with a
-  // mismatching length contribute 0 for the missing entries (defensive).
+  const weights = animRbfWeights(anim, currentParams, sigma);
   const pointCount = base.shape.basePoints.length;
-  const blendedPoints: [number, number][] = base.shape.basePoints.map((p) => [
-    p[0],
-    p[1],
-  ]);
-  for (let k = 0; k < anim.length; k++) {
-    const w = weights[k];
-    if (w === 0) continue;
-    const delta = anim[k].shapeDelta;
-    for (let p = 0; p < pointCount; p++) {
-      const d = delta[p];
-      if (!d) continue;
-      blendedPoints[p][0] += d[0] * w;
-      blendedPoints[p][1] += d[1] * w;
-    }
-  }
 
-  let anchorX = base.placement.anchor[0];
-  let anchorY = base.placement.anchor[1];
-  let anchorZ = base.placement.anchor[2];
-  let offsetNormal = base.placement.offsetNormal;
-  let offsetTangentX = base.placement.offsetTangent[0];
-  let offsetTangentY = base.placement.offsetTangent[1];
-  let rotPitch = base.placement.rotationOffset[0];
-  let rotYaw = base.placement.rotationOffset[1];
-  let rotRoll = base.placement.rotationOffset[2];
-  let scaleX = base.placement.scale[0];
-  let scaleY = base.placement.scale[1];
+  const points: Vec2[] = base.shape.basePoints.map((p) => [p[0], p[1]]);
+  const affine: AffineMatrix = [...base.affine] as AffineMatrix;
   let alpha = base.alpha;
 
   for (let k = 0; k < anim.length; k++) {
     const w = weights[k];
     if (w === 0) continue;
     const d = anim[k];
-    anchorX += d.placementDelta.anchorDelta[0] * w;
-    anchorY += d.placementDelta.anchorDelta[1] * w;
-    anchorZ += d.placementDelta.anchorDelta[2] * w;
-    offsetNormal += d.placementDelta.offsetNormalDelta * w;
-    offsetTangentX += d.placementDelta.offsetTangentDelta[0] * w;
-    offsetTangentY += d.placementDelta.offsetTangentDelta[1] * w;
-    rotPitch += d.placementDelta.rotationOffsetDelta[0] * w;
-    rotYaw += d.placementDelta.rotationOffsetDelta[1] * w;
-    rotRoll += d.placementDelta.rotationOffsetDelta[2] * w;
-    scaleX += d.placementDelta.scaleDelta[0] * w;
-    scaleY += d.placementDelta.scaleDelta[1] * w;
+    for (let p = 0; p < pointCount; p++) {
+      const dp = d.shapeDelta[p];
+      if (!dp) continue;
+      points[p][0] += dp[0] * w;
+      points[p][1] += dp[1] * w;
+    }
+    for (let m = 0; m < 6; m++) affine[m] += d.affineDelta[m] * w;
     alpha += d.alphaDelta * w;
   }
-
-  // Re-normalize anchor.
-  const anchorLen = Math.hypot(anchorX, anchorY, anchorZ);
-  const anchor: [number, number, number] =
-    anchorLen > 0
-      ? [anchorX / anchorLen, anchorY / anchorLen, anchorZ / anchorLen]
-      : [0, 0, 1];
-
   return {
-    id: base.id,
-    yaw: base.yaw,
-    pitch: base.pitch,
-    shape: { basePoints: blendedPoints, closed: base.shape.closed },
-    placement: {
-      anchor,
-      offsetNormal,
-      offsetTangent: [offsetTangentX, offsetTangentY],
-      rotationOffset: [rotPitch, rotYaw, rotRoll],
-      scale: [scaleX, scaleY],
-    },
+    shape: { basePoints: points, closed: base.shape.closed },
+    affine,
+    alpha: clamp01(alpha),
     visible: base.visible,
-    alpha: Math.max(0, Math.min(1, alpha)),
   };
 };
 
-// Build a default animKeyframe for the part: zero deltas matching the part's
-// current shape length. Useful when adding a keyframe via the UI.
-export const buildEmptyAnimKeyframe = (
+// ===== root group anim composition =====
+
+export const composeRootGroupViewWithAnim = (
+  base: InterpolatedRootGroupView,
+  anim: RootGroupAnimKeyframe[],
+  currentParams: Record<string, number>,
+  sigma: number,
+): InterpolatedRootGroupView => {
+  if (anim.length === 0) return base;
+  const weights = animRbfWeights(anim, currentParams, sigma);
+  const anchor: Vec3 = [...base.anchor] as Vec3;
+  const affine: AffineMatrix = [...base.affine] as AffineMatrix;
+  let alpha = base.alpha;
+  for (let k = 0; k < anim.length; k++) {
+    const w = weights[k];
+    if (w === 0) continue;
+    const d = anim[k];
+    anchor[0] += d.anchorDelta[0] * w;
+    anchor[1] += d.anchorDelta[1] * w;
+    anchor[2] += d.anchorDelta[2] * w;
+    for (let m = 0; m < 6; m++) affine[m] += d.affineDelta[m] * w;
+    alpha += d.alphaDelta * w;
+  }
+  return {
+    anchor,
+    affine,
+    alpha: clamp01(alpha),
+    visible: base.visible,
+  };
+};
+
+// ===== child group anim composition =====
+
+export const composeChildGroupViewWithAnim = (
+  base: InterpolatedChildGroupView,
+  anim: ChildGroupAnimKeyframe[],
+  currentParams: Record<string, number>,
+  sigma: number,
+): InterpolatedChildGroupView => {
+  if (anim.length === 0) return base;
+  const weights = animRbfWeights(anim, currentParams, sigma);
+  const affine: AffineMatrix = [...base.affine] as AffineMatrix;
+  let alpha = base.alpha;
+  for (let k = 0; k < anim.length; k++) {
+    const w = weights[k];
+    if (w === 0) continue;
+    const d = anim[k];
+    for (let m = 0; m < 6; m++) affine[m] += d.affineDelta[m] * w;
+    alpha += d.alphaDelta * w;
+  }
+  return {
+    affine,
+    alpha: clamp01(alpha),
+    visible: base.visible,
+  };
+};
+
+// ===== empty anim keyframe builders =====
+
+export const buildEmptyPartAnimKeyframe = (
   id: string,
   paramValues: Record<string, number>,
   shapePointCount: number,
-): AnimKeyframe => ({
+): PartAnimKeyframe => ({
   id,
   paramValues,
   shapeDelta: Array.from({ length: shapePointCount }, () => [0, 0]),
-  placementDelta: {
-    anchorDelta: [0, 0, 0],
-    offsetNormalDelta: 0,
-    offsetTangentDelta: [0, 0],
-    rotationOffsetDelta: [0, 0, 0],
-    scaleDelta: [0, 0],
-  },
+  affineDelta: [...AFFINE_ZERO] as AffineMatrix,
   alphaDelta: 0,
 });
 
-// Convenience: expand currentAnimParams record with defaults from registry.
+export const buildEmptyRootGroupAnimKeyframe = (
+  id: string,
+  paramValues: Record<string, number>,
+): RootGroupAnimKeyframe => ({
+  id,
+  paramValues,
+  anchorDelta: [0, 0, 0],
+  affineDelta: [...AFFINE_ZERO] as AffineMatrix,
+  alphaDelta: 0,
+});
+
+export const buildEmptyChildGroupAnimKeyframe = (
+  id: string,
+  paramValues: Record<string, number>,
+): ChildGroupAnimKeyframe => ({
+  id,
+  paramValues,
+  affineDelta: [...AFFINE_ZERO] as AffineMatrix,
+  alphaDelta: 0,
+});
+
 export const fillAnimDefaults = (
   current: Record<string, number>,
   defs: AnimParamDef[],

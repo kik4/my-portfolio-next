@@ -1,30 +1,27 @@
-import { animRbfWeights } from "./animRbf";
-import type {
-  GroupAnimKeyframe,
-  GroupTransformDelta,
-  GroupViewKeyframe,
-  PartGroup,
-  PartPlacement,
-  Vec2,
-  Vec3,
-} from "./types";
-import { viewRbfWeights } from "./viewRbf";
+import { AFFINE_IDENTITY, type AffineMatrix, composeAffine } from "./affine";
+import {
+  composeChildGroupViewWithAnim,
+  composeRootGroupViewWithAnim,
+} from "./animRbf";
+import { type Group, isRootGroup, type Vec3 } from "./types";
+import {
+  interpolateChildGroupViewKeyframes,
+  interpolateRootGroupViewKeyframes,
+} from "./viewRbf";
 
-// Walk from a group up to the root, returning [self, parent, grandparent, ...].
-// Detects cycles: if a group's parent chain re-encounters an already-visited
-// id, the chain is truncated at that point (so the function never infinite-
-// loops on bad data, but the caller should treat that as a corruption).
+// Walk from a group up to its root, returning [self, parent, grandparent, ...,
+// root]. Detects cycles defensively.
 export const groupAncestorChain = (
-  groups: PartGroup[],
+  groups: Group[],
   startId: string | undefined,
-): PartGroup[] => {
+): Group[] => {
   if (!startId) return [];
   const byId = new Map(groups.map((g) => [g.id, g]));
-  const chain: PartGroup[] = [];
+  const chain: Group[] = [];
   const seen = new Set<string>();
-  let cursor: string | undefined = startId;
+  let cursor: string | null | undefined = startId;
   while (cursor) {
-    if (seen.has(cursor)) break; // cycle
+    if (seen.has(cursor)) break;
     seen.add(cursor);
     const g = byId.get(cursor);
     if (!g) break;
@@ -34,12 +31,10 @@ export const groupAncestorChain = (
   return chain;
 };
 
-// True if making `proposedParent` the parent of `child` would form a cycle.
-// (Including the trivial case where `proposedParent === child`.)
 export const wouldCreateCycle = (
-  groups: PartGroup[],
+  groups: Group[],
   childId: string,
-  proposedParentId: string | undefined,
+  proposedParentId: string | null | undefined,
 ): boolean => {
   if (!proposedParentId) return false;
   if (proposedParentId === childId) return true;
@@ -47,9 +42,8 @@ export const wouldCreateCycle = (
   return ancestors.some((g) => g.id === childId);
 };
 
-// True if any group in the ancestor chain (including self) has visible=false.
 export const isGroupChainVisible = (
-  groups: PartGroup[],
+  groups: Group[],
   groupId: string | undefined,
 ): boolean => {
   if (!groupId) return true;
@@ -57,156 +51,83 @@ export const isGroupChainVisible = (
   return chain.every((g) => g.visible);
 };
 
-const ZERO_DELTA: GroupTransformDelta = {
-  anchorDelta: [0, 0, 0],
-  rotationOffsetDelta: [0, 0, 0],
-  scaleDelta: [0, 0],
-};
+// The fully-resolved transform of a group chain at the current camera + anim
+// state. `anchor` is in world space (the billboard plane center). `affine` is
+// the chained 2D affine that descendants must apply on top of their own.
+// `alpha` is the multiplied chain alpha; `visible` is the AND of chain
+// visibilities.
+export interface ResolvedGroupChain {
+  anchor: Vec3;
+  affine: AffineMatrix;
+  alpha: number;
+  visible: boolean;
+}
 
-// View-RBF blend the group's viewKeyframes at the current camera angles.
-// Returns a transformDelta (each component is the weighted average of the
-// keyframes' values; weights normalized as in viewRbf).
-export const interpolateGroupViewKeyframes = (
-  keyframes: GroupViewKeyframe[],
-  yaw: number,
-  pitch: number,
-  sigmaDeg: number,
-): GroupTransformDelta => {
-  if (keyframes.length === 0) return ZERO_DELTA;
-  if (keyframes.length === 1) return keyframes[0].transformDelta;
-  const weights = viewRbfWeights(keyframes, yaw, pitch, sigmaDeg);
-  let ax = 0;
-  let ay = 0;
-  let az = 0;
-  let rx = 0;
-  let ry = 0;
-  let rz = 0;
-  let sx = 0;
-  let sy = 0;
-  for (let i = 0; i < keyframes.length; i++) {
-    const w = weights[i];
-    const d = keyframes[i].transformDelta;
-    ax += d.anchorDelta[0] * w;
-    ay += d.anchorDelta[1] * w;
-    az += d.anchorDelta[2] * w;
-    rx += d.rotationOffsetDelta[0] * w;
-    ry += d.rotationOffsetDelta[1] * w;
-    rz += d.rotationOffsetDelta[2] * w;
-    sx += d.scaleDelta[0] * w;
-    sy += d.scaleDelta[1] * w;
-  }
-  return {
-    anchorDelta: [ax, ay, az],
-    rotationOffsetDelta: [rx, ry, rz],
-    scaleDelta: [sx, sy],
-  };
-};
-
-// Layer the group's animKeyframes onto the view-interpolated base. Anim
-// weights are *not* normalized (matches Part anim semantics): each keyframe's
-// distance-attenuated weight scales its own delta and adds in.
-export const composeGroupViewWithAnim = (
-  base: GroupTransformDelta,
-  anim: GroupAnimKeyframe[],
-  currentParams: Record<string, number>,
-  sigma: number,
-): GroupTransformDelta => {
-  if (anim.length === 0) return base;
-  const weights = animRbfWeights(anim, currentParams, sigma);
-  let ax = base.anchorDelta[0];
-  let ay = base.anchorDelta[1];
-  let az = base.anchorDelta[2];
-  let rx = base.rotationOffsetDelta[0];
-  let ry = base.rotationOffsetDelta[1];
-  let rz = base.rotationOffsetDelta[2];
-  let sx = base.scaleDelta[0];
-  let sy = base.scaleDelta[1];
-  for (let i = 0; i < anim.length; i++) {
-    const w = weights[i];
-    if (w === 0) continue;
-    const d = anim[i].transformDelta;
-    ax += d.anchorDelta[0] * w;
-    ay += d.anchorDelta[1] * w;
-    az += d.anchorDelta[2] * w;
-    rx += d.rotationOffsetDelta[0] * w;
-    ry += d.rotationOffsetDelta[1] * w;
-    rz += d.rotationOffsetDelta[2] * w;
-    sx += d.scaleDelta[0] * w;
-    sy += d.scaleDelta[1] * w;
-  }
-  return {
-    anchorDelta: [ax, ay, az],
-    rotationOffsetDelta: [rx, ry, rz],
-    scaleDelta: [sx, sy],
-  };
-};
-
-// Resolve a single group's effective transformDelta at the current camera +
-// anim state.
-export const resolveGroupDelta = (
-  group: PartGroup,
+// Resolve a group chain (leaf → root order from groupAncestorChain). The
+// chained affine is composed root-most first (so root.affine ∘ ... ∘ leaf.affine
+// matches "apply leaf's local transform first, then walk up to the root").
+export const resolveGroupChain = (
+  groups: Group[],
+  groupId: string,
   yaw: number,
   pitch: number,
   animParams: Record<string, number>,
-): GroupTransformDelta => {
-  const base = interpolateGroupViewKeyframes(
-    group.viewKeyframes,
-    yaw,
-    pitch,
-    group.rbfSigmaView,
-  );
-  return composeGroupViewWithAnim(
-    base,
-    group.animKeyframes,
-    animParams,
-    group.rbfSigmaAnim,
-  );
-};
-
-// Apply a chain of pre-resolved transformDeltas (root-most first or leaf-most
-// first — both are mathematically equivalent because addition / multiplication
-// commute here) to a part's placement. Anchor adds then re-normalizes.
-export const applyGroupChainToPlacement = (
-  groups: PartGroup[],
-  groupId: string | undefined,
-  placement: PartPlacement,
-  yaw: number,
-  pitch: number,
-  animParams: Record<string, number>,
-): PartPlacement => {
+): ResolvedGroupChain => {
   const chain = groupAncestorChain(groups, groupId);
-  if (chain.length === 0) return placement;
-
-  let anchorX = placement.anchor[0];
-  let anchorY = placement.anchor[1];
-  let anchorZ = placement.anchor[2];
-  let rotPitch = placement.rotationOffset[0];
-  let rotYaw = placement.rotationOffset[1];
-  let rotRoll = placement.rotationOffset[2];
-  let scaleX = placement.scale[0];
-  let scaleY = placement.scale[1];
-
-  for (const g of chain) {
-    const d = resolveGroupDelta(g, yaw, pitch, animParams);
-    anchorX += d.anchorDelta[0];
-    anchorY += d.anchorDelta[1];
-    anchorZ += d.anchorDelta[2];
-    rotPitch += d.rotationOffsetDelta[0];
-    rotYaw += d.rotationOffsetDelta[1];
-    rotRoll += d.rotationOffsetDelta[2];
-    scaleX *= 1 + d.scaleDelta[0];
-    scaleY *= 1 + d.scaleDelta[1];
+  if (chain.length === 0) {
+    return {
+      anchor: [0, 0, 0],
+      affine: [...AFFINE_IDENTITY] as AffineMatrix,
+      alpha: 1,
+      visible: true,
+    };
   }
 
-  const len = Math.hypot(anchorX, anchorY, anchorZ);
-  const anchor: Vec3 =
-    len > 0 ? [anchorX / len, anchorY / len, anchorZ / len] : [0, 0, 1];
-  const scale: Vec2 = [scaleX, scaleY];
+  let anchor: Vec3 = [0, 0, 0];
+  let chainAffine: AffineMatrix = [...AFFINE_IDENTITY] as AffineMatrix;
+  let alpha = 1;
+  let visible = true;
 
-  return {
-    ...placement,
-    anchor,
-    rotationOffset: [rotPitch, rotYaw, rotRoll],
-    scale,
-  };
+  // Walk from root to leaf so we can compose affines in the natural order
+  // (root applied last to a descendant point).
+  for (let i = chain.length - 1; i >= 0; i--) {
+    const g = chain[i];
+    if (!g.visible) visible = false;
+    if (isRootGroup(g)) {
+      const base = interpolateRootGroupViewKeyframes(
+        g.viewKeyframes,
+        yaw,
+        pitch,
+        g.rbfSigmaView,
+      );
+      const resolved = composeRootGroupViewWithAnim(
+        base,
+        g.animKeyframes,
+        animParams,
+        g.rbfSigmaAnim,
+      );
+      anchor = resolved.anchor;
+      chainAffine = composeAffine(resolved.affine, chainAffine);
+      alpha *= resolved.alpha;
+      if (!resolved.visible) visible = false;
+    } else {
+      const base = interpolateChildGroupViewKeyframes(
+        g.viewKeyframes,
+        yaw,
+        pitch,
+        g.rbfSigmaView,
+      );
+      const resolved = composeChildGroupViewWithAnim(
+        base,
+        g.animKeyframes,
+        animParams,
+        g.rbfSigmaAnim,
+      );
+      chainAffine = composeAffine(resolved.affine, chainAffine);
+      alpha *= resolved.alpha;
+      if (!resolved.visible) visible = false;
+    }
+  }
+
+  return { anchor, affine: chainAffine, alpha, visible };
 };

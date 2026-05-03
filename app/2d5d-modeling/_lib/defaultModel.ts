@@ -1,16 +1,16 @@
+import { AFFINE_IDENTITY, AFFINE_ZERO } from "./affine";
 import type {
+  ChildGroup,
   FaceModel,
   HeadMesh,
   Part,
-  PartGroup,
-  ViewKeyframe,
+  PartViewKeyframe,
+  RootGroup,
+  Vec2,
+  Vec3,
 } from "./types";
 
 export const buildDefaultHeadMesh = (): HeadMesh => {
-  // 7 latitude samples from apex (Y=1) down to chin (Y=-1.1).
-  // halfX gives the front silhouette (right half-width).
-  // zFront / zBack give the side silhouette (front face / back of skull).
-  // Apex and chin collapse to a point: halfX = zFront = zBack = 0.
   const ySamples = [1.0, 0.7, 0.4, 0.0, -0.4, -0.8, -1.1];
   const frontHalfXs = [0.0, 0.55, 0.7, 0.72, 0.65, 0.45, 0.0];
   const sideZFronts = [0.0, 0.55, 0.72, 0.78, 0.7, 0.5, 0.0];
@@ -32,51 +32,62 @@ export const buildDefaultHeadMesh = (): HeadMesh => {
   };
 };
 
-const buildDefaultViewKeyframe = (): ViewKeyframe => ({
+const buildDefaultPartViewKeyframe = (
+  basePoints: Vec2[],
+): PartViewKeyframe => ({
   id: "vk-default",
   yaw: 0,
   pitch: 0,
-  shape: {
-    basePoints: [
+  shape: { basePoints, closed: true },
+  affine: AFFINE_IDENTITY,
+  alpha: 1,
+  visible: true,
+});
+
+export const buildDefaultPart = (
+  id: string,
+  name: string,
+  groupId: string,
+): Part => ({
+  id,
+  name,
+  groupId,
+  layerIndex: 0,
+  fillColor: "#202020",
+  strokeColor: "#202020",
+  strokeWidth: 0,
+  viewKeyframes: [
+    buildDefaultPartViewKeyframe([
       [-0.08, -0.04],
       [0.08, -0.04],
       [0.08, 0.04],
       [-0.08, 0.04],
-    ],
-    closed: true,
-  },
-  placement: {
-    anchor: [0, 0, 1], // facing forward
-    offsetNormal: 0.005,
-    offsetTangent: [0, 0],
-    rotationOffset: [0, 0, 0],
-    scale: [1, 1],
-  },
-  visible: true,
-  alpha: 1,
+    ]),
+  ],
+  animKeyframes: [],
+  rbfSigmaView: 30,
+  rbfSigmaAnim: 0.5,
 });
 
-export const buildDefaultGroup = (
+export const buildDefaultRootGroup = (
   id: string,
   name: string,
-  parentId?: string,
-): PartGroup => ({
+  anchor: Vec3,
+): RootGroup => ({
   id,
   name,
+  parentId: null,
   visible: true,
-  parentId,
-  // A single static view keyframe at (yaw=0, pitch=0) with zero deltas; the
-  // group has no effect until the user adds more keyframes or edits the deltas.
+  anchor,
   viewKeyframes: [
     {
       id: `gvk-${id}-default`,
       yaw: 0,
       pitch: 0,
-      transformDelta: {
-        anchorDelta: [0, 0, 0],
-        rotationOffsetDelta: [0, 0, 0],
-        scaleDelta: [0, 0],
-      },
+      anchor,
+      affine: AFFINE_IDENTITY,
+      alpha: 1,
+      visible: true,
     },
   ],
   animKeyframes: [],
@@ -84,74 +95,108 @@ export const buildDefaultGroup = (
   rbfSigmaAnim: 0.5,
 });
 
-export const buildDefaultPart = (id: string, name: string): Part => ({
+export const buildDefaultChildGroup = (
+  id: string,
+  name: string,
+  parentId: string,
+): ChildGroup => ({
   id,
   name,
-  layerIndex: 0,
-  fillColor: "#202020",
-  strokeColor: "#202020",
-  strokeWidth: 0,
-  viewKeyframes: [buildDefaultViewKeyframe()],
+  parentId,
+  visible: true,
+  viewKeyframes: [
+    {
+      id: `gvk-${id}-default`,
+      yaw: 0,
+      pitch: 0,
+      affine: AFFINE_IDENTITY,
+      alpha: 1,
+      visible: true,
+    },
+  ],
   animKeyframes: [],
   rbfSigmaView: 30,
   rbfSigmaAnim: 0.5,
 });
 
 export const buildDefaultFaceModel = (): FaceModel => {
-  // A small starter face: two eye placeholders + a mouth.
-  const leftEye = buildDefaultPart("part-eye-left", "left eye");
-  leftEye.layerIndex = 10;
-  leftEye.viewKeyframes[0] = {
-    ...leftEye.viewKeyframes[0],
-    placement: {
-      ...leftEye.viewKeyframes[0].placement,
-      anchor: normalize([-0.35, 0.15, 0.93]),
-    },
+  // One root group at the head's front, two eye parts and one mouth part
+  // attached to it. Anchors live in 3D world space; the rest is pure 2D on
+  // the billboard plane.
+  const root = buildDefaultRootGroup("group-face", "face", [0, 0, 0.9]);
+
+  const leftEye: Part = {
+    ...buildDefaultPart("part-eye-left", "left eye", root.id),
+    layerIndex: 10,
+    viewKeyframes: [
+      {
+        id: "vk-default",
+        yaw: 0,
+        pitch: 0,
+        shape: {
+          basePoints: [
+            [-0.04, -0.02],
+            [0.04, -0.02],
+            [0.04, 0.02],
+            [-0.04, 0.02],
+          ],
+          closed: true,
+        },
+        // translate the eye to the upper-left of the billboard plane
+        affine: [1, 0, 0, 1, -0.2, 0.12],
+        alpha: 1,
+        visible: true,
+      },
+    ],
   };
 
-  const rightEye = buildDefaultPart("part-eye-right", "right eye");
-  rightEye.layerIndex = 10;
-  rightEye.viewKeyframes[0] = {
-    ...rightEye.viewKeyframes[0],
-    placement: {
-      ...rightEye.viewKeyframes[0].placement,
-      anchor: normalize([0.35, 0.15, 0.93]),
-    },
+  const rightEye: Part = {
+    ...leftEye,
+    id: "part-eye-right",
+    name: "right eye",
+    viewKeyframes: [
+      {
+        ...leftEye.viewKeyframes[0],
+        id: "vk-default",
+        affine: [1, 0, 0, 1, 0.2, 0.12],
+      },
+    ],
   };
 
-  const mouth = buildDefaultPart("part-mouth", "mouth");
-  mouth.layerIndex = 5;
-  mouth.fillColor = "#a04030";
-  mouth.viewKeyframes[0] = {
-    ...mouth.viewKeyframes[0],
-    shape: {
-      basePoints: [
-        [-0.12, -0.02],
-        [0.12, -0.02],
-        [0.12, 0.02],
-        [-0.12, 0.02],
-      ],
-      closed: true,
-    },
-    placement: {
-      ...mouth.viewKeyframes[0].placement,
-      anchor: normalize([0, -0.45, 0.9]),
-    },
+  const mouth: Part = {
+    ...buildDefaultPart("part-mouth", "mouth", root.id),
+    layerIndex: 5,
+    fillColor: "#a04030",
+    viewKeyframes: [
+      {
+        id: "vk-default",
+        yaw: 0,
+        pitch: 0,
+        shape: {
+          basePoints: [
+            [-0.08, -0.015],
+            [0.08, -0.015],
+            [0.08, 0.015],
+            [-0.08, 0.015],
+          ],
+          closed: true,
+        },
+        affine: [1, 0, 0, 1, 0, -0.25],
+        alpha: 1,
+        visible: true,
+      },
+    ],
   };
 
   return {
-    version: 3,
+    version: 4,
     head: buildDefaultHeadMesh(),
+    groups: [root],
     parts: [leftEye, rightEye, mouth],
-    groups: [],
     animParams: [],
     currentAnimParams: {},
   };
 };
 
-const normalize = (v: [number, number, number]): [number, number, number] => {
-  const [x, y, z] = v;
-  const len = Math.hypot(x, y, z);
-  if (len === 0) return [0, 0, 1];
-  return [x / len, y / len, z / len];
-};
+// Surface AFFINE_ZERO for callers building empty anim deltas.
+export { AFFINE_ZERO };
