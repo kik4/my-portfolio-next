@@ -20,6 +20,7 @@ interface Props {
   setEditingKfIndex: (i: number) => void;
   cameraYaw: number;
   cameraPitch: number;
+  onSnapCamera?: (yaw: number, pitch: number) => void;
 }
 
 export const GroupEditor = (props: Props) => {
@@ -41,6 +42,7 @@ const RootGroupEditor = ({
   setEditingKfIndex,
   cameraYaw,
   cameraPitch,
+  onSnapCamera,
 }: Props & { group: RootGroup }) => {
   const safeIdx = Math.min(editingKfIndex, group.viewKeyframes.length - 1);
   const kf = group.viewKeyframes[safeIdx];
@@ -102,6 +104,7 @@ const RootGroupEditor = ({
         setSelectedIndex={setEditingKfIndex}
         onAddAtCamera={addKfAtCamera}
         onRemove={removeKf}
+        onSnapCamera={onSnapCamera}
         cameraYaw={cameraYaw}
         cameraPitch={cameraPitch}
       />
@@ -214,6 +217,7 @@ const ChildGroupEditor = ({
   setEditingKfIndex,
   cameraYaw,
   cameraPitch,
+  onSnapCamera,
 }: Props & { group: ChildGroup }) => {
   const safeIdx = Math.min(editingKfIndex, group.viewKeyframes.length - 1);
   const kf = group.viewKeyframes[safeIdx];
@@ -274,6 +278,7 @@ const ChildGroupEditor = ({
         setSelectedIndex={setEditingKfIndex}
         onAddAtCamera={addKfAtCamera}
         onRemove={removeKf}
+        onSnapCamera={onSnapCamera}
         cameraYaw={cameraYaw}
         cameraPitch={cameraPitch}
       />

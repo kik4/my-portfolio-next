@@ -48,6 +48,15 @@ export const ModelingTool = () => {
   const [selection, setSelection] = useState<Selection>(null);
   // Per-selection keyframe editing index. Reset when the selection changes.
   const [editingKfIndex, setEditingKfIndex] = useState(0);
+  // Snap target. Each new object literal triggers Scene to teleport the
+  // interactive camera. Identity-based, so requesting the same angle twice
+  // (by passing a fresh literal each time) still fires.
+  const [snapRequest, setSnapRequest] = useState<
+    { yaw: number; pitch: number } | undefined
+  >(undefined);
+  const snapToCamera = useCallback((yaw: number, pitch: number) => {
+    setSnapRequest({ yaw, pitch });
+  }, []);
 
   useEffect(() => {
     const loaded = loadFaceModelFromLocalStorage();
@@ -387,6 +396,7 @@ export const ModelingTool = () => {
               setEditingKfIndex={setEditingKfIndex}
               cameraYaw={cameraYaw}
               cameraPitch={cameraPitch}
+              onSnapCamera={snapToCamera}
             />
           </div>
         )}
@@ -399,6 +409,7 @@ export const ModelingTool = () => {
               setEditingKfIndex={setEditingKfIndex}
               cameraYaw={cameraYaw}
               cameraPitch={cameraPitch}
+              onSnapCamera={snapToCamera}
             />
           </div>
         )}
@@ -457,6 +468,7 @@ export const ModelingTool = () => {
             setCameraYaw(y);
             setCameraPitch(p);
           }}
+          snapRequest={snapRequest}
           renderMainOverlay={
             selectedGroup && isRootGroup(selectedGroup)
               ? () => (

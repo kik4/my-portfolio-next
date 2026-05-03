@@ -13,6 +13,10 @@ interface Props {
   setSelectedIndex: (i: number) => void;
   onAddAtCamera: () => void;
   onRemove: (index: number) => void;
+  // Optional: when provided, clicking a keyframe row also teleports the
+  // main interactive camera to that (yaw, pitch). Pass a fresh request
+  // object literal each call so identity changes even for the same angles.
+  onSnapCamera?: (yaw: number, pitch: number) => void;
   cameraYaw: number;
   cameraPitch: number;
   // Disable removal when only one keyframe remains (the part / group must
@@ -27,6 +31,7 @@ export const KeyframeList = ({
   setSelectedIndex,
   onAddAtCamera,
   onRemove,
+  onSnapCamera,
   cameraYaw,
   cameraPitch,
   minCount = 1,
@@ -48,7 +53,12 @@ export const KeyframeList = ({
           <li key={k.id} className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => setSelectedIndex(i)}
+              onClick={() => {
+                setSelectedIndex(i);
+                // Snap the main camera so the user is looking at this
+                // keyframe's angle while editing it.
+                onSnapCamera?.(k.yaw, k.pitch);
+              }}
               className={`flex-1 rounded px-1 py-0.5 text-left ${
                 i === selectedIndex
                   ? "bg-blue-100 text-blue-800"

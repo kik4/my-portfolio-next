@@ -14,6 +14,7 @@ interface Props {
   setEditingKfIndex: (i: number) => void;
   cameraYaw: number;
   cameraPitch: number;
+  onSnapCamera?: (yaw: number, pitch: number) => void;
 }
 
 export const PartEditor = ({
@@ -23,6 +24,7 @@ export const PartEditor = ({
   setEditingKfIndex,
   cameraYaw,
   cameraPitch,
+  onSnapCamera,
 }: Props) => {
   const safeIdx = Math.min(editingKfIndex, part.viewKeyframes.length - 1);
   const kf = part.viewKeyframes[safeIdx];
@@ -131,6 +133,7 @@ export const PartEditor = ({
         setSelectedIndex={setEditingKfIndex}
         onAddAtCamera={addKfAtCamera}
         onRemove={removeKf}
+        onSnapCamera={onSnapCamera}
         cameraYaw={cameraYaw}
         cameraPitch={cameraPitch}
       />
