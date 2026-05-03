@@ -3,7 +3,7 @@
 import { AFFINE_IDENTITY, type AffineMatrix } from "../_lib/affine";
 import { insertShapePoint, removeShapePoint } from "../_lib/shapeTopology";
 import type { Part, PartViewKeyframe, Vec2 } from "../_lib/types";
-import { AffineFields } from "./AffineFields";
+import { AffineGizmo2D } from "./AffineGizmo2D";
 import { KeyframeList } from "./KeyframeList";
 import { PointEditor } from "./PointEditor";
 
@@ -197,13 +197,10 @@ export const PartEditor = ({
         </p>
       </fieldset>
 
-      <AffineFields
-        // Re-mount on keyframe switch so the AffineFields' local "params"
-        // state resets to identity (the editor is a recomposing widget,
-        // not a decomposing one — see AffineFields.tsx).
-        key={kf.id}
+      <AffineGizmo2D
         affine={kf.affine}
-        onCommit={(next) => updateKf((k) => ({ ...k, affine: next }))}
+        shape={kf.shape}
+        onChange={(next) => updateKf((k) => ({ ...k, affine: next }))}
       />
 
       <button

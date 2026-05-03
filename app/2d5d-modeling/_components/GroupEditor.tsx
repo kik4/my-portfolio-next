@@ -10,7 +10,7 @@ import type {
   Vec3,
 } from "../_lib/types";
 import { isRootGroup } from "../_lib/types";
-import { AffineFields } from "./AffineFields";
+import { AffineGizmo2D } from "./AffineGizmo2D";
 import { KeyframeList } from "./KeyframeList";
 
 interface Props {
@@ -161,10 +161,9 @@ const RootGroupEditor = ({
         </div>
       </fieldset>
 
-      <AffineFields
-        key={kf.id}
+      <AffineGizmo2D
         affine={kf.affine}
-        onCommit={(next) => updateKf((k) => ({ ...k, affine: next }))}
+        onChange={(next) => updateKf((k) => ({ ...k, affine: next }))}
       />
 
       <button
@@ -311,10 +310,9 @@ const ChildGroupEditor = ({
         </div>
       </fieldset>
 
-      <AffineFields
-        key={kf.id}
+      <AffineGizmo2D
         affine={kf.affine}
-        onCommit={(next) => updateKf((k) => ({ ...k, affine: next }))}
+        onChange={(next) => updateKf((k) => ({ ...k, affine: next }))}
       />
 
       <button
