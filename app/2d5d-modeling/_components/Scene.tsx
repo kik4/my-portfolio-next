@@ -12,6 +12,8 @@ interface Props {
   model: FaceModel;
   showAxes: boolean;
   showGrid: boolean;
+  // When true, the head mesh renders with flat (per-face) shading.
+  flatShading?: boolean;
   // Called every frame with the current camera (yaw, pitch) in degrees in
   // interactive mode. Ignored in fixed mode.
   onCameraChange?: (yaw: number, pitch: number) => void;
@@ -39,6 +41,7 @@ export const Scene = ({
   model,
   showAxes,
   showGrid,
+  flatShading = false,
   onCameraChange,
   fixedView,
   cameraDistance = DEFAULT_DISTANCE,
@@ -83,7 +86,7 @@ export const Scene = ({
       <ambientLight intensity={0.6} />
       <directionalLight position={[2, 3, 4]} intensity={0.8} />
 
-      <HeadMesh head={model.head} />
+      <HeadMesh head={model.head} flatShading={flatShading} />
       <Parts
         parts={model.parts}
         groups={model.groups}

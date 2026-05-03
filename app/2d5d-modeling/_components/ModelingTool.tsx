@@ -40,6 +40,10 @@ export const ModelingTool = () => {
   const [hydrated, setHydrated] = useState(false);
   const [showAxes, setShowAxes] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
+  // Local UI toggle (not persisted with the model). Switches the head mesh
+  // material between smooth (interpolated vertex normals) and flat (per-face
+  // normals via dFdx/dFdy in the shader).
+  const [flatShading, setFlatShading] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [resizing, setResizing] = useState(false);
   const [cameraYaw, setCameraYaw] = useState(0);
@@ -369,6 +373,14 @@ export const ModelingTool = () => {
             />
             グリッド
           </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={flatShading}
+              onChange={(e) => setFlatShading(e.target.checked)}
+            />
+            フラットシェーディング
+          </label>
         </div>
 
         <h2 className="mb-2 font-bold">構造</h2>
@@ -464,6 +476,7 @@ export const ModelingTool = () => {
           model={model}
           showAxes={showAxes}
           showGrid={showGrid}
+          flatShading={flatShading}
           onCameraChange={(y, p) => {
             setCameraYaw(y);
             setCameraPitch(p);
