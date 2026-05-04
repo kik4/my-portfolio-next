@@ -29,6 +29,7 @@ interface Props {
   onRemovePart: (id: string) => void;
   onReparentGroup: (id: string, newParentId: string) => void;
   onReparentPart: (id: string, newGroupId: string) => void;
+  onMirrorGroup: (id: string) => void;
 }
 
 export const PartTree = ({
@@ -43,6 +44,7 @@ export const PartTree = ({
   onRemovePart,
   onReparentGroup,
   onReparentPart,
+  onMirrorGroup,
 }: Props) => {
   const [dragSource, setDragSource] = useState<DragSource>(null);
   const roots = groups.filter((g) => g.parentId === null);
@@ -76,6 +78,7 @@ export const PartTree = ({
             onRemovePart={onRemovePart}
             onReparentGroup={onReparentGroup}
             onReparentPart={onReparentPart}
+            onMirrorGroup={onMirrorGroup}
             dragSource={dragSource}
             setDragSource={setDragSource}
           />
@@ -98,6 +101,7 @@ interface GroupNodeProps {
   onRemovePart: (id: string) => void;
   onReparentGroup: (id: string, newParentId: string) => void;
   onReparentPart: (id: string, newGroupId: string) => void;
+  onMirrorGroup: (id: string) => void;
   dragSource: DragSource;
   setDragSource: (s: DragSource) => void;
 }
@@ -115,6 +119,7 @@ const GroupNode = ({
   onRemovePart,
   onReparentGroup,
   onReparentPart,
+  onMirrorGroup,
   dragSource,
   setDragSource,
 }: GroupNodeProps) => {
@@ -225,6 +230,15 @@ const GroupNode = ({
         </button>
         <button
           type="button"
+          onClick={() => onMirrorGroup(group.id)}
+          className="px-1 text-purple-600 hover:text-purple-800"
+          aria-label={`${group.name} を左右反転で複製`}
+          title="左右反転で複製"
+        >
+          ⇄
+        </button>
+        <button
+          type="button"
           onClick={() => onRemoveGroup(group.id)}
           className="px-1 text-red-500 hover:text-red-700"
           aria-label={`${group.name} を削除`}
@@ -250,6 +264,7 @@ const GroupNode = ({
               onRemovePart={onRemovePart}
               onReparentGroup={onReparentGroup}
               onReparentPart={onReparentPart}
+              onMirrorGroup={onMirrorGroup}
               dragSource={dragSource}
               setDragSource={setDragSource}
             />

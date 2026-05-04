@@ -13,6 +13,7 @@ import {
   saveFaceModelToLocalStorage,
   serializeFaceModel,
 } from "../_lib/jsonIO";
+import { buildMirrorSubtree } from "../_lib/mirrorGroup";
 import type { FaceModel, Group, Part, Vec3 } from "../_lib/types";
 import { isRootGroup } from "../_lib/types";
 import { useHistory } from "../_lib/useHistory";
@@ -271,6 +272,17 @@ export const ModelingTool = () => {
     }));
   };
 
+  const mirrorGroup = (id: string) => {
+    const result = buildMirrorSubtree(model.groups, model.parts, id);
+    if (!result) return;
+    commit((m) => ({
+      ...m,
+      groups: [...m.groups, ...result.groups],
+      parts: [...m.parts, ...result.parts],
+    }));
+    setSelection({ kind: "group", id: result.rootId });
+  };
+
   const exportJson = () => {
     const blob = new Blob([serializeFaceModel(model)], {
       type: "application/json",
@@ -402,6 +414,7 @@ export const ModelingTool = () => {
             onRemovePart={removePart}
             onReparentGroup={reparentGroup}
             onReparentPart={reparentPart}
+            onMirrorGroup={mirrorGroup}
           />
         </div>
         {selectedPart && (
