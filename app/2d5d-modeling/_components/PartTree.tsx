@@ -1,8 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import type { Group, Part } from "../_lib/types";
 
 export type Selection =
+  | { kind: "part"; id: string }
+  | { kind: "group"; id: string }
+  | null;
+
+// What's currently being dragged. We carry this in component state instead
+// of round-tripping it through the DataTransfer payload because the latter
+// is unreadable during dragover (browsers only expose it on drop), but we
+// want to highlight valid drop targets while the cursor moves.
+type DragSource =
   | { kind: "part"; id: string }
   | { kind: "group"; id: string }
   | null;
@@ -34,6 +44,7 @@ export const PartTree = ({
   onReparentGroup,
   onReparentPart,
 }: Props) => {
+  const [dragSource, setDragSource] = useState<DragSource>(null);
   const roots = groups.filter((g) => g.parentId === null);
   return (
     <div className="space-y-2 text-xs">
@@ -46,6 +57,9 @@ export const PartTree = ({
           + ルートグループ
         </button>
       </div>
+      <p className="text-[10px] text-gray-500">
+        ドラッグでグループへ移動 (ルートグループは移動不可)
+      </p>
       <ul className="space-y-1">
         {roots.map((g) => (
           <GroupNode
@@ -62,6 +76,8 @@ export const PartTree = ({
             onRemovePart={onRemovePart}
             onReparentGroup={onReparentGroup}
             onReparentPart={onReparentPart}
+            dragSource={dragSource}
+            setDragSource={setDragSource}
           />
         ))}
       </ul>
@@ -82,6 +98,8 @@ interface GroupNodeProps {
   onRemovePart: (id: string) => void;
   onReparentGroup: (id: string, newParentId: string) => void;
   onReparentPart: (id: string, newGroupId: string) => void;
+  dragSource: DragSource;
+  setDragSource: (s: DragSource) => void;
 }
 
 const GroupNode = ({
@@ -97,31 +115,94 @@ const GroupNode = ({
   onRemovePart,
   onReparentGroup,
   onReparentPart,
+  dragSource,
+  setDragSource,
 }: GroupNodeProps) => {
+  const [hover, setHover] = useState(false);
   const childGroups = groups.filter((g) => g.parentId === group.id);
   const childParts = parts.filter((p) => p.groupId === group.id);
   const isSelected = selection?.kind === "group" && selection.id === group.id;
-  // Reparent target list: any group that wouldn't make a cycle. We don't
-  // detect cycles here for the dropdown; the parent's onReparentGroup must
-  // reject invalid moves.
-  const reparentTargets = groups.filter((g) => g.id !== group.id);
+  const isRoot = group.parentId === null;
+
+  // Whether dropping the current drag source onto this group is meaningful.
+  // - Parts are always droppable onto any group (including root).
+  // - Child groups can be dropped onto any group except themselves and
+  //   their own descendants (cycle); the parent must run wouldCreateCycle
+  //   on commit anyway, but we hide the highlight here too.
+  const canAcceptDrop = (() => {
+    if (!dragSource) return false;
+    if (dragSource.kind === "part") return true;
+    if (dragSource.kind === "group") {
+      if (dragSource.id === group.id) return false;
+      // Walk up from this group; if we ever hit dragSource.id, dropping
+      // would create a cycle (the source is an ancestor of this group).
+      let cursor: string | null = group.id;
+      const byId = new Map(groups.map((g) => [g.id, g]));
+      while (cursor) {
+        if (cursor === dragSource.id) return false;
+        const cur = byId.get(cursor);
+        cursor = cur ? cur.parentId : null;
+      }
+      return true;
+    }
+    return false;
+  })();
+
+  const onDragStart = (e: React.DragEvent) => {
+    if (isRoot) {
+      e.preventDefault();
+      return;
+    }
+    e.dataTransfer.effectAllowed = "move";
+    // Set some payload so Firefox actually starts the drag.
+    e.dataTransfer.setData("text/plain", `group:${group.id}`);
+    setDragSource({ kind: "group", id: group.id });
+  };
+
+  const onDragOver = (e: React.DragEvent) => {
+    if (!canAcceptDrop) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (!hover) setHover(true);
+  };
+
+  const onDragLeave = () => {
+    if (hover) setHover(false);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    if (!canAcceptDrop || !dragSource) return;
+    e.preventDefault();
+    setHover(false);
+    if (dragSource.kind === "part") {
+      onReparentPart(dragSource.id, group.id);
+    } else {
+      onReparentGroup(dragSource.id, group.id);
+    }
+    setDragSource(null);
+  };
 
   return (
     <li>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: tree row needs DnD wiring; keyboard a11y is provided by inner buttons */}
       <div
         style={{ paddingLeft: depth * 12 }}
+        draggable={!isRoot}
+        onDragStart={onDragStart}
+        onDragEnd={() => setDragSource(null)}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
         className={`flex items-center gap-1 rounded ${
-          isSelected ? "bg-blue-100" : "hover:bg-gray-100"
-        }`}
+          isSelected ? "bg-blue-100" : ""
+        } ${hover && canAcceptDrop ? "ring-2 ring-blue-400" : "hover:bg-gray-100"}`}
       >
         <button
           type="button"
           onClick={() => onSelect({ kind: "group", id: group.id })}
           className="flex-1 truncate text-left"
         >
-          <span className="text-gray-500">
-            {group.parentId === null ? "◆" : "◇"}
-          </span>{" "}
+          <span className="text-gray-500">{isRoot ? "◆" : "◇"}</span>{" "}
           {group.name}
         </button>
         <button
@@ -142,21 +223,6 @@ const GroupNode = ({
         >
           +G
         </button>
-        {group.parentId !== null && (
-          <select
-            value={group.parentId ?? ""}
-            onChange={(e) => onReparentGroup(group.id, e.target.value)}
-            className="w-16 rounded border bg-white text-[10px]"
-            aria-label={`${group.name} の親`}
-            title="親を変更"
-          >
-            {reparentTargets.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        )}
         <button
           type="button"
           onClick={() => onRemoveGroup(group.id)}
@@ -184,6 +250,8 @@ const GroupNode = ({
               onRemovePart={onRemovePart}
               onReparentGroup={onReparentGroup}
               onReparentPart={onReparentPart}
+              dragSource={dragSource}
+              setDragSource={setDragSource}
             />
           ))}
           {childParts.map((p) => (
@@ -191,11 +259,10 @@ const GroupNode = ({
               key={p.id}
               part={p}
               depth={depth + 1}
-              groups={groups}
               selection={selection}
               onSelect={onSelect}
               onRemovePart={onRemovePart}
-              onReparentPart={onReparentPart}
+              setDragSource={setDragSource}
             />
           ))}
         </ul>
@@ -207,27 +274,36 @@ const GroupNode = ({
 interface PartNodeProps {
   part: Part;
   depth: number;
-  groups: Group[];
   selection: Selection;
   onSelect: (s: Selection) => void;
   onRemovePart: (id: string) => void;
-  onReparentPart: (id: string, newGroupId: string) => void;
+  setDragSource: (s: DragSource) => void;
 }
 
 const PartNode = ({
   part,
   depth,
-  groups,
   selection,
   onSelect,
   onRemovePart,
-  onReparentPart,
+  setDragSource,
 }: PartNodeProps) => {
   const isSelected = selection?.kind === "part" && selection.id === part.id;
+
+  const onDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", `part:${part.id}`);
+    setDragSource({ kind: "part", id: part.id });
+  };
+
   return (
     <li>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: row is the drag target; selection is via an inner button */}
       <div
         style={{ paddingLeft: depth * 12 }}
+        draggable
+        onDragStart={onDragStart}
+        onDragEnd={() => setDragSource(null)}
         className={`flex items-center gap-1 rounded ${
           isSelected ? "bg-blue-100" : "hover:bg-gray-100"
         }`}
@@ -239,19 +315,6 @@ const PartNode = ({
         >
           <span className="text-gray-500">●</span> {part.name}
         </button>
-        <select
-          value={part.groupId}
-          onChange={(e) => onReparentPart(part.id, e.target.value)}
-          className="w-16 rounded border bg-white text-[10px]"
-          aria-label={`${part.name} のグループ`}
-          title="所属グループを変更"
-        >
-          {groups.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.name}
-            </option>
-          ))}
-        </select>
         <button
           type="button"
           onClick={() => onRemovePart(part.id)}
