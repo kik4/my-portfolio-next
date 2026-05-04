@@ -68,7 +68,6 @@ export const buildDefaultPart = (
     ]),
   ],
   animKeyframes: [],
-  rbfSigmaView: 30,
   rbfSigmaAnim: 0.5,
 });
 
@@ -93,7 +92,6 @@ export const buildDefaultRootGroup = (
     },
   ],
   animKeyframes: [],
-  rbfSigmaView: 30,
   rbfSigmaAnim: 0.5,
 });
 
@@ -117,7 +115,6 @@ export const buildDefaultChildGroup = (
     },
   ],
   animKeyframes: [],
-  rbfSigmaView: 30,
   rbfSigmaAnim: 0.5,
 });
 

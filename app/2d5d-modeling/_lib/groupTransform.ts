@@ -98,7 +98,6 @@ export const resolveGroupChain = (
         g.viewKeyframes,
         yaw,
         pitch,
-        g.rbfSigmaView,
       );
       const resolved = composeRootGroupViewWithAnim(
         base,
@@ -115,7 +114,6 @@ export const resolveGroupChain = (
         g.viewKeyframes,
         yaw,
         pitch,
-        g.rbfSigmaView,
       );
       const resolved = composeChildGroupViewWithAnim(
         base,

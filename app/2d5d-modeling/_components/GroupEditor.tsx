@@ -387,21 +387,5 @@ const CommonGroupHeader = ({
       />
       表示
     </label>
-    <label className="block">
-      <span className="block text-gray-600">view RBF σ (deg)</span>
-      <input
-        type="number"
-        step={1}
-        min={1}
-        value={group.rbfSigmaView}
-        onChange={(e) =>
-          updateGroup(group.id, (g) => ({
-            ...g,
-            rbfSigmaView: Number(e.target.value),
-          }))
-        }
-        className="w-20 rounded border px-1"
-      />
-    </label>
   </>
 );

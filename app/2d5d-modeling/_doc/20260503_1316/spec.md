@@ -7,7 +7,7 @@
 破棄理由:
 - パーツが頭メッシュにレイキャストでスナップされる構造は、輪郭線シェーダ（backface hull）の押し出しと干渉して z-fighting や視認性の問題を生んだ
 - パーツ位置を 3D 多様体に縛ると「ある角度では頭表面、別の角度では空中に置きたい」自由度が出ない
-- パーツ層と 3D 層の責務が混ざっており、補間ロジック（view RBF / anim RBF / group chain）の合成が複雑
+- パーツ層と 3D 層の責務が混ざっており、補間ロジック（view / anim / group chain）の合成が複雑
 
 過去 spec（参照のみ、実装は破棄）:
 - [20260411_2231/spec.md](../20260411_2231/spec.md) — Billboard 2D 版
@@ -112,7 +112,6 @@ interface Part {
   // view × anim 二軸補間の対象
   viewKeyframes: PartViewKeyframe[];
   animKeyframes: PartAnimKeyframe[];
-  rbfSigmaView: number;
   rbfSigmaAnim: number;
 }
 
@@ -155,7 +154,6 @@ interface RootGroup {
   // RootGroup 自体には anchor フィールドを持たせない。
   viewKeyframes: RootGroupViewKeyframe[];
   animKeyframes: RootGroupAnimKeyframe[];
-  rbfSigmaView: number;
   rbfSigmaAnim: number;
 }
 
@@ -167,7 +165,6 @@ interface ChildGroup {
   // view × anim 二軸補間の対象
   viewKeyframes: ChildGroupViewKeyframe[];
   animKeyframes: ChildGroupAnimKeyframe[];
-  rbfSigmaView: number;
   rbfSigmaAnim: number;
 }
 
@@ -256,7 +253,7 @@ T(tx, ty) = | 1 0 tx |
 
 1. グループツリーをルートから DFS で巡回
 2. 各ルートグループについて:
-   1. 現在の (yaw, pitch) で `viewKeyframes` を view RBF 補間 → `(anchor, affine, alpha, visible)` を取得
+   1. 現在の (yaw, pitch) で `viewKeyframes` を view 補間（Delaunay + 重心座標）→ `(anchor, affine, alpha, visible)` を取得
    2. 現在の anim params で `animKeyframes` を anim RBF 補間 → 各 delta を加算（`anchor + anchorDelta`、`affine + affineDelta` 6成分加算、`alpha + alphaDelta` を 0..1 にクランプ、`visible` は anim では変えない）
    3. ビルボード平面を構築: `anchor` を中心、カメラの右ベクトルを +X、上ベクトルを +Y、奥行きはカメラ視線方向に倒した平面
 3. ルートグループの affine を初期累積アフィンとして、子要素を再帰描画
@@ -290,7 +287,7 @@ Three.js では `<group position={A} quaternion={cameraQuaternion}>` のよう�
 
 ### 5.4 アフィン補間の方針
 
-view RBF / anim RBF は引き続き Gaussian RBF。`affine` の 6 成分は **独立に線形補間** する（行列を decompose しない）。
+view 補間（後述の Delaunay + 重心座標）と anim RBF（Gaussian）共に、`affine` の 6 成分は **独立に線形補間** する（行列を decompose しない）。
 
 - 利点: 実装が単純、加算 delta との整合がとれる
 - 欠点: 90° と -90° の中間が「無回転」になる等、回転の補間が幾何的には不自然になりうる
@@ -298,15 +295,20 @@ view RBF / anim RBF は引き続き Gaussian RBF。`affine` の 6 成分は **�
 
 ## 6. 補間アルゴリズム
 
-### 6.1 view RBF（exact interpolation, base-relative）
+### 6.1 view 補間（Delaunay + 重心座標、base-relative）
 
-`viewKeyframes[0]` を base frame として扱い、他の keyframe は base からの差分として補間する。これにより、どの keyframe の角度で query してもその keyframe の値が完全に再現され、かつどの keyframe からも遠い角度では base に引き寄せられる。
+`viewKeyframes[0]` を base frame として扱い、他の keyframe は base からの差分として補間する。重みは (yaw, pitch) 度空間で keyframe を散布点と見なした **Delaunay 三角形分割 + 重心座標** で求める。RBF と異なり、影響を及ぼすのはクエリ点が乗る三角形の **3 keyframe のみ**。これにより「ヨーだけ動かしたのに pitch 違いの keyframe が混ざる」現象を避ける。
 
 ```
-kernel(a, b) = exp(-(great_circle_distance(a, b) / σ)²)
-K[i][j]       = kernel(kf_i, kf_j)        (n×n)、対角に小さなリッジを足す
-k_i           = kernel(query, kf_i)        (n)
-weight        = K^-1 · k                   (Σw≠1。kf_i 角度では w = e_i)
+points = viewKeyframes.map(k => [k.yaw, k.pitch])  // 度
+tris   = Delaunay(points)                          // 三角形分割
+
+クエリ point q について:
+  - q がどれかの keyframe と一致 → その keyframe に w=1（exact）
+  - q が三角形 (i, j, k) 内 → 重心座標 (λ_i, λ_j, λ_k) を weight に
+  - q が凸包の外 → 凸包エッジ上に射影、最近接エッジの 2 keyframe で線形補間
+  - keyframes が 2 個 → 線分上に射影、2 keyframe で線形補間（クランプ）
+  - keyframes が同一直線上 → 軸ソートして区間内 2 keyframe で線形補間
 
 base = kf_0.value
 result = base + Σ weight_i × (kf_i.value - base)
@@ -314,9 +316,10 @@ result = base + Σ weight_i × (kf_i.value - base)
 ```
 
 性質:
-- query が kf_0 の角度: weight = e_0、`result = base × (1 - 1) + 1 × base = base`。
-- query が kf_j (j > 0) の角度: weight = e_j、`result = (1 - 1) × base + 1 × kf_j.value = kf_j.value`。
-- query がどの keyframe からも遠い: Σ weight が 0 に近づき、`result ≈ base`（base に引き寄せられる）。
+- query がどの keyframe の角度でも、その keyframe のみ w=1、他は 0 → 値が完全に再現される。
+- 三角形内では 3 keyframe のみが寄与し、それ以外の keyframe の影響は **完全にゼロ**。
+- 凸包外ではエッジ上の 2 keyframe のみが寄与（外挿せず端でクランプ）。
+- σ パラメータは不要（距離スケールに依存しない）。
 
 補間対象:
 - パーツ: `shape.basePoints[]` の各成分、`affine` の 6 成分、`alpha`、`visible`（最大重み keyframe の値を採用）
@@ -403,7 +406,7 @@ PartEditor と同じ構造。違いは:
 | Phase | 内容 |
 |---|---|
 | 1 | 旧コード（v3 実装）の整理。FaceModel v4 のスキーマ、defaultModel、jsonIO、useHistory、affine ユーティリティ。最小可動: 単一ルートグループ + 単一パーツが画面に出る |
-| 2 | view RBF + 二軸補間ロジックの再実装（パーツ + ルートグループ + 子グループの補間対象を網羅） |
+| 2 | view 補間（Delaunay + 重心座標）+ anim RBF + 二軸合成ロジックの再実装（パーツ + ルートグループ + 子グループの補間対象を網羅） |
 | 3 | 編集 UI（PartTree、PartEditor、RootGroupEditor、ChildGroupEditor、PointEditor、アフィンフィールド、AnchorGizmo） |
 | 4 | マルチビュー、Undo/Redo、AnimParamsPanel、AnimKeyframeEditor。Unreal 出力 spec の v4 対応 |
 
@@ -420,7 +423,7 @@ PartEditor と同じ構造。違いは:
 
 - 頭メッシュ（HeadMesh + headMeshBuild + HeadCurveEditor + outlineMaterial）
 - マルチビュー（MultiView + Scene + 固定 4 視点 + メインインタラクティブ）
-- view RBF / anim RBF の数学（Gaussian、補間対象だけ差し替え）
+- anim RBF の数学（Gaussian、補間対象だけ差し替え）。view 側は Delaunay + 重心座標へ差し替え。
 - AnimParamDef / animParams レジストリ / currentAnimParams スナップショット
 - PointEditor（パーツ shape の 2D ドラッグ、補間対象が変わるだけ）
 - shapeTopology（点追加/削除を全 keyframe に伝播）

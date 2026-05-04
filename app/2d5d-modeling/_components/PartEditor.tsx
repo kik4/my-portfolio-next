@@ -109,23 +109,6 @@ export const PartEditor = ({
           className="w-20 rounded border px-1"
         />
       </label>
-      <label className="block">
-        <span className="block text-gray-600">view RBF σ (deg)</span>
-        <input
-          type="number"
-          step={1}
-          min={1}
-          value={part.rbfSigmaView}
-          onChange={(e) =>
-            updatePart(part.id, (p) => ({
-              ...p,
-              rbfSigmaView: Number(e.target.value),
-            }))
-          }
-          className="w-20 rounded border px-1"
-        />
-      </label>
-
       <KeyframeList
         title="view keyframes"
         keyframes={part.viewKeyframes}

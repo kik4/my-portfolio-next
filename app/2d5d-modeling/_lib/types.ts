@@ -61,7 +61,6 @@ export interface Part {
   strokeWidth: number;
   viewKeyframes: PartViewKeyframe[]; // at least one
   animKeyframes: PartAnimKeyframe[];
-  rbfSigmaView: number;
   rbfSigmaAnim: number;
 }
 
@@ -72,7 +71,6 @@ interface GroupBase {
   id: string;
   name: string;
   visible: boolean;
-  rbfSigmaView: number;
   rbfSigmaAnim: number;
 }
 

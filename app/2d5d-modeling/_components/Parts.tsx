@@ -74,14 +74,8 @@ const PartRenderer = ({
     }
   });
   const baseView = useMemo(
-    () =>
-      interpolatePartViewKeyframes(
-        part.viewKeyframes,
-        yaw,
-        pitch,
-        part.rbfSigmaView,
-      ),
-    [part.viewKeyframes, part.rbfSigmaView, yaw, pitch],
+    () => interpolatePartViewKeyframes(part.viewKeyframes, yaw, pitch),
+    [part.viewKeyframes, yaw, pitch],
   );
 
   const partView = useMemo(
