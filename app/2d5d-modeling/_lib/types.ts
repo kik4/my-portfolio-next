@@ -38,3 +38,12 @@ export type Selection =
   | { kind: "edge"; partId: string; edgeIndex: number }
   | { kind: "face"; partId: string; faceIndex: number }
   | null;
+
+// ActiveNode tracks which part/group is the focus of property edits in the
+// sidebar (color, name, etc). Independent of mesh-element Selection: clicking
+// a point also implicitly activates that point's part, but the user can also
+// activate a part/group by name from the tree without selecting any element.
+export type ActiveNode =
+  | { kind: "part"; id: string }
+  | { kind: "group"; id: string }
+  | null;

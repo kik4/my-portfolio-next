@@ -70,6 +70,35 @@ const buildSphereMesh = (
   return { points, edges, faces };
 };
 
+// Factories for new tree nodes (used by the part tree's add buttons).
+
+export const buildEmptyMesh = (): Mesh => ({
+  points: [],
+  edges: [],
+  faces: [],
+});
+
+export const buildNewGroup = (
+  id: string,
+  name: string,
+  parentId: string | null,
+): Group => ({ id, name, parentId, visible: true });
+
+export const buildNewPart = (
+  id: string,
+  name: string,
+  groupId: string,
+): Part => ({
+  id,
+  name,
+  groupId,
+  visible: true,
+  mesh: buildEmptyMesh(),
+  strokeColor: "#222222",
+  fillColor: "#cccccc",
+  strokeWidth: 2,
+});
+
 export const buildDefaultModel = (): Model => {
   const groupId = "group-root";
   const partId = "part-sphere";
