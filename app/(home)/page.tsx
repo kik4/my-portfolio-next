@@ -17,12 +17,14 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { MyLink } from "../_components/MyLink";
 import { getPathToDijkstra } from "../dijkstra/getPath";
+import { getPathToMimesis } from "../mimesis/getPath";
 import { getPathToTextTagEditor } from "../text-tag-editor/getPath";
 import { getPathToTypeScript } from "../typescript/getPath";
 import { AnimateOnScroll } from "./_components/AnimateOnScroll";
 import { WavyBackground } from "./_components/WavyBackground";
 import bannerArticles from "./_img/banner_articles.jpg";
 import icon from "./_img/icon_1024x1024.jpg";
+import projectNoImage from "./_img/no-image.png";
 import projectDijkstra from "./_img/projectDijkstra.jpg";
 import projectF from "./_img/projectF.jpg";
 import projectN from "./_img/projectN.jpg";
@@ -326,6 +328,17 @@ export default function Home() {
             </AnimateOnScroll>
             <div className="flex flex-col gap-4">
               {[
+                {
+                  title: "2.5Dモデリングツール",
+                  category: "技術実験" as const,
+                  period: "2025",
+                  description:
+                    "2Dと3Dを組み合わせたモデリングツール。2Dのスプライトを配置して理想の3Dキャラクターを構築。（開発中）",
+                  image: projectNoImage,
+                  tech: ["React", "TypeScript"].join(", "),
+                  link: getPathToMimesis(),
+                  linkIcon: <LinkIcon size={16} />,
+                },
                 {
                   title: "テキストタグエディター",
                   category: "技術実験" as const,
