@@ -30,8 +30,11 @@ export interface Model {
   parts: Part[];
 }
 
+// Selection is a single union state. Multi-select applies only to points;
+// edge/face are always single-element. Switching kinds clears the prior
+// kind (e.g. clicking an edge clears the point selection).
 export type Selection =
-  | { kind: "point"; partId: string; pointIndex: number }
+  | { kind: "points"; partId: string; pointIndices: number[] }
   | { kind: "edge"; partId: string; edgeIndex: number }
   | { kind: "face"; partId: string; faceIndex: number }
   | null;
