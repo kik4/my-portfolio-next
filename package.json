@@ -29,7 +29,8 @@
     "react-dom": "^19.2.5",
     "react-intersection-observer": "^10.0.3",
     "react-toastify": "^11.1.0",
-    "three": "^0.183.2"
+    "three": "^0.183.2",
+    "three-stdlib": "^2.36.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.13",
@@ -44,7 +45,6 @@
     "lint-staged": "^16.4.0",
     "postcss": "^8.5.12",
     "tailwindcss": "^4.2.4",
-    "three-stdlib": "^2.36.1",
     "typescript": "^6.0.3"
   },
   "lint-staged": {

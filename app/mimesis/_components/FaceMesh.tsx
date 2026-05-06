@@ -4,9 +4,7 @@ import { Billboard } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { useMemo } from "react";
 import * as THREE from "three";
-import { Line2 } from "three/examples/jsm/lines/Line2.js";
-import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
-import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
+import { Line2, LineGeometry, LineMaterial } from "three-stdlib";
 import { buildFaceGeometry } from "../_lib/buildGeometry";
 import type { FaceModel, YawPitch } from "../_lib/types";
 
