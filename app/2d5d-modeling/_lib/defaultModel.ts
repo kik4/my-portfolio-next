@@ -1,70 +1,75 @@
-import type { Group, Mesh, Model, Part } from "./types";
+import type { Group, Mesh, Model, Part, Vec3 } from "./types";
 
-// Build a UV-sphere-style mesh with the given segment / ring counts. Edges
-// connect lat / lon neighbours so the explicit edge layer doubles as a
-// wireframe overlay.
-const buildSphereMesh = (
-  radius: number,
-  rings: number, // number of horizontal rings between (but excluding) the poles
-  segments: number, // longitudinal segments
-): Mesh => {
-  const points: Mesh["points"] = [];
-  // Top pole
-  points.push([0, radius, 0]);
-  // Middle rings
-  for (let r = 1; r <= rings; r++) {
-    const phi = (Math.PI * r) / (rings + 1); // [0..pi]
-    const y = radius * Math.cos(phi);
-    const rr = radius * Math.sin(phi);
-    for (let s = 0; s < segments; s++) {
-      const theta = (2 * Math.PI * s) / segments;
-      points.push([rr * Math.cos(theta), y, rr * Math.sin(theta)]);
+// Regular icosahedron: 12 vertices, 30 edges, 20 triangle faces. Every face
+// is genuinely flat, so silhouette extraction never gets confused by
+// non-planar quad pairs (which the UV-sphere suffered from). Good enough as
+// a rough sphere stand-in for the editor's default scene; users can refine
+// further by adding points and faces.
+const buildIcosahedronMesh = (radius: number): Mesh => {
+  // Golden ratio. The icosahedron's 12 vertices are formed by three mutually
+  // perpendicular golden rectangles (±1, ±phi) on each axis triple.
+  const phi = (1 + Math.sqrt(5)) / 2;
+  const norm = Math.sqrt(1 + phi * phi);
+  const a = radius / norm;
+  const b = (radius * phi) / norm;
+
+  const points: Vec3[] = [
+    [-a, b, 0],
+    [a, b, 0],
+    [-a, -b, 0],
+    [a, -b, 0],
+    [0, -a, b],
+    [0, a, b],
+    [0, -a, -b],
+    [0, a, -b],
+    [b, 0, -a],
+    [b, 0, a],
+    [-b, 0, -a],
+    [-b, 0, a],
+  ];
+
+  // Faces are CCW from outside. List sourced from the canonical icosahedron
+  // tessellation so winding is consistent.
+  const faces: [number, number, number][] = [
+    [0, 11, 5],
+    [0, 5, 1],
+    [0, 1, 7],
+    [0, 7, 10],
+    [0, 10, 11],
+    [1, 5, 9],
+    [5, 11, 4],
+    [11, 10, 2],
+    [10, 7, 6],
+    [7, 1, 8],
+    [3, 9, 4],
+    [3, 4, 2],
+    [3, 2, 6],
+    [3, 6, 8],
+    [3, 8, 9],
+    [4, 9, 5],
+    [2, 4, 11],
+    [6, 2, 10],
+    [8, 6, 7],
+    [9, 8, 1],
+  ];
+
+  // Derive the unique edge set from the face list. An icosahedron has
+  // exactly 30 edges; building from faces avoids transcription mistakes.
+  const seen = new Set<string>();
+  const edges: [number, number][] = [];
+  const key = (u: number, v: number) => (u < v ? `${u}-${v}` : `${v}-${u}`);
+  for (const [u, v, w] of faces) {
+    for (const [p, q] of [
+      [u, v],
+      [v, w],
+      [w, u],
+    ] as const) {
+      const k = key(p, q);
+      if (!seen.has(k)) {
+        seen.add(k);
+        edges.push([p, q]);
+      }
     }
-  }
-  // Bottom pole
-  points.push([0, -radius, 0]);
-
-  const topIndex = 0;
-  const bottomIndex = points.length - 1;
-  const ringStart = (r: number) => 1 + r * segments; // r in [0..rings-1]
-
-  const edges: Mesh["edges"] = [];
-  const faces: Mesh["faces"] = [];
-
-  // Top cap fan
-  for (let s = 0; s < segments; s++) {
-    const a = ringStart(0) + s;
-    const b = ringStart(0) + ((s + 1) % segments);
-    edges.push([topIndex, a]);
-    faces.push([topIndex, b, a]);
-  }
-  // Middle quads (each = 2 triangles)
-  for (let r = 0; r < rings - 1; r++) {
-    for (let s = 0; s < segments; s++) {
-      const a = ringStart(r) + s;
-      const b = ringStart(r) + ((s + 1) % segments);
-      const c = ringStart(r + 1) + ((s + 1) % segments);
-      const d = ringStart(r + 1) + s;
-      // CCW from outside (camera looking in toward the surface)
-      faces.push([a, b, c]);
-      faces.push([a, c, d]);
-      edges.push([a, b]);
-      edges.push([a, d]);
-    }
-  }
-  // Bottom ring vertical edges + bottom-row horizontal
-  const lastRing = rings - 1;
-  for (let s = 0; s < segments; s++) {
-    const a = ringStart(lastRing) + s;
-    const b = ringStart(lastRing) + ((s + 1) % segments);
-    edges.push([a, b]);
-  }
-  // Bottom cap fan
-  for (let s = 0; s < segments; s++) {
-    const a = ringStart(lastRing) + s;
-    const b = ringStart(lastRing) + ((s + 1) % segments);
-    edges.push([bottomIndex, a]);
-    faces.push([bottomIndex, a, b]);
   }
 
   return { points, edges, faces };
@@ -101,7 +106,7 @@ export const buildNewPart = (
 
 export const buildDefaultModel = (): Model => {
   const groupId = "group-root";
-  const partId = "part-sphere";
+  const partId = "part-ico";
   const group: Group = {
     id: groupId,
     name: "root",
@@ -110,10 +115,10 @@ export const buildDefaultModel = (): Model => {
   };
   const part: Part = {
     id: partId,
-    name: "sphere",
+    name: "icosahedron",
     groupId,
     visible: true,
-    mesh: buildSphereMesh(0.6, 6, 12),
+    mesh: buildIcosahedronMesh(0.6),
     strokeColor: "#222222",
     fillColor: "#cccccc",
     strokeWidth: 2,

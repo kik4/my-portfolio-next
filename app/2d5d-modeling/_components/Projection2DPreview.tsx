@@ -1,6 +1,7 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
+import earcut from "earcut";
 import { useMemo } from "react";
 import * as THREE from "three";
 import { type Point2, smoothCatmullRom2D } from "../_lib/catmullRom2D";
@@ -30,9 +31,9 @@ const buildExplicitPositions = (mesh: MeshData): Float32Array => {
   return arr;
 };
 
-// Capacity for silhouette geometry (in segments). Smoothing inflates a
-// small loop to many subsegments, so size generously.
 const SIL_SEGMENTS_CAPACITY = 4096;
+const FILL_VERTICES_CAPACITY = 4096;
+const FILL_INDICES_CAPACITY = 12288;
 
 export const Projection2DPreview = ({
   mesh,
@@ -56,30 +57,36 @@ export const Projection2DPreview = ({
     return g;
   }, [mesh]);
 
-  const depthGeom = useMemo(() => {
-    const g = new THREE.BufferGeometry();
-    const positions = new Float32Array(mesh.faces.length * 9);
-    for (let i = 0; i < mesh.faces.length; i++) {
-      const [a, b, c] = mesh.faces[i];
-      positions.set(
-        [...mesh.points[a], ...mesh.points[b], ...mesh.points[c]],
-        i * 9,
-      );
-    }
-    g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    return g;
-  }, [mesh]);
-
+  // Pre-allocated buffers for the silhouette line strip and the earcut fill
+  // mesh. Both are rebuilt every frame from the current camera so they stay
+  // in sync with the smoothed silhouette curve.
   const silhouetteGeom = useMemo(() => {
     const g = new THREE.BufferGeometry();
-    const buf = new Float32Array(SIL_SEGMENTS_CAPACITY * 6);
-    g.setAttribute("position", new THREE.BufferAttribute(buf, 3));
+    g.setAttribute(
+      "position",
+      new THREE.BufferAttribute(new Float32Array(SIL_SEGMENTS_CAPACITY * 6), 3),
+    );
+    g.setDrawRange(0, 0);
+    return g;
+  }, []);
+
+  const fillGeom = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute(
+      "position",
+      new THREE.BufferAttribute(
+        new Float32Array(FILL_VERTICES_CAPACITY * 3),
+        3,
+      ),
+    );
+    g.setIndex(
+      new THREE.BufferAttribute(new Uint32Array(FILL_INDICES_CAPACITY), 1),
+    );
     g.setDrawRange(0, 0);
     return g;
   }, []);
 
   useFrame(() => {
-    if (!showSilhouette) return;
     const cameraPos: [number, number, number] = [
       camera.position.x,
       camera.position.y,
@@ -88,35 +95,17 @@ export const Projection2DPreview = ({
     const { silhouetteEdges } = extractSilhouette(mesh, cameraPos);
     const loops = chainSilhouetteLoops(silhouetteEdges);
 
-    const attr = silhouetteGeom.getAttribute(
-      "position",
-    ) as THREE.BufferAttribute;
-    const buf = attr.array as Float32Array;
-
-    let written = 0;
-    const writeSeg = (
-      ax: number,
-      ay: number,
-      az: number,
-      bx: number,
-      by: number,
-      bz: number,
-    ) => {
-      if (written >= SIL_SEGMENTS_CAPACITY) return;
-      buf.set([ax, ay, az, bx, by, bz], written * 6);
-      written++;
-    };
-
-    const ndcPoints: { ndc: Point2; z: number }[] = [];
+    // ---- Build smoothed (or raw) loops, recording both world-space points
+    //      (for line + fill geometry) and NDC xy (for earcut input).
     const tmp = new THREE.Vector3();
+    const builtLoops: { world: THREE.Vector3[]; ndc: Point2[] }[] = [];
 
     for (const loop of loops) {
-      // Project each loop point to NDC. Loops emitted by chainSilhouetteLoops
-      // include the start at the end (closed); we treat closed=true and
-      // exclude the duplicate before sampling to avoid a zero-length segment.
       const isClosed = loop.length >= 2 && loop[0] === loop[loop.length - 1];
       const seq = isClosed ? loop.slice(0, -1) : loop;
-      ndcPoints.length = 0;
+      if (seq.length < 2) continue;
+
+      const ndcPoints: { ndc: Point2; z: number }[] = [];
       for (const idx of seq) {
         const p = mesh.points[idx];
         tmp.set(p[0], p[1], p[2]).project(camera);
@@ -127,17 +116,10 @@ export const Projection2DPreview = ({
       if (smoothSilhouette && ndcPoints.length >= 3) {
         const xy = ndcPoints.map((p) => p.ndc);
         const smoothed = smoothCatmullRom2D(xy, isClosed, smoothSamples);
-        // Map each smoothed point back to a depth by piecewise-linear
-        // interpolation along the original ring's arc length in NDC. Crude
-        // but adequate — depth doesn't have to be exact for the depth test
-        // to give sensible occlusion at sub-pixel scale.
-        const ringZs = ndcPoints.map((p) => p.z);
-        // Build cumulative arc lengths of the ORIGINAL polyline in NDC for
-        // depth lookup. The smoothed curve's arc length isn't trivially
-        // alignable; we re-anchor by nearest-segment instead.
+        // Re-anchor each smoothed point's depth to the nearest segment of
+        // the original ring. Adequate for the depth test; doesn't have to
+        // be exact at sub-pixel scale.
         curve = smoothed.map((q) => {
-          // Find which original segment q sits closest to — pick by minimum
-          // distance to the segment, then interpolate z linearly along it.
           let bestSeg = 0;
           let bestT = 0;
           let bestD = Infinity;
@@ -165,51 +147,101 @@ export const Projection2DPreview = ({
               bestT = t;
             }
           }
-          const za = ringZs[bestSeg];
-          const zb = ringZs[(bestSeg + 1) % ringZs.length];
+          const za = ndcPoints[bestSeg].z;
+          const zb = ndcPoints[(bestSeg + 1) % ndcPoints.length].z;
           return { ndc: q, z: za + (zb - za) * bestT };
         });
       } else {
         curve = ndcPoints.slice();
-        if (isClosed && curve.length > 0) curve.push(curve[0]);
+      }
+      // Drop a duplicate trailing endpoint if the smoother emitted one for
+      // a closed ring; both the line writer and earcut handle closure
+      // implicitly via index arithmetic.
+      if (
+        curve.length >= 2 &&
+        curve[0].ndc[0] === curve[curve.length - 1].ndc[0] &&
+        curve[0].ndc[1] === curve[curve.length - 1].ndc[1]
+      ) {
+        curve.pop();
       }
 
-      // Unproject NDC -> world and emit segments.
-      const worldPts: THREE.Vector3[] = curve.map((p) => {
+      const world = curve.map((p) => {
         const v = new THREE.Vector3(p.ndc[0], p.ndc[1], p.z);
         v.unproject(camera);
         return v;
       });
-      for (let i = 0; i + 1 < worldPts.length; i++) {
-        const wa = worldPts[i];
-        const wb = worldPts[i + 1];
-        writeSeg(wa.x, wa.y, wa.z, wb.x, wb.y, wb.z);
-      }
-      if (smoothSilhouette && isClosed && worldPts.length >= 1) {
-        // Close the smoothed ring back to its first point.
-        const wa = worldPts[worldPts.length - 1];
-        const wb = worldPts[0];
-        writeSeg(wa.x, wa.y, wa.z, wb.x, wb.y, wb.z);
+      const ndc = curve.map((p) => p.ndc);
+      builtLoops.push({ world, ndc });
+    }
+
+    // ---- Silhouette line buffer (closed strip per loop).
+    const silAttr = silhouetteGeom.getAttribute(
+      "position",
+    ) as THREE.BufferAttribute;
+    const silBuf = silAttr.array as Float32Array;
+    let silWritten = 0;
+    if (showSilhouette) {
+      for (const { world } of builtLoops) {
+        for (let i = 0; i < world.length; i++) {
+          if (silWritten >= SIL_SEGMENTS_CAPACITY) break;
+          const a = world[i];
+          const b = world[(i + 1) % world.length];
+          silBuf.set([a.x, a.y, a.z, b.x, b.y, b.z], silWritten * 6);
+          silWritten++;
+        }
       }
     }
-    attr.needsUpdate = true;
-    silhouetteGeom.setDrawRange(0, written * 2);
+    silAttr.needsUpdate = true;
+    silhouetteGeom.setDrawRange(0, silWritten * 2);
+
+    // ---- Fill: earcut each loop in NDC space, emit world-space triangles.
+    //      Loops are treated as independent outer rings — true holes are
+    //      not detected here, but the icosahedron / typical convex meshes
+    //      we expect at this stage produce a single ring per view.
+    const fillPosAttr = fillGeom.getAttribute(
+      "position",
+    ) as THREE.BufferAttribute;
+    const fillIdxAttr = fillGeom.getIndex() as THREE.BufferAttribute;
+    const fillPos = fillPosAttr.array as Float32Array;
+    const fillIdx = fillIdxAttr.array as Uint32Array;
+    let vCount = 0;
+    let iCount = 0;
+    for (const { world, ndc } of builtLoops) {
+      if (world.length < 3) continue;
+      const flat: number[] = [];
+      for (const p of ndc) flat.push(p[0], p[1]);
+      const tri = earcut(flat);
+      if (tri.length === 0) continue;
+      const baseV = vCount;
+      for (const w of world) {
+        if (vCount >= FILL_VERTICES_CAPACITY) break;
+        fillPos[vCount * 3] = w.x;
+        fillPos[vCount * 3 + 1] = w.y;
+        fillPos[vCount * 3 + 2] = w.z;
+        vCount++;
+      }
+      for (const ti of tri) {
+        if (iCount >= FILL_INDICES_CAPACITY) break;
+        fillIdx[iCount++] = baseV + ti;
+      }
+    }
+    fillPosAttr.needsUpdate = true;
+    fillIdxAttr.needsUpdate = true;
+    fillGeom.setDrawRange(0, iCount);
   });
 
   return (
     <>
-      {/* Surface pass. When `showFill` is on, colour is written using the
-          part's fillColor so the projected silhouette interior is opaque.
-          When off, only depth is written so lines drawn after fail the
-          depth test wherever the mesh occludes them. polygonOffset nudges
-          the surface back so coplanar explicit edges still render on top.
-          BackSide-only ensures we don't paint over interior detail when
-          two layers of the mesh stack. */}
-      <mesh geometry={depthGeom} renderOrder={0}>
+      {/* Fill pass. Always renders so the depth buffer has the silhouette
+          surface in it — that's what occludes back-side lines. colorWrite
+          is toggled by showFill so the user can hide colour but keep the
+          occlusion. polygonOffset nudges the fill back so coplanar lines
+          pass the depth test on top. */}
+      <mesh geometry={fillGeom} renderOrder={0}>
         <meshBasicMaterial
           color={fillColor}
           colorWrite={showFill}
-          side={THREE.FrontSide}
+          side={THREE.DoubleSide}
           polygonOffset
           polygonOffsetFactor={1}
           polygonOffsetUnits={1}
