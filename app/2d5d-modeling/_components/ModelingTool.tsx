@@ -55,6 +55,7 @@ export const ModelingTool = () => {
   // orbiting confirms the silhouette tracks the view.
   const [perspectiveMode, setPerspectiveMode] =
     useState<PerspectiveMode>("mesh");
+  const [showFill, setShowFill] = useState(true);
   const [showExplicitEdges, setShowExplicitEdges] = useState(true);
   const [showSilhouette, setShowSilhouette] = useState(true);
   const [smoothSilhouette, setSmoothSilhouette] = useState(true);
@@ -162,6 +163,8 @@ export const ModelingTool = () => {
               key={part.id}
               mesh={part.mesh}
               strokeColor={part.strokeColor}
+              fillColor={part.fillColor}
+              showFill={showFill}
               showExplicitEdges={showExplicitEdges}
               showSilhouette={showSilhouette}
               smoothSilhouette={smoothSilhouette}
@@ -344,6 +347,14 @@ export const ModelingTool = () => {
           </div>
           {perspectiveMode === "projection" && (
             <div className="space-y-1 pt-1">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={showFill}
+                  onChange={(e) => setShowFill(e.target.checked)}
+                />
+                面塗り
+              </label>
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"

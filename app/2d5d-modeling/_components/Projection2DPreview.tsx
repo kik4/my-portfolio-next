@@ -10,7 +10,9 @@ import type { Mesh as MeshData } from "../_lib/types";
 interface Props {
   mesh: MeshData;
   strokeColor: string;
+  fillColor: string;
   silhouetteColor?: string;
+  showFill?: boolean;
   showExplicitEdges?: boolean;
   showSilhouette?: boolean;
   smoothSilhouette?: boolean;
@@ -35,7 +37,9 @@ const SIL_SEGMENTS_CAPACITY = 4096;
 export const Projection2DPreview = ({
   mesh,
   strokeColor,
+  fillColor,
   silhouetteColor = "#cc3300",
+  showFill = true,
   showExplicitEdges = true,
   showSilhouette = true,
   smoothSilhouette = true,
@@ -194,13 +198,18 @@ export const Projection2DPreview = ({
 
   return (
     <>
-      {/* Depth-only pass: writes z but not colour so lines drawn after fail
-          the depth test wherever the mesh occludes them. polygonOffset nudges
-          the surface back so coplanar explicit edges still render on top. */}
+      {/* Surface pass. When `showFill` is on, colour is written using the
+          part's fillColor so the projected silhouette interior is opaque.
+          When off, only depth is written so lines drawn after fail the
+          depth test wherever the mesh occludes them. polygonOffset nudges
+          the surface back so coplanar explicit edges still render on top.
+          BackSide-only ensures we don't paint over interior detail when
+          two layers of the mesh stack. */}
       <mesh geometry={depthGeom} renderOrder={0}>
         <meshBasicMaterial
-          colorWrite={false}
-          side={THREE.DoubleSide}
+          color={fillColor}
+          colorWrite={showFill}
+          side={THREE.FrontSide}
           polygonOffset
           polygonOffsetFactor={1}
           polygonOffsetUnits={1}
