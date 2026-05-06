@@ -16,8 +16,11 @@ import type { Mesh, Model, Selection, Vec3 } from "../_lib/types";
 import { MeshView } from "./MeshView";
 import { PointDragger2D } from "./PointDragger2D";
 import { PointGizmo } from "./PointGizmo";
+import { Projection2DPreview } from "./Projection2DPreview";
 import { QuadView } from "./QuadView";
 import { Scene, type ViewKind } from "./Scene";
+
+type PerspectiveMode = "mesh" | "projection";
 
 const togglePointInSelection = (
   selection: Selection,
@@ -47,6 +50,14 @@ export const ModelingTool = () => {
   const [showWinding, setShowWinding] = useState(false);
   const [showAxes, setShowAxes] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
+  // 3D pane content. "mesh" = full 3D editing view; "projection" = 2D
+  // line preview (explicit edges + silhouette) using the same camera so
+  // orbiting confirms the silhouette tracks the view.
+  const [perspectiveMode, setPerspectiveMode] =
+    useState<PerspectiveMode>("mesh");
+  const [showExplicitEdges, setShowExplicitEdges] = useState(true);
+  const [showSilhouette, setShowSilhouette] = useState(true);
+  const [smoothSilhouette, setSmoothSilhouette] = useState(true);
 
   const updatePartMesh = useCallback(
     (partId: string, mut: (mesh: Mesh) => Mesh) => {
@@ -140,6 +151,25 @@ export const ModelingTool = () => {
       selectedPart
         ? (selectedPart.mesh.points[selection.pointIndices[0]] ?? null)
         : null;
+
+    // Projection preview replaces the entire mesh+gizmo content of the 3D
+    // pane. Silhouette is recomputed each frame against the live camera.
+    if (view === "perspective" && perspectiveMode === "projection") {
+      return (
+        <Scene view={view} showAxes={showAxes} showGrid={showGrid}>
+          {model.parts.map((part) => (
+            <Projection2DPreview
+              key={part.id}
+              mesh={part.mesh}
+              strokeColor={part.strokeColor}
+              showExplicitEdges={showExplicitEdges}
+              showSilhouette={showSilhouette}
+              smoothSilhouette={smoothSilhouette}
+            />
+          ))}
+        </Scene>
+      );
+    }
 
     return (
       <Scene view={view} showAxes={showAxes} showGrid={showGrid}>
@@ -284,6 +314,62 @@ export const ModelingTool = () => {
             />
             winding 色分け (表青/裏赤)
           </label>
+        </div>
+
+        <h2 className="mb-2 font-bold">3D ペイン</h2>
+        <div className="mb-4 space-y-1">
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => setPerspectiveMode("mesh")}
+              className={`flex-1 rounded px-2 py-0.5 text-xs ${
+                perspectiveMode === "mesh"
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100 hover:bg-gray-200"
+              }`}
+            >
+              メッシュ
+            </button>
+            <button
+              type="button"
+              onClick={() => setPerspectiveMode("projection")}
+              className={`flex-1 rounded px-2 py-0.5 text-xs ${
+                perspectiveMode === "projection"
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100 hover:bg-gray-200"
+              }`}
+            >
+              投影プレビュー
+            </button>
+          </div>
+          {perspectiveMode === "projection" && (
+            <div className="space-y-1 pt-1">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={showExplicitEdges}
+                  onChange={(e) => setShowExplicitEdges(e.target.checked)}
+                />
+                明示エッジ
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={showSilhouette}
+                  onChange={(e) => setShowSilhouette(e.target.checked)}
+                />
+                シルエット (赤)
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={smoothSilhouette}
+                  onChange={(e) => setSmoothSilhouette(e.target.checked)}
+                />
+                シルエットを Catmull-Rom で滑らか化
+              </label>
+            </div>
+          )}
         </div>
 
         <h2 className="mb-2 font-bold">選択</h2>
