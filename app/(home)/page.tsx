@@ -331,7 +331,7 @@ export default function Home() {
                 {
                   title: "2.5Dモデリングツール",
                   category: "技術実験" as const,
-                  period: "2025",
+                  period: "2026",
                   description:
                     "2Dと3Dを組み合わせたモデリングツール。2Dのスプライトを配置して理想の3Dキャラクターを構築。（開発中）",
                   image: projectNoImage,
