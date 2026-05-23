@@ -1,5 +1,8 @@
+overrides:
+  dompurify@<3.4.0: 3.4.0
+  postcss@<8.5.10: 8.5.10
 allowBuilds:
-  '@biomejs/biome': true
-  '@tailwindcss/oxide': true
+  "@biomejs/biome": true
+  "@tailwindcss/oxide": true
   sharp: true
   unrs-resolver: true
