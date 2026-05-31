@@ -565,11 +565,7 @@ export function ModelingTool() {
 
   // Sibling polygons in the same group (for background display in PointEditor)
   const siblingPolygons = useMemo(() => {
-    if (
-      !selectedPolygon ||
-      selectedPolygon.group !== "feature" ||
-      !selectedPolygon.groupId
-    )
+    if (selectedPolygon?.group !== "feature" || !selectedPolygon.groupId)
       return [];
     return polygons
       .filter(
