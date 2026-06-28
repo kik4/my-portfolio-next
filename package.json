@@ -11,7 +11,7 @@
     "type:check": "tsc --noEmit"
   },
   "dependencies": {
-    "@babel/standalone": "^7.29.7",
+    "@babel/standalone": "^8.0.3",
     "@icons-pack/react-simple-icons": "^13.13.0",
     "@monaco-editor/react": "^4.7.0",
     "@react-three/drei": "^10.7.7",
@@ -20,31 +20,31 @@
     "clsx": "^2.1.1",
     "delaunator": "^5.1.0",
     "earcut": "^3.0.2",
-    "framer-motion": "^12.40.0",
-    "lucide-react": "^1.17.0",
+    "framer-motion": "^12.42.0",
+    "lucide-react": "^1.21.0",
     "monaco-editor": "^0.55.1",
-    "next": "^16.2.6",
+    "next": "^16.2.9",
     "polygon-clipping": "^0.15.7",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "react-intersection-observer": "^10.0.3",
     "react-toastify": "^11.1.0",
-    "three": "^0.184.0",
+    "three": "^0.185.0",
     "three-stdlib": "^2.36.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.16",
-    "@tailwindcss/postcss": "^4.3.0",
+    "@biomejs/biome": "^2.5.1",
+    "@tailwindcss/postcss": "^4.3.1",
     "@types/babel__standalone": "^7.1.9",
     "@types/earcut": "^3.0.0",
-    "@types/node": "^24.12.4",
-    "@types/react": "^19.2.15",
+    "@types/node": "^26.0.1",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@types/three": "^0.184.1",
+    "@types/three": "^0.185.0",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.5",
+    "lint-staged": "^17.0.8",
     "postcss": "^8.5.15",
-    "tailwindcss": "^4.3.0",
+    "tailwindcss": "^4.3.1",
     "typescript": "^6.0.3"
   },
   "lint-staged": {
@@ -52,5 +52,5 @@
       "biome check --write --unsafe --no-errors-on-unmatched --files-ignore-unknown=true"
     ]
   },
-  "packageManager": "pnpm@11.1.0"
+  "packageManager": "pnpm@11.8.0"
 }
