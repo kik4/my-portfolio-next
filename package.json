@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@babel/standalone": "^8.0.4",
-    "@icons-pack/react-simple-icons": "^13.13.0",
+    "@icons-pack/react-simple-icons": "^13.15.1",
     "@monaco-editor/react": "^4.7.0",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
@@ -20,10 +20,10 @@
     "clsx": "^2.1.1",
     "delaunator": "^5.1.0",
     "earcut": "^3.2.3",
-    "framer-motion": "^13.0.0",
-    "lucide-react": "^1.29.0",
+    "framer-motion": "^13.1.0",
+    "lucide-react": "^1.33.0",
     "monaco-editor": "^0.56.0",
-    "next": "^16.3.0",
+    "next": "^16.3.1",
     "polygon-clipping": "^0.15.7",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -33,11 +33,11 @@
     "three-stdlib": "^2.36.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.7",
+    "@biomejs/biome": "^2.5.9",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/babel__standalone": "^7.1.9",
     "@types/earcut": "^3.0.0",
-    "@types/node": "^26.1.2",
+    "@types/node": "^26.2.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@types/three": "^0.185.4",
@@ -45,7 +45,7 @@
     "lint-staged": "^17.3.0",
     "postcss": "^8.5.26",
     "tailwindcss": "^4.3.3",
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   },
   "lint-staged": {
     "*": [

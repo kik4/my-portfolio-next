@@ -80,8 +80,8 @@ export default async function OgImage() {
           {/** biome-ignore lint/performance/noImgElement: tmp */}
           <img
             src={iconBase64}
-            width="280"
-            height="280"
+            width={280}
+            height={280}
             style={{
               objectFit: "cover",
             }}
