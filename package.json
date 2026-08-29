@@ -20,10 +20,10 @@
     "clsx": "^2.1.1",
     "delaunator": "^5.1.0",
     "earcut": "^3.2.3",
-    "framer-motion": "^13.1.0",
+    "framer-motion": "^13.1.1",
     "lucide-react": "^1.33.0",
     "monaco-editor": "^0.56.0",
-    "next": "^16.3.1",
+    "next": "^16.3.2",
     "polygon-clipping": "^0.15.7",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -33,7 +33,7 @@
     "three-stdlib": "^2.36.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.9",
+    "@biomejs/biome": "^2.5.10",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/babel__standalone": "^7.1.9",
     "@types/earcut": "^3.0.0",
