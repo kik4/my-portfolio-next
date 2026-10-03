@@ -86,7 +86,7 @@ export function CodeEditor({
         filename: "playground.ts",
       });
 
-      if (!result.code) {
+      if (!result?.code) {
         setOutput(["Error: Compilation failed"]);
         setIsRunning(false);
         return;
