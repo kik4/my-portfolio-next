@@ -24,11 +24,20 @@ export const WavyBackground: React.FC = () => {
       }
     };
 
+    // 「視差効果を減らす」設定時は静止した 1 フレームだけ描く
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
     // Initial resize
     resizeCanvas();
 
     // Add resize listener
-    window.addEventListener("resize", resizeCanvas);
+    const handleResize = () => {
+      resizeCanvas();
+      if (reduceMotion) animate();
+    };
+    window.addEventListener("resize", handleResize);
 
     // Animation function
     const animate = () => {
@@ -72,7 +81,9 @@ export const WavyBackground: React.FC = () => {
         ctx.fill();
       }
 
-      animationFrameId = requestAnimationFrame(animate);
+      if (!reduceMotion) {
+        animationFrameId = requestAnimationFrame(animate);
+      }
     };
 
     // Start animation
@@ -80,7 +91,7 @@ export const WavyBackground: React.FC = () => {
 
     // Cleanup
     return () => {
-      window.removeEventListener("resize", resizeCanvas);
+      window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);

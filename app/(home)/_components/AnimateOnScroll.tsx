@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useAnimation } from "framer-motion";
+import { motion, useAnimation, useReducedMotion } from "framer-motion";
 import { type ReactNode, useEffect } from "react";
 import { useInView } from "react-intersection-observer";
 
@@ -20,6 +20,8 @@ export const AnimateOnScroll = ({
   animation = "fadeIn",
 }: AnimateOnScrollProps) => {
   const controls = useAnimation();
+  // OS の「視差効果を減らす」設定時はアニメーションせずに表示する
+  const shouldReduceMotion = useReducedMotion();
   const [ref, inView] = useInView({ threshold });
 
   // アニメーションのバリエーション
@@ -93,7 +95,7 @@ export const AnimateOnScroll = ({
   return (
     <motion.div
       ref={ref}
-      initial="hidden"
+      initial={shouldReduceMotion ? "visible" : "hidden"}
       animate={controls}
       variants={selectedAnimation}
       className={className}

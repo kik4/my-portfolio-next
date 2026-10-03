@@ -7,11 +7,32 @@ import {
 } from "@icons-pack/react-simple-icons";
 import { clsx } from "clsx";
 import {
+  BookOpen,
+  Bug,
+  Check,
+  Code,
   Database,
   ExternalLink,
+  GraduationCap,
+  Handshake,
   Hexagon,
+  Languages,
+  Layers,
+  Lightbulb,
   Link as LinkIcon,
+  MessageCircle,
+  Monitor,
+  Package,
+  Palette,
+  Rocket,
+  Server,
+  Sprout,
+  Target,
+  TrendingUp,
   Triangle,
+  Users,
+  Workflow,
+  Zap,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -21,6 +42,7 @@ import { getPathToMimesis } from "../mimesis/getPath";
 import { getPathToTextTagEditor } from "../text-tag-editor/getPath";
 import { getPathToTypeScript } from "../typescript/getPath";
 import { AnimateOnScroll } from "./_components/AnimateOnScroll";
+import { IconBox } from "./_components/IconBox";
 import { WavyBackground } from "./_components/WavyBackground";
 import bannerArticles from "./_img/banner_articles.jpg";
 import icon from "./_img/icon_1024x1024.jpg";
@@ -53,29 +75,30 @@ export default function Home() {
               animation="slideRight"
               className="mb-10 md:mb-0 md:w-1/2"
             >
-              <h2 className="mb-6 font-bold text-5xl leading-tight">
+              <h2 className="mb-6 font-bold text-4xl leading-tight sm:text-5xl">
                 Webエンジニア、
                 <br />
                 <span className="text-accent">kik4</span>
                 です
               </h2>
-              <div className="mb-10 space-y-4 text-lg">
-                <p className="border-b pb-1 font-medium">
-                  <span className="text-accent">01.</span>{" "}
-                  モダンな技術と効率的な開発環境構築で、プロダクトを高速に改善。
-                </p>
-                <p className="border-b pb-1 font-medium">
-                  <span className="text-accent">02.</span>{" "}
-                  倉庫管理・EC・求職サイトなど、実務システム開発のスペシャリスト。
-                </p>
-                <p className="border-b pb-1 font-medium">
-                  <span className="text-accent">03.</span>{" "}
-                  TypeScriptを主軸に、バックエンドもフロントエンドも対応可能。
-                </p>
-              </div>
+              <ul className="mb-10 text-lg">
+                {[
+                  "モダンな技術と効率的な開発環境構築で、プロダクトを高速に改善。",
+                  "倉庫管理・EC・求職サイトなど、実務システム開発のスペシャリスト。",
+                  "TypeScriptを主軸に、バックエンドもフロントエンドも対応可能。",
+                ].map((text) => (
+                  <li
+                    key={text}
+                    className="flex gap-3 border-gray-300 border-b py-3 font-medium first:pt-0 dark:border-gray-600"
+                  >
+                    <span className="mt-[0.6em] h-2 w-2 shrink-0 rounded-full bg-blue-600 dark:bg-blue-300" />
+                    {text}
+                  </li>
+                ))}
+              </ul>
               <MyLink
                 href="#work"
-                className="rounded-full bg-blue-600 px-8 py-3 font-medium text-white transition hover:bg-blue-700"
+                className="inline-block rounded-full bg-blue-600 px-8 py-3 font-medium text-white transition hover:bg-blue-700"
               >
                 プロダクトを見る
               </MyLink>
@@ -268,7 +291,7 @@ export default function Home() {
                 key={project.title}
                 animation="slideUp"
                 delay={index * 0.1}
-                className="overflow-hidden rounded-lg bg-white shadow-lg transition-transform hover:-translate-y-2 dark:bg-gray-50/20"
+                className="flex flex-col overflow-hidden rounded-lg bg-white shadow-md dark:bg-gray-50/20"
               >
                 <div className="relative h-56">
                   <Image
@@ -279,7 +302,7 @@ export default function Home() {
                     alt=""
                   />
                 </div>
-                <div className="p-6">
+                <div className="flex flex-1 flex-col p-6">
                   <div className="mb-2 flex items-center justify-between">
                     <p className="font-medium text-accent">
                       {project.category}
@@ -298,22 +321,25 @@ export default function Home() {
                     )}
                   </div>
                   <h3 className="mb-3 font-bold text-xl">{project.title}</h3>
-                  <div className="flex flex-col gap-2 text-gray-600 dark:text-gray-300">
-                    <p className="mb-2 text-gray-600 dark:text-gray-300">
-                      {project.description}
-                    </p>
-                    <p className="text-gray-700/60 text-sm italic dark:text-gray-200/60">
-                      <span className="text-green-600 dark:text-green-400">
-                        {project.responsible}
-                      </span>
-                      <br />
-                      <span className="font-medium text-blue-600 dark:text-blue-400">
-                        {project.scale}
-                      </span>
-                      <br />
-                      {project.tech}
-                    </p>
-                  </div>
+                  <p className="mb-5 text-gray-600 leading-relaxed dark:text-gray-300">
+                    {project.description}
+                  </p>
+                  <dl className="mt-auto grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 border-gray-200 border-t pt-4 text-sm dark:border-gray-600">
+                    {[
+                      { label: "担当", value: project.responsible },
+                      { label: "規模", value: project.scale },
+                      { label: "技術", value: project.tech },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="contents">
+                        <dt className="text-gray-500 dark:text-gray-400">
+                          {label}
+                        </dt>
+                        <dd className="text-gray-700 dark:text-gray-200">
+                          {value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
                 </div>
               </AnimateOnScroll>
             ))}
@@ -322,8 +348,8 @@ export default function Home() {
           {/* 遊び心のプロジェクト */}
           <div className="mx-auto mt-16 max-w-2xl">
             <AnimateOnScroll animation="fadeIn">
-              <h3 className="mb-4 text-center font-medium text-gray-400 text-sm dark:text-gray-300">
-                + 遊び心のプロジェクト
+              <h3 className="mb-4 text-center font-bold text-gray-500 dark:text-gray-300">
+                遊び心のプロジェクト
               </h3>
             </AnimateOnScroll>
             <div className="flex flex-col gap-4">
@@ -390,9 +416,8 @@ export default function Home() {
                   key={project.title}
                   animation="slideUp"
                   delay={index * 0.1}
-                  className="overflow-hidden rounded-lg bg-white shadow-lg transition-transform hover:-translate-y-1 dark:bg-gray-50/20"
                 >
-                  <div className="group overflow-hidden rounded-lg border border-gray-200 bg-gray-50 shadow-lg transition-all hover:border-gray-300 hover:bg-white dark:border-gray-700/50 dark:bg-gray-800/30 dark:hover:border-gray-600 dark:hover:bg-gray-800/50">
+                  <div className="group overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md dark:border-gray-700/50 dark:bg-gray-800/30 dark:hover:border-gray-600 dark:hover:bg-gray-800/50">
                     <MyLink
                       href={project.link}
                       className="flex flex-row items-center"
@@ -433,12 +458,12 @@ export default function Home() {
                           >
                             {project.title}
                           </h3>
-                          <p className="mb-2 text-gray-500 text-xs leading-relaxed dark:text-gray-400">
+                          <p className="mb-2 text-gray-600 text-sm leading-relaxed dark:text-gray-400">
                             {project.description}
                           </p>
                         </div>
                         <div className="flex items-center justify-between">
-                          <p className="text-gray-400 text-xs dark:text-gray-400">
+                          <p className="text-gray-500 text-xs dark:text-gray-400">
                             {project.tech}
                           </p>
                           <span
@@ -470,27 +495,27 @@ export default function Home() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
             {[
               {
-                icon: "💻",
+                icon: <Monitor size={24} />,
                 title: "Webデザイン",
                 skills: "HTML5, CSS3, Responsive Design",
               },
               {
-                icon: "🎨",
+                icon: <Palette size={24} />,
                 title: "UI/UXデザイン",
                 skills: "プロトタイピング, インタラクションデザイン",
               },
               {
-                icon: "⚙️",
+                icon: <Code size={24} />,
                 title: "フロントエンド開発",
                 skills: "TypeScript, React.js, Next.js",
               },
               {
-                icon: "🗄️",
+                icon: <Server size={24} />,
                 title: "バックエンド開発",
                 skills: "Node.js, Express, Next.js",
               },
               {
-                icon: "📖",
+                icon: <GraduationCap size={24} />,
                 title: "IT知識",
                 skills: "情報工学専攻, 応用情報技術者資格取得",
               },
@@ -501,7 +526,7 @@ export default function Home() {
                 delay={index * 0.1}
                 className="rounded-lg bg-gray-50 p-8 text-center shadow-sm dark:bg-gray-50/20"
               >
-                <div className="mb-4 text-4xl">{skill.icon}</div>
+                <IconBox className="mx-auto mb-4">{skill.icon}</IconBox>
                 <h3 className="mb-4 font-bold text-xl">{skill.title}</h3>
                 <p className="text-gray-600 dark:text-gray-200/60">
                   {skill.skills}
@@ -574,7 +599,7 @@ export default function Home() {
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             {[
               {
-                icon: <ExternalLink size={20} />,
+                icon: <Languages size={22} />,
                 title: "React公式ドキュメント日本語訳",
                 description:
                   "React公式ドキュメントの日本語訳プロジェクトに協力。日本の開発者コミュニティへの貢献を行いました。",
@@ -583,7 +608,7 @@ export default function Home() {
                 type: "ドキュメント翻訳",
               },
               {
-                icon: <ExternalLink size={20} />,
+                icon: <Bug size={22} />,
                 title: "react-intersection-observer",
                 description:
                   "人気のReactライブラリのバグ修正PRを送信。Intersection Observer APIを使用したライブラリの安定性向上に貢献しました。",
@@ -592,7 +617,7 @@ export default function Home() {
                 type: "バグ修正",
               },
               {
-                icon: <ExternalLink size={20} />,
+                icon: <Package size={22} />,
                 title: "array-compressor",
                 description:
                   "配列の圧縮とセグメント化を効率的に行うnpmパッケージを開発・公開。データ処理の最適化に役立つユーティリティライブラリです。",
@@ -601,7 +626,7 @@ export default function Home() {
                 type: "ライブラリ公開",
               },
               {
-                icon: <ExternalLink size={20} />,
+                icon: <Workflow size={22} />,
                 title: "simple-vercel-deploy",
                 description:
                   "Vercelへのデプロイを行うシンプルなGitHub Actionを開発・公開。自動デプロイでは足りない部分を補完し、CI/CDパイプラインの構築を効率化するツールです。",
@@ -614,25 +639,23 @@ export default function Home() {
                 key={item.title}
                 animation="slideUp"
                 delay={index * 0.15}
-                className="rounded-lg bg-white p-6 shadow-lg transition-transform hover:-translate-y-1 dark:bg-gray-50/20"
+                className="h-full rounded-lg bg-white p-6 shadow-md dark:bg-gray-50/20"
               >
                 <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                    {item.icon}
-                  </div>
+                  <IconBox>{item.icon}</IconBox>
                   <div className="flex-1">
-                    <div className="mb-2 flex items-center justify-between">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                       <h3 className="font-bold text-lg">{item.title}</h3>
                       <span className="rounded-full bg-gray-100 px-3 py-1 text-gray-600 text-xs dark:bg-gray-700/50 dark:text-gray-300">
                         {item.type}
                       </span>
                     </div>
-                    <p className="mb-4 text-gray-600 dark:text-gray-300">
+                    <p className="mb-4 text-gray-600 leading-relaxed dark:text-gray-300">
                       {item.description}
                     </p>
                     <MyLink
                       href={item.link}
-                      className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 font-medium text-sm text-white transition hover:bg-blue-700"
+                      className="inline-flex items-center gap-2 rounded border border-blue-600 px-4 py-2 font-medium text-blue-600 text-sm transition hover:bg-blue-600 hover:text-white dark:border-blue-300 dark:text-blue-300 dark:hover:bg-blue-300 dark:hover:text-gray-900"
                     >
                       <ExternalLink size={14} />
                       {item.linkText}
@@ -669,9 +692,9 @@ export default function Home() {
           </div>
 
           <AnimateOnScroll animation="slideUp" delay={0.2}>
-            <div className="mx-auto max-w-4xl rounded-2xl bg-gradient-to-r from-blue-50 to-blue-100 p-8 shadow-lg dark:from-blue-800/50 dark:to-blue-700/50">
+            <div className="mx-auto max-w-4xl rounded-2xl border border-gray-200 bg-white p-8 shadow-md dark:border-gray-700/50 dark:bg-gray-50/20">
               <div className="flex flex-col items-center gap-6 md:flex-row">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-black text-white shadow-lg">
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-black text-white dark:ring-1 dark:ring-gray-500">
                   <SiX className="fill-white" size={24} />
                 </div>
                 <div className="flex-1 text-center md:text-left">
@@ -708,9 +731,9 @@ export default function Home() {
           </AnimateOnScroll>
 
           <AnimateOnScroll animation="slideUp" delay={0.3}>
-            <div className="mx-auto mt-8 max-w-4xl rounded-2xl bg-gradient-to-r from-gray-50 to-gray-100 p-8 shadow-lg dark:from-gray-800/50 dark:to-gray-700/50">
+            <div className="mx-auto mt-8 max-w-4xl rounded-2xl border border-gray-200 bg-white p-8 shadow-md dark:border-gray-700/50 dark:bg-gray-50/20">
               <div className="flex flex-col items-center gap-6 md:flex-row">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-500 text-white shadow-lg">
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-green-500 text-white">
                   <span className="font-bold text-2xl">Q</span>
                 </div>
                 <div className="flex-1 text-center md:text-left">
@@ -757,9 +780,9 @@ export default function Home() {
 
           <div className="mx-auto max-w-6xl">
             <AnimateOnScroll animation="slideUp" delay={0.1}>
-              <div className="mb-8 rounded-2xl bg-gradient-to-r from-purple-100 to-blue-100 p-8 shadow-lg dark:from-purple-800/50 dark:to-blue-800/50">
-                <div className="mb-6 text-center">
-                  <div className="group mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full shadow-lg transition-all duration-300 hover:animate-shake hover:blur-[1px]">
+              <div className="mb-8 rounded-2xl bg-white p-8 shadow-md dark:bg-gray-50/20">
+                <div className="text-center">
+                  <div className="group mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full shadow-md transition-all duration-300 hover:animate-shake hover:blur-[1px]">
                     <Image
                       src={icon}
                       width={80}
@@ -771,7 +794,7 @@ export default function Home() {
                   <h3 className="mb-4 font-bold text-2xl">
                     堅実かつ迅速開発に邁進するエンジニア
                   </h3>
-                  <p className="mx-auto max-w-3xl text-gray-600 [line-break:strict] dark:text-gray-300">
+                  <p className="mx-auto max-w-3xl text-gray-600 leading-relaxed [line-break:strict] dark:text-gray-300">
                     私は日々の開発業務に集中し、 スピード感のある業務を心がけ、
                     成長し続けるコードを書き続けてきました。
                     そんな「もくもく系」の私の特徴をご紹介します。
@@ -783,7 +806,7 @@ export default function Home() {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {[
                 {
-                  icon: "📚",
+                  icon: <BookOpen size={22} />,
                   title: "継続的な技術習得",
                   points: [
                     "2014年から10年以上の実務経験を積み重ね",
@@ -792,7 +815,7 @@ export default function Home() {
                   ],
                 },
                 {
-                  icon: "⚡",
+                  icon: <Layers size={22} />,
                   title: "幅広い開発対応力",
                   points: [
                     "バックエンドからフロントエンド、インフラまで担当",
@@ -801,7 +824,7 @@ export default function Home() {
                   ],
                 },
                 {
-                  icon: "🏃",
+                  icon: <Zap size={22} />,
                   title: "スピードと挑戦を重視した開発",
                   points: [
                     "プロジェクトに最適な技術選定を心がけ",
@@ -810,7 +833,7 @@ export default function Home() {
                   ],
                 },
                 {
-                  icon: "🤝",
+                  icon: <Users size={22} />,
                   title: "開発者コミュニティへの貢献",
                   points: [
                     "React公式ドキュメントの日本語翻訳に参加",
@@ -819,7 +842,7 @@ export default function Home() {
                   ],
                 },
                 {
-                  icon: "📈",
+                  icon: <TrendingUp size={22} />,
                   title: "リモートワークでの高い生産性",
                   points: [
                     "フルリモート・フルフレックス環境で集中開発",
@@ -828,7 +851,7 @@ export default function Home() {
                   ],
                 },
                 {
-                  icon: "💡",
+                  icon: <Lightbulb size={22} />,
                   title: "現代開発スタイルへの適応",
                   points: [
                     "GitHubでのコードレビュー文化に慣れ親しみ",
@@ -841,21 +864,19 @@ export default function Home() {
                   key={value.title}
                   animation="slideUp"
                   delay={index * 0.1}
-                  className="rounded-lg bg-zinc-100 p-6 shadow-lg transition-transform hover:-translate-y-1 dark:bg-gray-50/20"
+                  className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-50/20"
                 >
-                  <div className="mb-4 text-center">
-                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-50 text-2xl shadow-sm dark:bg-gray-800/50">
-                      {value.icon}
-                    </div>
+                  <div className="mb-4 flex items-center gap-3">
+                    <IconBox>{value.icon}</IconBox>
                     <h4 className="font-bold text-lg">{value.title}</h4>
                   </div>
                   <ul className="divide-y divide-gray-200 dark:divide-gray-600/50">
                     {value.points.map((point) => (
                       <li
                         key={point}
-                        className="flex items-center gap-2 py-2 text-gray-600 text-sm first:pt-0 last:pb-0 dark:text-gray-300"
+                        className="flex gap-2 py-2 text-gray-600 text-sm first:pt-0 last:pb-0 dark:text-gray-300"
                       >
-                        <span className="flex-shrink-0 text-accent">•</span>
+                        <span className="shrink-0 text-accent">•</span>
                         <span>{point}</span>
                       </li>
                     ))}
@@ -865,9 +886,9 @@ export default function Home() {
             </div>
 
             <AnimateOnScroll animation="fadeIn" delay={0.3}>
-              <div className="mt-12 rounded-2xl bg-gradient-to-r from-gray-200 to-gray-300 p-8 text-center shadow-lg dark:from-gray-800/50 dark:to-gray-700/50">
+              <div className="mt-12 rounded-2xl bg-blue-50 p-8 dark:bg-blue-900/20">
                 <h4 className="mb-4 font-bold text-xl">私のスタンス</h4>
-                <p className="mx-auto max-w-4xl text-gray-600 dark:text-gray-300">
+                <p className="max-w-4xl text-gray-700 leading-relaxed dark:text-gray-300">
                   派手なアピールは得意ではありませんが、
                   <strong>技術への深い理解</strong>、
                   <strong>学び続ける姿勢</strong>、<strong>確実な実装力</strong>
@@ -891,12 +912,13 @@ export default function Home() {
 
           <div className="mx-auto max-w-6xl">
             <AnimateOnScroll animation="slideUp" delay={0.1}>
-              <div className="mb-8 rounded-2xl bg-gradient-to-r from-green-100 to-emerald-100 p-8 shadow-lg dark:from-green-800/50 dark:to-emerald-800/50">
+              <div className="mb-8 rounded-2xl bg-gray-50 p-8 dark:bg-gray-50/10">
                 <div className="text-center">
-                  <div className="group relative mx-auto mb-6 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-green-300 to-emerald-300 text-white shadow-lg dark:from-green-600 dark:to-emerald-600">
-                    <span className="relative z-10 text-3xl transition-transform duration-300 group-hover:scale-110 group-hover:animate-pulse">
-                      🚀
-                    </span>
+                  <div className="group relative mx-auto mb-6 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-blue-600 text-white shadow-md dark:bg-blue-500">
+                    <Rocket
+                      size={32}
+                      className="relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:animate-pulse"
+                    />
                     {/* 白い粒のアニメーション */}
                     <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                       {[
@@ -925,7 +947,7 @@ export default function Home() {
                   <h3 className="mb-4 font-bold text-2xl">
                     私が力を発揮できる企業環境
                   </h3>
-                  <p className="mx-auto max-w-3xl text-gray-600 dark:text-gray-300">
+                  <p className="mx-auto max-w-3xl text-gray-600 leading-relaxed dark:text-gray-300">
                     開発者の裁量を重視し、挑戦を歓迎するフットワークの軽い企業文化で、
                     私のスキルと経験を最大限に活かして貢献したいと考えています。
                   </p>
@@ -933,10 +955,10 @@ export default function Home() {
               </div>
             </AnimateOnScroll>
 
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {[
                 {
-                  icon: "⚡",
+                  icon: <Zap size={22} />,
                   title: "爆速スタート・スピード重視",
                   description: "技術選定から実装まで迅速に進める開発体制",
                   points: [
@@ -944,13 +966,9 @@ export default function Home() {
                     "プロトタイプから本格運用まで一気通貫で対応",
                     "必要な技術を素早く習得・適用する能力",
                   ],
-                  color:
-                    "from-orange-100 to-red-100 dark:from-orange-800/50 dark:to-red-800/50",
-                  iconBg:
-                    "bg-gradient-to-r from-orange-300 to-red-300 dark:from-orange-600 dark:to-red-600",
                 },
                 {
-                  icon: "🎯",
+                  icon: <Target size={22} />,
                   title: "開発者裁量・技術選択の自由",
                   description:
                     "最適な技術スタックを開発者が主導で決められる環境",
@@ -959,13 +977,9 @@ export default function Home() {
                     "プロジェクトに最適なツールを選択・提案",
                     "AIなどの新技術の導入を積極的に検討・実装",
                   ],
-                  color:
-                    "from-blue-100 to-cyan-100 dark:from-blue-800/50 dark:to-cyan-800/50",
-                  iconBg:
-                    "bg-gradient-to-r from-blue-300 to-cyan-300 dark:from-blue-600 dark:to-cyan-600",
                 },
                 {
-                  icon: "🏃‍♂️",
+                  icon: <Rocket size={22} />,
                   title: "チャレンジを歓迎する文化",
                   description: "失敗を恐れず新しい挑戦を推奨する組織風土",
                   points: [
@@ -973,13 +987,9 @@ export default function Home() {
                     "改善提案を歓迎し実行に移せる環境",
                     "継続的な学習・成長をサポート",
                   ],
-                  color:
-                    "from-purple-100 to-pink-100 dark:from-purple-800/50 dark:to-pink-800/50",
-                  iconBg:
-                    "bg-gradient-to-r from-purple-300 to-pink-300 dark:from-purple-600 dark:to-pink-600",
                 },
                 {
-                  icon: "🤝",
+                  icon: <Handshake size={22} />,
                   title: "フラットな組織・風通しの良さ",
                   description: "階層に関係なく意見を言い合える開放的な環境",
                   points: [
@@ -987,27 +997,19 @@ export default function Home() {
                     "スピード感のある意思決定",
                     "リモートワークだからこそ密なコミュニケーション",
                   ],
-                  color:
-                    "from-emerald-100 to-teal-100 dark:from-emerald-800/50 dark:to-teal-800/50",
-                  iconBg:
-                    "bg-gradient-to-r from-emerald-300 to-teal-300 dark:from-emerald-600 dark:to-teal-600",
                 },
               ].map((item, index) => (
                 <AnimateOnScroll
                   key={item.title}
                   animation="slideUp"
-                  delay={index * 0.15}
-                  className={`rounded-2xl bg-gradient-to-r hover:-translate-y-2 ${item.color} p-6 shadow-lg transition-transform`}
+                  delay={index * 0.1}
+                  className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700/50 dark:bg-gray-50/10"
                 >
                   <div className="mb-4 flex items-start gap-4">
-                    <div
-                      className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl ${item.iconBg} shadow-md`}
-                    >
-                      <span className="text-xl">{item.icon}</span>
-                    </div>
+                    <IconBox>{item.icon}</IconBox>
                     <div>
-                      <h4 className="mb-2 font-bold text-lg">{item.title}</h4>
-                      <p className="mb-4 text-gray-600 text-sm dark:text-gray-300">
+                      <h4 className="mb-1 font-bold text-lg">{item.title}</h4>
+                      <p className="text-gray-600 text-sm dark:text-gray-300">
                         {item.description}
                       </p>
                     </div>
@@ -1018,9 +1020,10 @@ export default function Home() {
                         key={point}
                         className="flex items-start gap-2 text-gray-700 text-sm dark:text-gray-200"
                       >
-                        <span className="mt-1 flex-shrink-0 text-green-500">
-                          ✓
-                        </span>
+                        <Check
+                          size={16}
+                          className="mt-0.5 shrink-0 text-blue-600 dark:text-blue-300"
+                        />
                         <span>{point}</span>
                       </li>
                     ))}
@@ -1029,30 +1032,30 @@ export default function Home() {
               ))}
             </div>
 
-            <AnimateOnScroll animation="fadeIn" delay={0.6}>
-              <div className="mt-12 rounded-2xl bg-gradient-to-r from-gray-100 to-blue-50 p-8 text-center shadow-lg dark:from-gray-800/50 dark:to-blue-900/50">
-                <h4 className="mb-4 font-bold text-xl">理想的な協働スタイル</h4>
+            <AnimateOnScroll animation="fadeIn" delay={0.3}>
+              <div className="mt-12 rounded-2xl bg-blue-50 p-8 text-center dark:bg-blue-900/20">
+                <h4 className="mb-6 font-bold text-xl">理想的な協働スタイル</h4>
                 <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-3">
                   {[
                     {
-                      icon: "💬",
+                      icon: <MessageCircle size={22} />,
                       title: "オープンな議論",
                       description: "技術的な課題を率直に話し合える関係性",
                     },
                     {
-                      icon: "🎯",
+                      icon: <Target size={22} />,
                       title: "成果重視",
                       description: "プロセスよりも最終的なアウトプットを重視",
                     },
                     {
-                      icon: "🌱",
+                      icon: <Sprout size={22} />,
                       title: "共に成長",
                       description: "チーム全体の成長を目指す文化",
                     },
                   ].map((style) => (
                     <div key={style.title} className="text-center">
-                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
-                        <span className="text-xl">{style.icon}</span>
+                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-white text-blue-600 dark:bg-blue-900/50 dark:text-blue-300">
+                        {style.icon}
                       </div>
                       <h5 className="mb-2 font-semibold">{style.title}</h5>
                       <p className="text-gray-600 text-sm dark:text-gray-300">
@@ -1062,7 +1065,7 @@ export default function Home() {
                   ))}
                 </div>
                 <div className="mt-8">
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="text-gray-700 leading-relaxed dark:text-gray-300">
                     このような環境で、私の<strong>継続的な学習意欲</strong>と
                     <strong>実装力</strong>を活かし、
                     チームの技術的成長とプロダクトの成功に貢献したいと考えています。
@@ -1081,18 +1084,44 @@ export default function Home() {
           </AnimateOnScroll>
 
           <AnimateOnScroll animation="slideUp" delay={0.1}>
-            <div className="mx-auto max-w-3xl rounded-2xl bg-gradient-to-r from-white to-gray-100 p-8 text-center shadow-lg dark:from-black dark:to-gray-800">
-              <div className="mb-6 flex justify-center">
-                <MyLink
-                  href="https://x.com/_kik4_"
-                  className="flex h-12 w-12 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-600 shadow-sm transition hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:bg-gray-700"
-                >
-                  <SiX className="dark:fill-white" size={18} />
-                </MyLink>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400">
+            <div className="mx-auto max-w-3xl rounded-2xl bg-white p-8 text-center shadow-md dark:bg-gray-50/20">
+              <p className="mb-6 text-gray-600 dark:text-gray-300">
                 気軽にお声がけください
               </p>
+              <div className="flex flex-wrap justify-center gap-3">
+                {[
+                  {
+                    label: "X (@_kik4_)",
+                    href: "https://x.com/_kik4_",
+                    icon: <SiX size={16} />,
+                    primary: true,
+                  },
+                  {
+                    label: "GitHub",
+                    href: "https://github.com/kik4",
+                    icon: <SiGithub size={18} />,
+                  },
+                  {
+                    label: "Qiita",
+                    href: "https://qiita.com/kik4",
+                    icon: <span className="font-bold">Q</span>,
+                  },
+                ].map((contact) => (
+                  <MyLink
+                    key={contact.href}
+                    href={contact.href}
+                    className={clsx(
+                      "inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-medium transition",
+                      contact.primary
+                        ? "bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 [&_svg]:fill-current"
+                        : "border border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 [&_svg]:fill-current",
+                    )}
+                  >
+                    {contact.icon}
+                    {contact.label}
+                  </MyLink>
+                ))}
+              </div>
             </div>
           </AnimateOnScroll>
         </div>
