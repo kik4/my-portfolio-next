@@ -1015,7 +1015,7 @@ export function ModelingTool() {
               setEditorBgColor("#ffffff");
               setZoom(600);
             }}
-            className="flex-1 rounded bg-red-100 px-2 py-1 text-red-700 text-xs hover:bg-red-200"
+            className="flex-1 rounded bg-red-100 px-2 py-1 text-xs text-red-700 hover:bg-red-200"
           >
             Reset
           </button>
@@ -1065,7 +1065,7 @@ export function ModelingTool() {
               />
             </label>
             <div className="space-y-1">
-              <div className="text-gray-600 text-xs">Visibility yaw</div>
+              <div className="text-xs text-gray-600">Visibility yaw</div>
               <div className="flex gap-1">
                 <input
                   type="number"
@@ -1117,7 +1117,7 @@ export function ModelingTool() {
                   className="w-14 rounded border px-1"
                 />
               </div>
-              <div className="text-gray-600 text-xs">Visibility pitch</div>
+              <div className="text-xs text-gray-600">Visibility pitch</div>
               <div className="flex gap-1">
                 <input
                   type="number"
@@ -1171,7 +1171,7 @@ export function ModelingTool() {
               </div>
             </div>
             <div className="space-y-1">
-              <div className="text-gray-600 text-xs">グループKF</div>
+              <div className="text-xs text-gray-600">グループKF</div>
               {sortedKeyframeIndices(selectedGroup.yawPitchKeyframes).map(
                 (ki) => {
                   const kf = selectedGroup.yawPitchKeyframes[ki];
@@ -1447,13 +1447,13 @@ export function ModelingTool() {
                     ),
                   );
                 }}
-                className="w-full rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
+                className="w-full rounded border border-dashed border-gray-400 px-1 py-0.5 text-gray-600 hover:bg-gray-50"
               >
                 + ({angle.yaw.toFixed(0)}°, {angle.pitch.toFixed(0)}°)
               </button>
             </div>
             <div className="space-y-1">
-              <div className="text-gray-600 text-xs">LayerIndex KF</div>
+              <div className="text-xs text-gray-600">LayerIndex KF</div>
               {(selectedGroup.layerIndexKeyframes ?? []).map((kf, ki) => (
                 <div
                   key={`li-${kf.angle.yaw},${kf.angle.pitch}`}
@@ -1518,7 +1518,7 @@ export function ModelingTool() {
                       ),
                     );
                   }}
-                  className="flex-1 rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
+                  className="flex-1 rounded border border-dashed border-gray-400 px-1 py-0.5 text-gray-600 hover:bg-gray-50"
                 >
                   + ({angle.yaw.toFixed(0)}°, {angle.pitch.toFixed(0)}°)
                 </button>
@@ -1595,7 +1595,7 @@ export function ModelingTool() {
                       });
                     }}
                   />
-                  <span className="text-gray-500 text-xs">
+                  <span className="text-xs text-gray-500">
                     yaw{"<"}0 を yaw{">"}=0 の鏡像で表示
                   </span>
                 </label>
@@ -1775,7 +1775,7 @@ export function ModelingTool() {
                           >
                             {strokeRangesEditMode ? "編集中(終了)" : "範囲追加"}
                           </button>
-                          <span className="text-gray-500 text-xs">
+                          <span className="text-xs text-gray-500">
                             {strokeRangesEditMode
                               ? "制御点を2回クリック: 始点→終点"
                               : ""}
@@ -1789,7 +1789,7 @@ export function ModelingTool() {
                               </span>
                               <button
                                 type="button"
-                                className="rounded border px-1 text-red-600 text-xs"
+                                className="rounded border px-1 text-xs text-red-600"
                                 onClick={() =>
                                   updateSelectedPolygon((p) => {
                                     if (
@@ -1840,7 +1840,7 @@ export function ModelingTool() {
             </div>
 
             {/* Point editor */}
-            <div className="border-b px-3 py-1 font-semibold text-xs">
+            <div className="border-b px-3 py-1 text-xs font-semibold">
               {editMode.type === "base"
                 ? "正面ベース点列"
                 : editMode.type === "blendshape"
@@ -1976,7 +1976,7 @@ export function ModelingTool() {
 
             {/* Keyframes */}
             <div className="space-y-1 border-t px-3 py-2">
-              <div className="font-semibold text-xs">キーフレーム</div>
+              <div className="text-xs font-semibold">キーフレーム</div>
               <button
                 type="button"
                 onClick={() => setEditMode({ type: "base" })}
@@ -2054,7 +2054,7 @@ export function ModelingTool() {
               <button
                 type="button"
                 onClick={addKeyframe}
-                className="w-full rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
+                className="w-full rounded border border-dashed border-gray-400 px-1 py-0.5 text-gray-600 hover:bg-gray-50"
               >
                 + ({angle.yaw.toFixed(0)}°, {angle.pitch.toFixed(0)}°)
               </button>
@@ -2062,7 +2062,7 @@ export function ModelingTool() {
 
             {/* Blend shapes */}
             <div className="space-y-1 border-t px-3 py-2">
-              <div className="font-semibold text-xs">ブレンドシェイプ</div>
+              <div className="text-xs font-semibold">ブレンドシェイプ</div>
               {selectedPolygon.blendShapes.map((bs, i) => (
                 <div key={bs.id} className="flex items-center gap-1">
                   <button
@@ -2141,7 +2141,7 @@ export function ModelingTool() {
                     index: selectedPolygon.blendShapes.length,
                   });
                 }}
-                className="w-full rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
+                className="w-full rounded border border-dashed border-gray-400 px-1 py-0.5 text-gray-600 hover:bg-gray-50"
               >
                 + BS追加
               </button>

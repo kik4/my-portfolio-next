@@ -177,11 +177,11 @@ export default function DijkstraPage() {
         <nav className="container mx-auto flex items-center justify-between px-6 py-3">
           <MyLink
             href={getPathToHome()}
-            className="text-gray-600 text-sm hover:text-accent dark:text-gray-400 dark:hover:text-accent"
+            className="hover:text-accent dark:hover:text-accent text-sm text-gray-600 dark:text-gray-400"
           >
             ← ホーム
           </MyLink>
-          <h1 className="font-bold text-lg">ダイクストラ法ビジュアライザー</h1>
+          <h1 className="text-lg font-bold">ダイクストラ法ビジュアライザー</h1>
           <DarkToggleButton />
         </nav>
       </header>
@@ -233,7 +233,7 @@ export default function DijkstraPage() {
                     <p className="font-medium text-green-600 dark:text-green-400">
                       最短経路: {currentStep.path.join(" → ")}
                     </p>
-                    <p className="text-gray-600 text-sm dark:text-gray-400">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       距離:{" "}
                       {(endNode && currentStep.distances.get(endNode)) ||
                         "到達不可"}
@@ -247,7 +247,7 @@ export default function DijkstraPage() {
           {/* コントロールパネル */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
             <div className="rounded-lg bg-gray-100 p-4 dark:bg-gray-800">
-              <h3 className="mb-3 font-bold text-lg">モード選択</h3>
+              <h3 className="mb-3 text-lg font-bold">モード選択</h3>
               <div className="flex flex-col gap-2">
                 {[
                   { value: "move" as Mode, label: "移動", icon: "✋" },
@@ -275,7 +275,7 @@ export default function DijkstraPage() {
             </div>
 
             <div className="rounded-lg bg-gray-100 p-4 dark:bg-gray-800">
-              <h3 className="mb-3 font-bold text-lg">開始点・終点</h3>
+              <h3 className="mb-3 text-lg font-bold">開始点・終点</h3>
               <div className="flex flex-col gap-2">
                 <button
                   onClick={() => setMode("set-start")}
@@ -303,7 +303,7 @@ export default function DijkstraPage() {
             </div>
 
             <div className="rounded-lg bg-gray-100 p-4 dark:bg-gray-800">
-              <h3 className="mb-3 font-bold text-lg">実行</h3>
+              <h3 className="mb-3 text-lg font-bold">実行</h3>
               <div className="flex flex-col gap-2">
                 <button
                   onClick={runDijkstra}
@@ -330,8 +330,8 @@ export default function DijkstraPage() {
             </div>
 
             <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
-              <h3 className="mb-2 font-bold text-sm">使い方</h3>
-              <ul className="space-y-1 text-gray-600 text-xs dark:text-gray-400">
+              <h3 className="mb-2 text-sm font-bold">使い方</h3>
+              <ul className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
                 <li>• 移動: 頂点をドラッグで移動</li>
                 <li>• 頂点追加: キャンバスをクリック</li>
                 <li>• 辺追加: 2つの頂点を順にクリック</li>
@@ -340,7 +340,7 @@ export default function DijkstraPage() {
             </div>
 
             <div className="rounded-lg bg-purple-50 p-4 dark:bg-purple-900/20">
-              <h3 className="mb-2 font-bold text-sm">色の意味</h3>
+              <h3 className="mb-2 text-sm font-bold">色の意味</h3>
               <ul className="space-y-1 text-xs">
                 <li className="flex items-center gap-2">
                   <span className="h-3 w-3 rounded-full bg-blue-600" />

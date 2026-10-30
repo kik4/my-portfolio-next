@@ -11,7 +11,7 @@ export function Header({ isHome = false }: { isHome?: boolean }) {
     <header
       className={clsx("w-full bg-background/50", {
         "fixed top-0 z-10 shadow-md backdrop-blur-sm": isHome,
-        "border-gray-200 border-b dark:border-gray-700 dark:bg-gray-900":
+        "border-b border-gray-200 dark:border-gray-700 dark:bg-gray-900":
           !isHome,
       })}
     >
@@ -19,8 +19,8 @@ export function Header({ isHome = false }: { isHome?: boolean }) {
         <div className="flex items-center gap-4 md:gap-8">
           {/* SP表示用のハンバーガーメニュー */}
           <MobileMenu />
-          <h1 className="font-bold text-2xl">
-            <MyLink href={getPathToHome()} className="font-bold text-2xl">
+          <h1 className="text-2xl font-bold">
+            <MyLink href={getPathToHome()} className="text-2xl font-bold">
               kik4.work
             </MyLink>
           </h1>

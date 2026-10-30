@@ -11,11 +11,11 @@ export default function MimesisPage() {
         <nav className="flex items-center justify-between px-6 py-2">
           <MyLink
             href={getPathToHome()}
-            className="text-gray-600 text-sm hover:text-blue-600"
+            className="text-sm text-gray-600 hover:text-blue-600"
           >
             ← ホーム
           </MyLink>
-          <h1 className="font-bold text-gray-800 text-lg">
+          <h1 className="text-lg font-bold text-gray-800">
             2.5Dモデリング (Mimesis)
           </h1>
           <div className="w-16" />

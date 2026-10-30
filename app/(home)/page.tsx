@@ -75,7 +75,7 @@ export default function Home() {
               animation="slideRight"
               className="mb-10 md:mb-0 md:w-1/2"
             >
-              <h2 className="mb-6 font-bold text-4xl leading-tight sm:text-5xl">
+              <h2 className="mb-6 text-4xl leading-tight font-bold sm:text-5xl">
                 Webエンジニア、
                 <br />
                 <span className="text-accent">kik4</span>
@@ -89,7 +89,7 @@ export default function Home() {
                 ].map((text) => (
                   <li
                     key={text}
-                    className="flex gap-3 border-gray-300 border-b py-3 font-medium first:pt-0 dark:border-gray-600"
+                    className="flex gap-3 border-b border-gray-300 py-3 font-medium first:pt-0 dark:border-gray-600"
                   >
                     <span className="mt-[0.6em] h-2 w-2 shrink-0 rounded-full bg-blue-600 dark:bg-blue-300" />
                     {text}
@@ -122,7 +122,7 @@ export default function Home() {
       <section id="work" className="py-20">
         <div className="container mx-auto px-6">
           <AnimateOnScroll animation="fadeIn">
-            <h2 className="mb-16 text-center font-bold text-3xl">プロダクト</h2>
+            <h2 className="mb-16 text-center text-3xl font-bold">プロダクト</h2>
           </AnimateOnScroll>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
             {[
@@ -304,27 +304,27 @@ export default function Home() {
                 </div>
                 <div className="flex flex-1 flex-col p-6">
                   <div className="mb-2 flex items-center justify-between">
-                    <p className="font-medium text-accent">
+                    <p className="text-accent font-medium">
                       {project.category}
-                      <span className="ml-2 text-gray-700/60 text-sm dark:text-gray-200/60">
+                      <span className="ml-2 text-sm text-gray-700/60 dark:text-gray-200/60">
                         {project.period}
                       </span>
                     </p>
                     {project.link && (
                       <MyLink
                         href={project.link}
-                        className="inline-flex items-center gap-1 rounded bg-gray-600 px-2 py-1 font-medium text-white text-xs transition hover:bg-gray-700"
+                        className="inline-flex items-center gap-1 rounded bg-gray-600 px-2 py-1 text-xs font-medium text-white transition hover:bg-gray-700"
                       >
                         <ExternalLink size={14} />
                         GitHub
                       </MyLink>
                     )}
                   </div>
-                  <h3 className="mb-3 font-bold text-xl">{project.title}</h3>
-                  <p className="mb-5 text-gray-600 leading-relaxed dark:text-gray-300">
+                  <h3 className="mb-3 text-xl font-bold">{project.title}</h3>
+                  <p className="mb-5 leading-relaxed text-gray-600 dark:text-gray-300">
                     {project.description}
                   </p>
-                  <dl className="mt-auto grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 border-gray-200 border-t pt-4 text-sm dark:border-gray-600">
+                  <dl className="mt-auto grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 border-t border-gray-200 pt-4 text-sm dark:border-gray-600">
                     {[
                       { label: "担当", value: project.responsible },
                       { label: "規模", value: project.scale },
@@ -436,7 +436,7 @@ export default function Home() {
                           <div className="mb-1 flex items-center gap-2">
                             <span
                               className={clsx(
-                                "rounded px-2 py-0.5 font-medium text-xs",
+                                "rounded px-2 py-0.5 text-xs font-medium",
                                 project.category === "技術実験"
                                   ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
                                   : "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",
@@ -444,13 +444,13 @@ export default function Home() {
                             >
                               {project.category}
                             </span>
-                            <span className="text-gray-400 text-xs dark:text-gray-400">
+                            <span className="text-xs text-gray-400 dark:text-gray-400">
                               {project.period}
                             </span>
                           </div>
                           <h3
                             className={clsx(
-                              "mb-1 font-semibold text-base text-gray-700 dark:text-gray-300",
+                              "mb-1 text-base font-semibold text-gray-700 dark:text-gray-300",
                               project.category === "技術実験"
                                 ? "group-hover:text-blue-600 dark:group-hover:text-blue-400"
                                 : "group-hover:text-purple-600 dark:group-hover:text-purple-400",
@@ -458,12 +458,12 @@ export default function Home() {
                           >
                             {project.title}
                           </h3>
-                          <p className="mb-2 text-gray-600 text-sm leading-relaxed dark:text-gray-400">
+                          <p className="mb-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
                             {project.description}
                           </p>
                         </div>
                         <div className="flex items-center justify-between">
-                          <p className="text-gray-500 text-xs dark:text-gray-400">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             {project.tech}
                           </p>
                           <span
@@ -490,7 +490,7 @@ export default function Home() {
       <section className="py-20">
         <div className="container mx-auto px-6">
           <AnimateOnScroll animation="fadeIn">
-            <h2 className="mb-16 text-center font-bold text-3xl">代表スキル</h2>
+            <h2 className="mb-16 text-center text-3xl font-bold">代表スキル</h2>
           </AnimateOnScroll>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
             {[
@@ -527,7 +527,7 @@ export default function Home() {
                 className="rounded-lg bg-gray-50 p-8 text-center shadow-sm dark:bg-gray-50/20"
               >
                 <IconBox className="mx-auto mb-4">{skill.icon}</IconBox>
-                <h3 className="mb-4 font-bold text-xl">{skill.title}</h3>
+                <h3 className="mb-4 text-xl font-bold">{skill.title}</h3>
                 <p className="text-gray-600 dark:text-gray-200/60">
                   {skill.skills}
                 </p>
@@ -576,12 +576,12 @@ export default function Home() {
                     className={`flex h-16 w-16 items-center justify-center rounded-xl ${tech.color} text-white shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl`}
                   >
                     {typeof tech.icon === "string" ? (
-                      <span className="font-bold text-xl">{tech.icon}</span>
+                      <span className="text-xl font-bold">{tech.icon}</span>
                     ) : (
                       tech.icon
                     )}
                   </div>
-                  <span className="font-medium text-gray-600 text-sm dark:text-gray-400">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                     {tech.name}
                   </span>
                 </div>
@@ -594,7 +594,7 @@ export default function Home() {
       <section className="py-20">
         <div className="container mx-auto px-6">
           <AnimateOnScroll animation="fadeIn">
-            <h2 className="mb-16 text-center font-bold text-3xl">OSS活動</h2>
+            <h2 className="mb-16 text-center text-3xl font-bold">OSS活動</h2>
           </AnimateOnScroll>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             {[
@@ -645,17 +645,17 @@ export default function Home() {
                   <IconBox>{item.icon}</IconBox>
                   <div className="flex-1">
                     <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                      <h3 className="font-bold text-lg">{item.title}</h3>
-                      <span className="rounded-full bg-gray-100 px-3 py-1 text-gray-600 text-xs dark:bg-gray-700/50 dark:text-gray-300">
+                      <h3 className="text-lg font-bold">{item.title}</h3>
+                      <span className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600 dark:bg-gray-700/50 dark:text-gray-300">
                         {item.type}
                       </span>
                     </div>
-                    <p className="mb-4 text-gray-600 leading-relaxed dark:text-gray-300">
+                    <p className="mb-4 leading-relaxed text-gray-600 dark:text-gray-300">
                       {item.description}
                     </p>
                     <MyLink
                       href={item.link}
-                      className="inline-flex items-center gap-2 rounded border border-blue-600 px-4 py-2 font-medium text-blue-600 text-sm transition hover:bg-blue-600 hover:text-white dark:border-blue-300 dark:text-blue-300 dark:hover:bg-blue-300 dark:hover:text-gray-900"
+                      className="inline-flex items-center gap-2 rounded border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 transition hover:bg-blue-600 hover:text-white dark:border-blue-300 dark:text-blue-300 dark:hover:bg-blue-300 dark:hover:text-gray-900"
                     >
                       <ExternalLink size={14} />
                       {item.linkText}
@@ -671,7 +671,7 @@ export default function Home() {
       <section className="py-20">
         <div className="container mx-auto px-6">
           <AnimateOnScroll animation="fadeIn">
-            <h2 className="mb-16 text-center font-bold text-3xl">技術発信</h2>
+            <h2 className="mb-16 text-center text-3xl font-bold">技術発信</h2>
           </AnimateOnScroll>
 
           <div className="mb-8 flex justify-center">
@@ -698,7 +698,7 @@ export default function Home() {
                   <SiX className="fill-white" size={24} />
                 </div>
                 <div className="flex-1 text-center md:text-left">
-                  <h3 className="mb-3 font-bold text-2xl">Xで技術情報を発信</h3>
+                  <h3 className="mb-3 text-2xl font-bold">Xで技術情報を発信</h3>
                   <p className="mb-4 text-gray-600 dark:text-gray-300">
                     日常的なつぶやきの他に開発の気づき、学習した内容をリアルタイムで投稿。
                     他の開発者の投稿から学びを得ながら、最新の技術トレンドを追いかけています。
@@ -712,7 +712,7 @@ export default function Home() {
                     ].map((tag) => (
                       <span
                         key={tag}
-                        className="rounded-full bg-blue-100 px-3 py-1 text-blue-700 text-sm dark:bg-blue-900/30 dark:text-blue-300"
+                        className="rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
                       >
                         {tag}
                       </span>
@@ -734,10 +734,10 @@ export default function Home() {
             <div className="mx-auto mt-8 max-w-4xl rounded-2xl border border-gray-200 bg-white p-8 shadow-md dark:border-gray-700/50 dark:bg-gray-50/20">
               <div className="flex flex-col items-center gap-6 md:flex-row">
                 <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-green-500 text-white">
-                  <span className="font-bold text-2xl">Q</span>
+                  <span className="text-2xl font-bold">Q</span>
                 </div>
                 <div className="flex-1 text-center md:text-left">
-                  <h3 className="mb-3 font-bold text-2xl">
+                  <h3 className="mb-3 text-2xl font-bold">
                     Qiitaで技術記事を執筆
                   </h3>
                   <p className="mb-4 text-gray-600 dark:text-gray-300">
@@ -749,7 +749,7 @@ export default function Home() {
                       (tag) => (
                         <span
                           key={tag}
-                          className="rounded-full bg-green-100 px-3 py-1 text-green-700 text-sm dark:bg-green-900/30 dark:text-green-300"
+                          className="rounded-full bg-green-100 px-3 py-1 text-sm text-green-700 dark:bg-green-900/30 dark:text-green-300"
                         >
                           {tag}
                         </span>
@@ -773,7 +773,7 @@ export default function Home() {
       <section className="py-20">
         <div className="container mx-auto px-6">
           <AnimateOnScroll animation="fadeIn">
-            <h2 className="mb-16 text-center font-bold text-3xl">
+            <h2 className="mb-16 text-center text-3xl font-bold">
               エンジニアとしての特徴
             </h2>
           </AnimateOnScroll>
@@ -791,10 +791,10 @@ export default function Home() {
                       alt="kik4"
                     />
                   </div>
-                  <h3 className="mb-4 font-bold text-2xl">
+                  <h3 className="mb-4 text-2xl font-bold">
                     堅実かつ迅速開発に邁進するエンジニア
                   </h3>
-                  <p className="mx-auto max-w-3xl text-gray-600 leading-relaxed [line-break:strict] dark:text-gray-300">
+                  <p className="mx-auto max-w-3xl leading-relaxed text-gray-600 [line-break:strict] dark:text-gray-300">
                     私は日々の開発業務に集中し、 スピード感のある業務を心がけ、
                     成長し続けるコードを書き続けてきました。
                     そんな「もくもく系」の私の特徴をご紹介します。
@@ -868,15 +868,15 @@ export default function Home() {
                 >
                   <div className="mb-4 flex items-center gap-3">
                     <IconBox>{value.icon}</IconBox>
-                    <h4 className="font-bold text-lg">{value.title}</h4>
+                    <h4 className="text-lg font-bold">{value.title}</h4>
                   </div>
                   <ul className="divide-y divide-gray-200 dark:divide-gray-600/50">
                     {value.points.map((point) => (
                       <li
                         key={point}
-                        className="flex gap-2 py-2 text-gray-600 text-sm first:pt-0 last:pb-0 dark:text-gray-300"
+                        className="flex gap-2 py-2 text-sm text-gray-600 first:pt-0 last:pb-0 dark:text-gray-300"
                       >
-                        <span className="shrink-0 text-accent">•</span>
+                        <span className="text-accent shrink-0">•</span>
                         <span>{point}</span>
                       </li>
                     ))}
@@ -887,8 +887,8 @@ export default function Home() {
 
             <AnimateOnScroll animation="fadeIn" delay={0.3}>
               <div className="mt-12 rounded-2xl bg-blue-50 p-8 dark:bg-blue-900/20">
-                <h4 className="mb-4 font-bold text-xl">私のスタンス</h4>
-                <p className="max-w-4xl text-gray-700 leading-relaxed dark:text-gray-300">
+                <h4 className="mb-4 text-xl font-bold">私のスタンス</h4>
+                <p className="max-w-4xl leading-relaxed text-gray-700 dark:text-gray-300">
                   派手なアピールは得意ではありませんが、
                   <strong>技術への深い理解</strong>、
                   <strong>学び続ける姿勢</strong>、<strong>確実な実装力</strong>
@@ -905,7 +905,7 @@ export default function Home() {
       <section className="py-20">
         <div className="container mx-auto px-6">
           <AnimateOnScroll animation="fadeIn">
-            <h2 className="mb-16 text-center font-bold text-3xl">
+            <h2 className="mb-16 text-center text-3xl font-bold">
               フィットする企業風土
             </h2>
           </AnimateOnScroll>
@@ -944,10 +944,10 @@ export default function Home() {
                       ))}
                     </div>
                   </div>
-                  <h3 className="mb-4 font-bold text-2xl">
+                  <h3 className="mb-4 text-2xl font-bold">
                     私が力を発揮できる企業環境
                   </h3>
-                  <p className="mx-auto max-w-3xl text-gray-600 leading-relaxed dark:text-gray-300">
+                  <p className="mx-auto max-w-3xl leading-relaxed text-gray-600 dark:text-gray-300">
                     開発者の裁量を重視し、挑戦を歓迎するフットワークの軽い企業文化で、
                     私のスキルと経験を最大限に活かして貢献したいと考えています。
                   </p>
@@ -1008,8 +1008,8 @@ export default function Home() {
                   <div className="mb-4 flex items-start gap-4">
                     <IconBox>{item.icon}</IconBox>
                     <div>
-                      <h4 className="mb-1 font-bold text-lg">{item.title}</h4>
-                      <p className="text-gray-600 text-sm dark:text-gray-300">
+                      <h4 className="mb-1 text-lg font-bold">{item.title}</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
                         {item.description}
                       </p>
                     </div>
@@ -1018,7 +1018,7 @@ export default function Home() {
                     {item.points.map((point) => (
                       <li
                         key={point}
-                        className="flex items-start gap-2 text-gray-700 text-sm dark:text-gray-200"
+                        className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200"
                       >
                         <Check
                           size={16}
@@ -1034,7 +1034,7 @@ export default function Home() {
 
             <AnimateOnScroll animation="fadeIn" delay={0.3}>
               <div className="mt-12 rounded-2xl bg-blue-50 p-8 text-center dark:bg-blue-900/20">
-                <h4 className="mb-6 font-bold text-xl">理想的な協働スタイル</h4>
+                <h4 className="mb-6 text-xl font-bold">理想的な協働スタイル</h4>
                 <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-3">
                   {[
                     {
@@ -1058,14 +1058,14 @@ export default function Home() {
                         {style.icon}
                       </div>
                       <h5 className="mb-2 font-semibold">{style.title}</h5>
-                      <p className="text-gray-600 text-sm dark:text-gray-300">
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
                         {style.description}
                       </p>
                     </div>
                   ))}
                 </div>
                 <div className="mt-8">
-                  <p className="text-gray-700 leading-relaxed dark:text-gray-300">
+                  <p className="leading-relaxed text-gray-700 dark:text-gray-300">
                     このような環境で、私の<strong>継続的な学習意欲</strong>と
                     <strong>実装力</strong>を活かし、
                     チームの技術的成長とプロダクトの成功に貢献したいと考えています。
@@ -1080,7 +1080,7 @@ export default function Home() {
       <section className="py-20">
         <div className="container mx-auto px-6">
           <AnimateOnScroll animation="fadeIn">
-            <h2 className="mb-16 text-center font-bold text-3xl">コンタクト</h2>
+            <h2 className="mb-16 text-center text-3xl font-bold">コンタクト</h2>
           </AnimateOnScroll>
 
           <AnimateOnScroll animation="slideUp" delay={0.1}>

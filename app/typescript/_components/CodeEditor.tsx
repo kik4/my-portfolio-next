@@ -184,15 +184,15 @@ export function CodeEditor({
   return (
     <div className="my-6 rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
       {/* Header */}
-      <div className="flex items-center justify-between border-gray-200 border-b bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
-        <h3 className="font-semibold text-gray-900 text-sm dark:text-white">
+      <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
           {title}
         </h3>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={resetCode}
-            className="rounded bg-gray-200 px-3 py-1 text-gray-700 text-xs transition hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+            className="rounded bg-gray-200 px-3 py-1 text-xs text-gray-700 transition hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
           >
             リセット
           </button>
@@ -200,7 +200,7 @@ export function CodeEditor({
             type="button"
             onClick={runCode}
             disabled={isRunning}
-            className="rounded bg-blue-600 px-4 py-1 font-medium text-white text-xs transition hover:bg-blue-700 disabled:opacity-50"
+            className="rounded bg-blue-600 px-4 py-1 text-xs font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
           >
             {isRunning ? "実行中..." : "▶ 実行"}
           </button>
@@ -231,7 +231,7 @@ export function CodeEditor({
         <button
           type="button"
           onMouseDown={handleResizeStart}
-          className={`group absolute inset-x-0 bottom-0 flex h-2 w-full cursor-ns-resize items-center justify-center border-gray-200 border-t bg-gray-100 transition-colors hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 ${
+          className={`group absolute inset-x-0 bottom-0 flex h-2 w-full cursor-ns-resize items-center justify-center border-t border-gray-200 bg-gray-100 transition-colors hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 ${
             isResizing ? "bg-gray-200 dark:bg-gray-700" : ""
           }`}
           title="ドラッグしてエディターの高さを調整"
@@ -242,11 +242,11 @@ export function CodeEditor({
       </div>
 
       {/* Output Tabs */}
-      <div className="flex border-gray-200 border-b bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
+      <div className="flex border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
         <button
           type="button"
           onClick={() => setActiveTab("output")}
-          className={`border-gray-200 border-r px-4 py-2 text-xs transition dark:border-gray-700 ${
+          className={`border-r border-gray-200 px-4 py-2 text-xs transition dark:border-gray-700 ${
             activeTab === "output"
               ? "bg-white font-medium text-gray-900 dark:bg-gray-800 dark:text-white"
               : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
@@ -282,7 +282,7 @@ export function CodeEditor({
                     // biome-ignore lint/suspicious/noArrayIndexKey: safe index usage
                     index
                   }`}
-                  className="border-gray-200 border-b py-1 text-gray-800 last:border-b-0 dark:border-gray-700 dark:text-gray-200"
+                  className="border-b border-gray-200 py-1 text-gray-800 last:border-b-0 dark:border-gray-700 dark:text-gray-200"
                 >
                   {log}
                 </div>

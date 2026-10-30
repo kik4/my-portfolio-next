@@ -44,7 +44,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
       {/* サイドバー */}
       <aside
         className={clsx(
-          "fixed inset-y-0 left-0 z-30 w-64 flex-shrink-0 transform overflow-y-auto border-gray-200 border-r bg-white transition-all duration-300 ease-out-quint lg:relative lg:translate-x-0 lg:overflow-clip lg:opacity-100 dark:border-gray-700 dark:bg-gray-900",
+          "fixed inset-y-0 left-0 z-30 w-64 flex-shrink-0 transform overflow-y-auto border-r border-gray-200 bg-white transition-all duration-300 ease-out-quint lg:relative lg:translate-x-0 lg:overflow-clip lg:opacity-100 dark:border-gray-700 dark:bg-gray-900",
           {
             "translate-x-0 opacity-100 blur-none": isSidebarOpen,
             "-translate-x-full opacity-0 blur-sm lg:blur-none": !isSidebarOpen,
@@ -53,7 +53,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
         )}
       >
         {/* 閉じるボタン（モバイル時のみ） */}
-        <div className="flex items-center justify-start border-gray-200 border-b p-2 lg:hidden dark:border-gray-700">
+        <div className="flex items-center justify-start border-b border-gray-200 p-2 lg:hidden dark:border-gray-700">
           <button
             type="button"
             onClick={() => setIsSidebarOpen(false)}

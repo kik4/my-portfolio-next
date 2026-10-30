@@ -144,7 +144,7 @@ export function PolygonTree({
             }}
           />
           {polygon.name}
-          <span className="ml-1 text-gray-400 text-xs">
+          <span className="ml-1 text-xs text-gray-400">
             {polygon.group === "outline"
               ? "輪郭"
               : polygon.group === "outlineShadow"
@@ -248,7 +248,7 @@ export function PolygonTree({
                 renderPolygonItem(polygon, index, true),
               )
             ) : (
-              <div className="py-0.5 pl-4 text-gray-400 text-xs italic">
+              <div className="py-0.5 pl-4 text-xs text-gray-400 italic">
                 ドラッグして追加
               </div>
             )}
@@ -261,28 +261,28 @@ export function PolygonTree({
         <button
           type="button"
           onClick={() => onAddPolygon("outline")}
-          className="flex-1 rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
+          className="flex-1 rounded border border-dashed border-gray-400 px-1 py-0.5 text-gray-600 hover:bg-gray-50"
         >
           + 輪郭
         </button>
         <button
           type="button"
           onClick={() => onAddPolygon("outlineShadow")}
-          className="flex-1 rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
+          className="flex-1 rounded border border-dashed border-gray-400 px-1 py-0.5 text-gray-600 hover:bg-gray-50"
         >
           + 輪郭影
         </button>
         <button
           type="button"
           onClick={() => onAddPolygon("feature")}
-          className="flex-1 rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
+          className="flex-1 rounded border border-dashed border-gray-400 px-1 py-0.5 text-gray-600 hover:bg-gray-50"
         >
           + 特徴
         </button>
         <button
           type="button"
           onClick={onAddGroup}
-          className="flex-1 rounded border border-gray-400 border-dashed px-1 py-0.5 text-gray-600 hover:bg-gray-50"
+          className="flex-1 rounded border border-dashed border-gray-400 px-1 py-0.5 text-gray-600 hover:bg-gray-50"
         >
           + グループ
         </button>

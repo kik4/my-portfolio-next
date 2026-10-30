@@ -7,7 +7,7 @@ import { MyLink } from "./MyLink";
 
 export function Footer() {
   return (
-    <footer className="border-gray-200 border-t bg-gray-800 pt-16 pb-8 text-white dark:border-gray-700 dark:bg-gray-900">
+    <footer className="border-t border-gray-200 bg-gray-800 pt-16 pb-8 text-white dark:border-gray-700 dark:bg-gray-900">
       <div className="container mx-auto px-6">
         <div className="mb-12 flex flex-wrap justify-between">
           <div className="mb-8 w-full md:mb-0 md:w-1/3">
@@ -21,14 +21,14 @@ export function Footer() {
                   alt="kik4"
                 />
               </div>
-              <h3 className="font-bold text-xl">kik4</h3>
+              <h3 className="text-xl font-bold">kik4</h3>
             </div>
             <p className="text-gray-400">
               Webエンジニア。現在はリードエンジニアとして自社開発プロジェクトに従事。フルリモート・フルフレックス勤務。
             </p>
           </div>
           <div className="mb-8 w-full md:mb-0 md:w-1/4">
-            <h3 className="mb-4 font-bold text-xl">リンク</h3>
+            <h3 className="mb-4 text-xl font-bold">リンク</h3>
             <ul className="space-y-2">
               {[
                 { href: { pathname: getPathToHome() }, label: "ホーム" },
@@ -49,7 +49,7 @@ export function Footer() {
             </ul>
           </div>
           <div className="w-full md:w-1/4">
-            <h3 className="mb-4 font-bold text-xl">フォローする</h3>
+            <h3 className="mb-4 text-xl font-bold">フォローする</h3>
             <div className="flex space-x-4">
               {[
                 {
@@ -73,7 +73,7 @@ export function Footer() {
             </div>
           </div>
         </div>
-        <div className="border-gray-700 border-t pt-8 text-center text-gray-400">
+        <div className="border-t border-gray-700 pt-8 text-center text-gray-400">
           <p>&copy; kik4. All Rights Reserved.</p>
         </div>
       </div>

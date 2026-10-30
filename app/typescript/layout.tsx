@@ -28,7 +28,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           {/* コンテンツ */}
           <div className="p-6">
             <MyLink href={getPathToTypeScript()} className="mb-6 block">
-              <h1 className="font-bold text-gray-900 text-medium dark:text-white">
+              <h1 className="text-medium font-bold text-gray-900 dark:text-white">
                 {algorithmPageTitle}
               </h1>
             </MyLink>
@@ -36,7 +36,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             <nav className="space-y-6">
               {publishedSections.map((section) => (
                 <div key={section.id}>
-                  <h3 className="mb-2 font-semibold text-gray-700 text-sm uppercase tracking-wider dark:text-gray-300">
+                  <h3 className="mb-2 text-sm font-semibold tracking-wider text-gray-700 uppercase dark:text-gray-300">
                     {section.title}
                   </h3>
                   <ul>
@@ -56,10 +56,10 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
 
           {/* トップページに戻るリンク */}
-          <div className="border-gray-200 border-t p-4 dark:border-gray-700">
+          <div className="border-t border-gray-200 p-4 dark:border-gray-700">
             <MyLink
               href={getPathToHome()}
-              className="flex items-center gap-2 text-gray-500 text-sm transition hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              className="flex items-center gap-2 text-sm text-gray-500 transition hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             >
               <span>←</span>
               kik4.work

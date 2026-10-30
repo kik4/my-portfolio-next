@@ -205,11 +205,11 @@ export default function TagEditor() {
         <nav className="container mx-auto flex items-center justify-between px-6 py-3">
           <MyLink
             href={getPathToHome()}
-            className="text-gray-600 text-sm hover:text-blue-600"
+            className="text-sm text-gray-600 hover:text-blue-600"
           >
             ← ホーム
           </MyLink>
-          <h1 className="font-bold text-gray-800 text-lg">
+          <h1 className="text-lg font-bold text-gray-800">
             テキストタグエディター
           </h1>
           <div className="w-16" />
@@ -222,7 +222,7 @@ export default function TagEditor() {
             <button
               type="button"
               onClick={resetToDefault}
-              className="rounded border border-gray-300 bg-white px-4 py-2 text-gray-700 text-sm hover:bg-gray-50"
+              className="rounded border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
               <Trash2 className="mr-2 inline-block" size={16} />
               リセット
@@ -370,18 +370,18 @@ export default function TagEditor() {
           {editors.map((editor, index) => (
             <div key={editor.id} className="relative">
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="font-medium text-gray-600 text-sm">
+                <h3 className="text-sm font-medium text-gray-600">
                   {editor.id === BASE_EDITOR_ID ? (
                     <>
                       基本タグ
-                      <span className="ml-2 rounded bg-blue-100 px-2 py-0.5 text-blue-700 text-xs">
+                      <span className="ml-2 rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
                         共通部分
                       </span>
                     </>
                   ) : (
                     <>
                       差分タグ {index}
-                      <span className="ml-2 rounded bg-violet-100 px-2 py-0.5 text-violet-700 text-xs">
+                      <span className="ml-2 rounded bg-violet-100 px-2 py-0.5 text-xs text-violet-700">
                         出力
                       </span>
                     </>
@@ -391,7 +391,7 @@ export default function TagEditor() {
                   <button
                     type="button"
                     onClick={() => removeEditor(editor.id)}
-                    className="rounded bg-red-500 px-3 py-1 text-white text-xs hover:bg-red-600"
+                    className="rounded bg-red-500 px-3 py-1 text-xs text-white hover:bg-red-600"
                   >
                     削除
                   </button>

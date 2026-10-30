@@ -9,7 +9,7 @@ export default function NotFound() {
         <div className="mx-auto max-w-2xl">
           {/* 404 Large Text with Animation */}
           <div className="relative mb-8">
-            <h1 className="animate-pulse font-bold text-[150px] text-gray-200 leading-none sm:text-[200px] dark:text-gray-700">
+            <h1 className="animate-pulse text-[150px] leading-none font-bold text-gray-200 sm:text-[200px] dark:text-gray-700">
               404
             </h1>
             <div className="absolute inset-0 flex items-center justify-center">
@@ -23,10 +23,10 @@ export default function NotFound() {
           </div>
 
           {/* Error Message */}
-          <h2 className="mb-4 font-bold text-3xl text-gray-800 sm:text-4xl dark:text-gray-200">
+          <h2 className="mb-4 text-3xl font-bold text-gray-800 sm:text-4xl dark:text-gray-200">
             ページが見つかりません
           </h2>
-          <p className="mb-8 text-gray-600 text-lg dark:text-gray-400">
+          <p className="mb-8 text-lg text-gray-600 dark:text-gray-400">
             お探しのページは存在しないか、移動または削除された可能性があります。
           </p>
 

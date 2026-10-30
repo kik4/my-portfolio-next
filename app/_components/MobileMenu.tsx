@@ -63,8 +63,8 @@ export function MobileMenu() {
       >
         <div className="flex h-full flex-col shadow-[inset_-10px_0_15px_-8px_rgba(0,0,0,0.2)] dark:shadow-[inset_-10px_0_15px_-8px_rgba(0,0,0,0.5)]">
           {/* ヘッダー部分 */}
-          <div className="flex items-center justify-between border-gray-200 border-b p-4 dark:border-gray-700">
-            <span className="font-bold text-lg">Menu</span>
+          <div className="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
+            <span className="text-lg font-bold">Menu</span>
             <button
               type="button"
               onClick={() => setIsOpen(false)}
@@ -102,7 +102,7 @@ export function MobileMenu() {
           </nav>
 
           {/* フッター部分（ダークモード切り替え） */}
-          <div className="border-gray-200 border-t p-4 dark:border-gray-700">
+          <div className="border-t border-gray-200 p-4 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <DarkToggleButton />
             </div>

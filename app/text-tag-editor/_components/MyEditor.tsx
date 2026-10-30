@@ -371,8 +371,8 @@ export const MyEditor = ({
     <div className="grid grid-cols-2 gap-4">
       {/* エディターペイン */}
       <div className="overflow-hidden rounded-lg border border-gray-300">
-        <div className="border-gray-300 border-b bg-gray-100 px-4 py-2">
-          <h2 className="font-semibold text-gray-700 text-sm">エディター</h2>
+        <div className="border-b border-gray-300 bg-gray-100 px-4 py-2">
+          <h2 className="text-sm font-semibold text-gray-700">エディター</h2>
         </div>
         <Editor
           height="600px"
@@ -396,12 +396,12 @@ export const MyEditor = ({
 
       {/* プレビューペイン */}
       <div className="overflow-hidden rounded-lg border border-gray-300">
-        <div className="border-gray-300 border-b bg-gray-100 px-4 py-2">
-          <h2 className="font-semibold text-gray-700 text-sm">プレビュー</h2>
+        <div className="border-b border-gray-300 bg-gray-100 px-4 py-2">
+          <h2 className="text-sm font-semibold text-gray-700">プレビュー</h2>
         </div>
         <div className="h-full bg-white">
           {editorId !== BASE_EDITOR_ID && (
-            <div className="flex flex-wrap items-start gap-2 border-gray-300 border-b p-2">
+            <div className="flex flex-wrap items-start gap-2 border-b border-gray-300 p-2">
               {baseTags.map((tagObj, index) => {
                 const isBaseEditorDuplicate = baseEditorDuplicateMap
                   .get(editorId)
