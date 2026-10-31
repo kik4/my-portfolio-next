@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { interpolateOutlinePoints } from "../_lib/interpolateOutline";
 import { downloadJson, exportFaceModel, importFaceModel } from "../_lib/jsonIO";
@@ -25,8 +26,20 @@ import { useDebouncedCommit, useHistory } from "../_lib/useHistory";
 import { GroupGizmo } from "./GroupGizmo";
 import { PointEditor } from "./PointEditor";
 import { PolygonTree } from "./PolygonTree";
-import { ReferenceScene } from "./ReferenceScene";
-import { Scene } from "./Scene";
+
+// three.js 一式は重いので、編集 UI を先に操作可能にするため 3D プレビューだけ遅延読み込みする
+const ReferenceScene = dynamic(
+  () => import("./ReferenceScene").then((m) => m.ReferenceScene),
+  { ssr: false },
+);
+const Scene = dynamic(() => import("./Scene").then((m) => m.Scene), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center text-sm text-gray-400">
+      3D プレビューを読み込み中…
+    </div>
+  ),
+});
 
 function createEllipsePoints(rx: number, ry: number, n: number): Point2D[] {
   const points: Point2D[] = [];
