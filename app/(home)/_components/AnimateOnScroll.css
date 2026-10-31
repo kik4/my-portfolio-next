@@ -1,0 +1,97 @@
+/* OS の「視差効果を減らす」設定時はアニメーションせずに表示する */
+@media (prefers-reduced-motion: no-preference) {
+  .aos {
+    animation-duration: 1.2s;
+    animation-fill-mode: backwards;
+    animation-timing-function: ease-out;
+    /* stiffness: 100, damping: 10, mass: 1 のスプリングをサンプリングした曲線 */
+    animation-timing-function: linear(
+      0,
+      0.104,
+      0.34,
+      0.61,
+      0.849,
+      1.023,
+      1.124,
+      1.162,
+      1.153,
+      1.118,
+      1.075,
+      1.034,
+      1.002,
+      0.983,
+      0.974,
+      0.974,
+      0.979,
+      0.986,
+      0.993,
+      0.999,
+      1.002,
+      1.004,
+      1.004,
+      1.004,
+      1
+    );
+  }
+
+  .aos-fade-in {
+    animation-name: aos-fade-in;
+    animation-duration: 0.6s;
+    animation-timing-function: ease-in-out;
+  }
+
+  .aos-slide-up {
+    animation-name: aos-slide-up;
+  }
+
+  .aos-slide-left {
+    animation-name: aos-slide-left;
+  }
+
+  .aos-slide-right {
+    animation-name: aos-slide-right;
+  }
+
+  .aos-scale {
+    animation-name: aos-scale;
+  }
+
+  .aos-waiting {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+@keyframes aos-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes aos-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+}
+
+@keyframes aos-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+}
+
+@keyframes aos-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+}
+
+@keyframes aos-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
